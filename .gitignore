@@ -33,15 +33,15 @@ $RECYCLE.BIN/
 # KDE directory preferences
 .directory
 
-# Linux trash folder which might appear on any partition or disk
+# Linux trash folder
 .Trash-*
 
 #-------------------------
 # Environment Files
 #-------------------------
-# These should never be under version control,
-# as it poses a security risk.
 .env
+.env.*
+!.env.example
 .vagrant
 Vagrantfile
 
@@ -78,13 +78,13 @@ php_errors.log
 #-------------------------
 /tests/coverage*
 
-# Don't save phpunit under version control.
 /phpunit
 
 #-------------------------
 # Composer
 #-------------------------
-vendor/
+/vendor/
+composer.phar
 
 #-------------------------
 # IDE / Development Files
@@ -96,15 +96,13 @@ _modules/*
 # phpenv local config
 .php-version
 
-# Jetbrains editors (PHPStorm, etc)
+# Jetbrains editors
 .idea/
 *.iml
 
 # NetBeans
 /nbproject/
-/build/
 /nbbuild/
-/dist/
 /nbdist/
 /nbactions.xml
 /nb-configuration.xml
@@ -124,3 +122,10 @@ _modules/*
 
 /results/
 /phpunit.xml
+
+#-------------------------
+# KEEP AdminLTE Assets
+#-------------------------
+# JANGAN ignore public/assets/dist/
+# JANGAN ignore public/assets/build/
+# JANGAN ignore public/assets/bower_components/
