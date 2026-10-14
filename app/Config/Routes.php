@@ -11,4 +11,10 @@ $routes->group('kategori-template-email', function ($routes) {
     $routes->post('update/(:num)','KategoriController::update/$1');
     $routes->post('delete/(:num)','KategoriController::delete/$1');
 });
-$routes->get('kontak', 'KontakController::index');
+
+$routes->group('kontak', function ($routes) {
+    $routes->get('/', 'KontakController::index');
+    $routes->post('store', 'KontakController::store');
+    $routes->post('update/(:num)', 'KontakController::update/$1');
+    $routes->post('delete/(:num)', 'KontakController::delete/$1');
+});
