@@ -5,80 +5,12 @@
 <?= $this->section('page_subtitle') ?>Ringkasan Aktivitas Email Blast<?= $this->endSection() ?>
 
 <?= $this->section('breadcrumb') ?>
-<li>
-    <a href="<?= site_url('dashboard') ?>">
-        <i class="fa fa-dashboard"></i> Home
-    </a>
-</li>
+<li><a href="<?= site_url('dashboard') ?>"><i class="fa fa-dashboard"></i> Home</a></li>
 <li class="active">Dashboard</li>
 <?= $this->endSection() ?>
 
 <?= $this->section('styles') ?>
-<style>
-    /* Welcome banner */
-    .welcome-banner {
-        background: linear-gradient(135deg, #00a65a 0%, #007d43 100%);
-        color: #fff;
-        padding: 25px 30px;
-        border-radius: 4px;
-        margin-bottom: 20px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 2px 6px rgba(0,0,0,.1);
-    }
-    .welcome-banner h2 {
-        margin: 0 0 6px 0;
-        font-weight: 600;
-        color: #fff;
-    }
-    .welcome-banner p {
-        margin: 0;
-        opacity: .9;
-        font-size: 14px;
-    }
-    .welcome-banner .banner-icon {
-        position: absolute;
-        right: 25px;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 110px;
-        opacity: .12;
-        color: #fff;
-    }
-
-    /* Small box lebih rapi */
-    .small-box {
-        border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.08);
-        transition: all .2s;
-    }
-    .small-box:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0,0,0,.12);
-    }
-
-    /* Quick action */
-    .quick-action .btn {
-        width: 100%;
-        text-align: left;
-        padding: 12px 15px;
-        margin-bottom: 8px;
-        font-weight: 500;
-        border-radius: 4px;
-    }
-    .quick-action .btn i {
-        margin-right: 8px;
-        width: 18px;
-        text-align: center;
-    }
-
-    /* Info box progress */
-    .info-box .progress {
-        height: 4px;
-        margin: 6px 0 0 0;
-        background: rgba(0,0,0,.08);
-    }
-</style>
+<link rel="stylesheet" href="<?= base_url('assets/css/dashboard.css') ?>">
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
@@ -87,329 +19,309 @@
 <!-- WELCOME BANNER -->
 <!-- ============================================== -->
 <div class="welcome-banner">
+    <span class="wb-badge">
+        <i class="fa fa-circle" style="font-size:7px; color:#4ade80;"></i>
+        Sistem Online & Beroperasi
+    </span>
     <h2>
-        <i class="fa fa-hand-peace-o"></i>
-        Selamat Datang, <?= esc(session()->get('name') ?? 'Guest') ?>!
+        Selamat Datang, <?= esc(session()->get('name') ?? 'Guest') ?> 👋
     </h2>
     <p>
-        Dashboard <strong>Email Blast</strong> — kelola kontak, template, dan pengiriman email dalam satu tempat.
+        Kelola kampanye <strong>Email Blast</strong>, daftar kontak penerima, serta pantau laporan pengiriman secara *real-time* di sini.
     </p>
     <i class="fa fa-paper-plane banner-icon"></i>
 </div>
 
 <!-- ============================================== -->
-<!-- SMALL BOXES -->
+<!-- STAT CARDS -->
 <!-- ============================================== -->
-<div class="row">
-
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-aqua">
-            <div class="inner">
-                <h3><?= number_format($totalKontak ?? 0) ?></h3>
-                <p>Total Kontak</p>
+<div class="row gap-tight">
+    <div class="col-lg-3 col-sm-6">
+        <a href="<?= site_url('kontak') ?>" class="stat-card stat-aqua">
+            <div class="stat-icon"><i class="fa fa-users"></i></div>
+            <div>
+                <div class="stat-label">Total Kontak</div>
+                <div class="stat-value"><?= number_format($totalKontak ?? 0) ?></div>
             </div>
-            <div class="icon">
-                <i class="fa fa-users"></i>
-            </div>
-            <a href="<?= site_url('kontak') ?>" class="small-box-footer">
-                Lihat Data <i class="fa fa-arrow-circle-right"></i>
-            </a>
-        </div>
+            <div class="stat-footer">Lihat Data <i class="fa fa-arrow-right"></i></div>
+        </a>
     </div>
 
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-green">
-            <div class="inner">
-                <h3><?= number_format($totalTerkirim ?? 0) ?></h3>
-                <p>Email Terkirim</p>
+    <div class="col-lg-3 col-sm-6">
+        <a href="<?= site_url('riwayat-pengiriman') ?>" class="stat-card stat-green">
+            <div class="stat-icon"><i class="fa fa-paper-plane"></i></div>
+            <div>
+                <div class="stat-label">Email Terkirim</div>
+                <div class="stat-value"><?= number_format($totalTerkirim ?? 0) ?></div>
             </div>
-            <div class="icon">
-                <i class="fa fa-paper-plane"></i>
-            </div>
-            <a href="<?= site_url('riwayat-pengiriman') ?>" class="small-box-footer">
-                Lihat Riwayat <i class="fa fa-arrow-circle-right"></i>
-            </a>
-        </div>
+            <div class="stat-footer">Lihat Riwayat <i class="fa fa-arrow-right"></i></div>
+        </a>
     </div>
 
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-yellow">
-            <div class="inner">
-                <h3><?= number_format($totalTemplate ?? 0) ?></h3>
-                <p>Template Email</p>
+    <div class="col-lg-3 col-sm-6">
+        <a href="<?= site_url('template-email') ?>" class="stat-card stat-yellow">
+            <div class="stat-icon"><i class="fa fa-file-text-o"></i></div>
+            <div>
+                <div class="stat-label">Template Email</div>
+                <div class="stat-value"><?= number_format($totalTemplate ?? 0) ?></div>
             </div>
-            <div class="icon">
-                <i class="fa fa-file-text-o"></i>
-            </div>
-            <a href="<?= site_url('template-email') ?>" class="small-box-footer">
-                Kelola Template <i class="fa fa-arrow-circle-right"></i>
-            </a>
-        </div>
+            <div class="stat-footer">Kelola Template <i class="fa fa-arrow-right"></i></div>
+        </a>
     </div>
 
-    <div class="col-lg-3 col-xs-6">
-        <div class="small-box bg-purple">
-            <div class="inner">
-                <h3><?= number_format($totalKategori ?? 0) ?></h3>
-                <p>Kategori Template</p>
+    <div class="col-lg-3 col-sm-6">
+        <a href="<?= site_url('kategori-template-email') ?>" class="stat-card stat-purple">
+            <div class="stat-icon"><i class="fa fa-tags"></i></div>
+            <div>
+                <div class="stat-label">Kategori</div>
+                <div class="stat-value"><?= number_format($totalKategori ?? 0) ?></div>
             </div>
-            <div class="icon">
-                <i class="fa fa-tags"></i>
-            </div>
-            <a href="<?= site_url('kategori-template-email') ?>" class="small-box-footer">
-                Lihat Kategori <i class="fa fa-arrow-circle-right"></i>
-            </a>
-        </div>
+            <div class="stat-footer">Lihat Kategori <i class="fa fa-arrow-right"></i></div>
+        </a>
     </div>
-
 </div>
 
-<div class="row">
+<!-- ============================================== -->
+<!-- QUICK ACTION + INFO CARDS -->
+<!-- ============================================== -->
+<div class="row gap-tight mt-28">
 
-    <!-- ============================================== -->
-    <!-- QUICK ACTION -->
-    <!-- ============================================== -->
+    <!-- Quick Action -->
     <div class="col-md-4">
+        <div class="panel quick-action" style="height:100%;">
+            <h3 class="panel-title">
+                <span class="pt-icon"><i class="fa fa-bolt"></i></span>
+                Aksi Cepat
+            </h3>
 
-        <div class="box box-primary">
-            <div class="box-header with-border">
-                <h3 class="box-title">
-                    <i class="fa fa-bolt"></i> Aksi Cepat
-                </h3>
-            </div>
-            <div class="box-body quick-action">
+            <a href="<?= site_url('kirim-email') ?>" class="qa-btn qa-green">
+                <span class="qa-icon"><i class="fa fa-paper-plane"></i></span>
+                <span class="qa-text">
+                    Kirim Email Baru
+                    <small>Buat &amp; kirim email langsung</small>
+                </span>
+                <i class="fa fa-chevron-right qa-arrow"></i>
+            </a>
 
-                <a href="<?= site_url('kirim-email') ?>" class="btn btn-success">
-                    <i class="fa fa-paper-plane"></i> Kirim Email Baru
-                </a>
+            <a href="<?= site_url('template-email') ?>" class="qa-btn qa-blue">
+                <span class="qa-icon"><i class="fa fa-file-text-o"></i></span>
+                <span class="qa-text">
+                    Kelola Template Email
+                    <small>Atur template yang tersedia</small>
+                </span>
+                <i class="fa fa-chevron-right qa-arrow"></i>
+            </a>
 
-                <a href="<?= site_url('template-email') ?>" class="btn btn-primary">
-                    <i class="fa fa-file-text-o"></i> Kelola Template Email
-                </a>
+            <a href="<?= site_url('kontak') ?>" class="qa-btn qa-aqua">
+                <span class="qa-icon"><i class="fa fa-user-plus"></i></span>
+                <span class="qa-text">
+                    Tambah Kontak
+                    <small>Tambah penerima email baru</small>
+                </span>
+                <i class="fa fa-chevron-right qa-arrow"></i>
+            </a>
 
-                <a href="<?= site_url('kontak') ?>" class="btn btn-info">
-                    <i class="fa fa-user-plus"></i> Tambah Kontak
-                </a>
-
-                <a href="<?= site_url('riwayat-pengiriman') ?>" class="btn btn-warning">
-                    <i class="fa fa-history"></i> Lihat Riwayat
-                </a>
-
-            </div>
+            <a href="<?= site_url('riwayat-pengiriman') ?>" class="qa-btn qa-orange">
+                <span class="qa-icon"><i class="fa fa-history"></i></span>
+                <span class="qa-text">
+                    Lihat Riwayat
+                    <small>Cek status pengiriman</small>
+                </span>
+                <i class="fa fa-chevron-right qa-arrow"></i>
+            </a>
         </div>
-
     </div>
 
-    <!-- ============================================== -->
-    <!-- INFO BOX + PROGRESS -->
-    <!-- ============================================== -->
+    <!-- Info Cards -->
     <div class="col-md-8">
+        <div class="row gap-tight">
 
-        <div class="row">
-
-            <div class="col-md-6">
-                <div class="info-box">
-                    <span class="info-box-icon bg-aqua">
-                        <i class="fa fa-envelope-o"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Email Bulan Ini</span>
-                        <span class="info-box-number"><?= number_format($emailBulanIni ?? 0) ?></span>
-                        <div class="progress">
-                            <div class="progress-bar bg-aqua"
-                                 style="width: <?= min(100, ($emailBulanIni ?? 0)) ?>%"></div>
+            <div class="col-sm-6">
+                <div class="info-card ic-aqua">
+                    <div class="ic-header">
+                        <div class="ic-icon"><i class="fa fa-envelope-o"></i></div>
+                        <div>
+                            <p class="ic-title">Email Bulan Ini</p>
+                            <div class="ic-value"><?= number_format($emailBulanIni ?? 0) ?></div>
                         </div>
-                        <span class="progress-description">
-                            Target: <?= number_format($targetBulanan ?? 100) ?> email
-                        </span>
                     </div>
+                    <div class="ic-progress">
+                        <div class="bar-aqua" style="width: <?= min(100, ($emailBulanIni ?? 0)) ?>%"></div>
+                    </div>
+                    <p class="ic-desc">
+                        <i class="fa fa-bullseye"></i> Target: <?= number_format($targetBulanan ?? 100) ?> email
+                    </p>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="info-box">
-                    <span class="info-box-icon bg-green">
-                        <i class="fa fa-check-circle-o"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Berhasil Terkirim</span>
-                        <span class="info-box-number"><?= number_format($totalBerhasil ?? 0) ?></span>
-                        <div class="progress">
-                            <div class="progress-bar bg-green"
-                                 style="width: <?= min(100, ($totalBerhasil ?? 0)) ?>%"></div>
+            <div class="col-sm-6">
+                <div class="info-card ic-green">
+                    <div class="ic-header">
+                        <div class="ic-icon"><i class="fa fa-check-circle-o"></i></div>
+                        <div>
+                            <p class="ic-title">Berhasil Terkirim</p>
+                            <div class="ic-value"><?= number_format($totalBerhasil ?? 0) ?></div>
                         </div>
-                        <span class="progress-description">
-                            Dari total pengiriman
-                        </span>
                     </div>
+                    <div class="ic-progress">
+                        <div class="bar-green" style="width: <?= min(100, ($totalBerhasil ?? 0)) ?>%"></div>
+                    </div>
+                    <p class="ic-desc">
+                        <i class="fa fa-check"></i> Dari total keseluruhan
+                    </p>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="info-box">
-                    <span class="info-box-icon bg-yellow">
-                        <i class="fa fa-clock-o"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Menunggu Kirim</span>
-                        <span class="info-box-number"><?= number_format($totalMenunggu ?? 0) ?></span>
-                        <div class="progress">
-                            <div class="progress-bar bg-yellow"
-                                 style="width: <?= min(100, ($totalMenunggu ?? 0)) ?>%"></div>
+            <div class="col-sm-6">
+                <div class="info-card ic-yellow">
+                    <div class="ic-header">
+                        <div class="ic-icon"><i class="fa fa-clock-o"></i></div>
+                        <div>
+                            <p class="ic-title">Menunggu Kirim</p>
+                            <div class="ic-value"><?= number_format($totalMenunggu ?? 0) ?></div>
                         </div>
-                        <span class="progress-description">
-                            Dalam antrean
-                        </span>
                     </div>
+                    <div class="ic-progress">
+                        <div class="bar-yellow" style="width: <?= min(100, ($totalMenunggu ?? 0)) ?>%"></div>
+                    </div>
+                    <p class="ic-desc">
+                        <i class="fa fa-hourglass-half"></i> Dalam antrean sistem
+                    </p>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="info-box">
-                    <span class="info-box-icon bg-red">
-                        <i class="fa fa-times-circle-o"></i>
-                    </span>
-                    <div class="info-box-content">
-                        <span class="info-box-text">Gagal Kirim</span>
-                        <span class="info-box-number"><?= number_format($totalGagal ?? 0) ?></span>
-                        <div class="progress">
-                            <div class="progress-bar bg-red"
-                                 style="width: <?= min(100, ($totalGagal ?? 0)) ?>%"></div>
+            <div class="col-sm-6">
+                <div class="info-card ic-red">
+                    <div class="ic-header">
+                        <div class="ic-icon"><i class="fa fa-times-circle-o"></i></div>
+                        <div>
+                            <p class="ic-title">Gagal Kirim</p>
+                            <div class="ic-value"><?= number_format($totalGagal ?? 0) ?></div>
                         </div>
-                        <span class="progress-description">
-                            Perlu ditinjau ulang
-                        </span>
                     </div>
+                    <div class="ic-progress">
+                        <div class="bar-red" style="width: <?= min(100, ($totalGagal ?? 0)) ?>%"></div>
+                    </div>
+                    <p class="ic-desc">
+                        <i class="fa fa-exclamation-circle"></i> Perlu ditinjau ulang
+                    </p>
                 </div>
             </div>
 
         </div>
-
     </div>
 
 </div>
 
 <!-- ============================================== -->
-<!-- AKTIVITAS TERBARU -->
+<!-- PENGIRIMAN TERBARU + STATUS SISTEM -->
 <!-- ============================================== -->
-<div class="row">
+<div class="row gap-tight">
 
+    <!-- Riwayat Pengiriman -->
     <div class="col-md-8">
+        <div class="panel">
+            <h3 class="panel-title">
+                <span class="pt-icon"><i class="fa fa-history"></i></span>
+                Pengiriman Terbaru
+                <a href="<?= site_url('riwayat-pengiriman') ?>" class="pt-link">
+                    Lihat Semua <i class="fa fa-arrow-right"></i>
+                </a>
+            </h3>
 
-        <div class="box box-success">
-            <div class="box-header with-border">
-                <h3 class="box-title">
-                    <i class="fa fa-history"></i> Pengiriman Terbaru
-                </h3>
-                <div class="box-tools pull-right">
-                    <a href="<?= site_url('riwayat-pengiriman') ?>" class="btn btn-box-tool">
-                        <i class="fa fa-external-link"></i> Lihat Semua
-                    </a>
-                </div>
-            </div>
-
-            <div class="box-body no-padding">
-                <table class="table table-striped">
+            <div class="table-wrapper">
+                <table class="modern-table">
                     <thead>
-                    <tr>
-                        <th width="40">#</th>
-                        <th>Penerima</th>
-                        <th>Template</th>
-                        <th width="120">Tanggal</th>
-                        <th width="90">Status</th>
-                    </tr>
+                        <tr>
+                            <th width="50">#</th>
+                            <th>Penerima</th>
+                            <th>Template</th>
+                            <th width="150">Tanggal</th>
+                            <th width="120">Status</th>
+                        </tr>
                     </thead>
                     <tbody>
-                    <tr>
-                        <td>1</td>
-                        <td>info@contoh.co.id</td>
-                        <td>Promo Bulan Ini</td>
-                        <td>2025-01-03 14:20</td>
-                        <td><span class="label label-success">Terkirim</span></td>
-                    </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>contact@majubersama.com</td>
-                        <td>Notifikasi Sistem</td>
-                        <td>2025-01-03 10:05</td>
-                        <td><span class="label label-success">Terkirim</span></td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>halo@digitalnusantara.id</td>
-                        <td>Promo Akhir Tahun</td>
-                        <td>2025-01-02 16:45</td>
-                        <td><span class="label label-warning">Menunggu</span></td>
-                    </tr>
-                    <tr>
-                        <td>4</td>
-                        <td>admin@situsku.com</td>
-                        <td>Verifikasi Akun</td>
-                        <td>2025-01-02 09:15</td>
-                        <td><span class="label label-danger">Gagal</span></td>
-                    </tr>
+                        <tr>
+                            <td>01</td>
+                            <td>info@contoh.co.id</td>
+                            <td>Promo Bulan Ini</td>
+                            <td>2025-01-03 14:20</td>
+                            <td><span class="badge-soft success">Terkirim</span></td>
+                        </tr>
+                        <tr>
+                            <td>02</td>
+                            <td>contact@majubersama.com</td>
+                            <td>Notifikasi Sistem</td>
+                            <td>2025-01-03 10:05</td>
+                            <td><span class="badge-soft success">Terkirim</span></td>
+                        </tr>
+                        <tr>
+                            <td>03</td>
+                            <td>halo@digitalnusantara.id</td>
+                            <td>Promo Akhir Tahun</td>
+                            <td>2025-01-02 16:45</td>
+                            <td><span class="badge-soft warning">Menunggu</span></td>
+                        </tr>
+                        <tr>
+                            <td>04</td>
+                            <td>admin@situsku.com</td>
+                            <td>Verifikasi Akun</td>
+                            <td>2025-01-02 09:15</td>
+                            <td><span class="badge-soft danger">Gagal</span></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
     </div>
 
+    <!-- Status Sistem -->
     <div class="col-md-4">
+        <div class="panel" style="height: calc(100% - 28px);">
+            <h3 class="panel-title">
+                <span class="pt-icon"><i class="fa fa-info-circle"></i></span>
+                Status Sistem
+            </h3>
 
-        <div class="box box-info">
-            <div class="box-header with-border">
-                <h3 class="box-title">
-                    <i class="fa fa-info-circle"></i> Status Sistem
-                </h3>
+            <div class="sys-progress">
+                <div class="sp-head">
+                    <span>Kapasitas Kontak</span>
+                    <span><b><?= number_format($totalKontak ?? 0) ?></b> / 5.000</span>
+                </div>
+                <div class="sp-bar">
+                    <div class="sp-aqua" style="width: <?= min(100, (($totalKontak ?? 0) / 5000) * 100) ?>%"></div>
+                </div>
             </div>
-            <div class="box-body">
 
-                <div class="progress-group">
-                    <span class="progress-text">Kapasitas Kontak</span>
-                    <span class="progress-number">
-                        <b><?= number_format($totalKontak ?? 0) ?></b> / 5.000
-                    </span>
-                    <div class="progress sm">
-                        <div class="progress-bar progress-bar-aqua"
-                             style="width: <?= min(100, (($totalKontak ?? 0) / 5000) * 100) ?>%"></div>
-                    </div>
+            <div class="sys-progress">
+                <div class="sp-head">
+                    <span>Pengiriman Hari Ini</span>
+                    <span><b><?= number_format($emailHariIni ?? 0) ?></b> / 500</span>
                 </div>
-
-                <div class="progress-group">
-                    <span class="progress-text">Pengiriman Hari Ini</span>
-                    <span class="progress-number">
-                        <b><?= number_format($emailHariIni ?? 0) ?></b> / 500
-                    </span>
-                    <div class="progress sm">
-                        <div class="progress-bar progress-bar-green"
-                             style="width: <?= min(100, (($emailHariIni ?? 0) / 500) * 100) ?>%"></div>
-                    </div>
+                <div class="sp-bar">
+                    <div class="sp-green" style="width: <?= min(100, (($emailHariIni ?? 0) / 500) * 100) ?>%"></div>
                 </div>
+            </div>
 
-                <div class="progress-group">
-                    <span class="progress-text">Template Aktif</span>
-                    <span class="progress-number">
-                        <b><?= number_format($totalTemplate ?? 0) ?></b>
-                    </span>
-                    <div class="progress sm">
-                        <div class="progress-bar progress-bar-yellow"
-                             style="width: 65%"></div>
-                    </div>
+            <div class="sys-progress">
+                <div class="sp-head">
+                    <span>Template Aktif</span>
+                    <span><b><?= number_format($totalTemplate ?? 0) ?></b></span>
                 </div>
+                <div class="sp-bar">
+                    <div class="sp-yellow" style="width: 65%"></div>
+                </div>
+            </div>
 
-                <hr>
-
-                <p class="text-muted text-center" style="margin:0;">
-                    <i class="fa fa-circle text-success"></i>
-                    Sistem berjalan normal
-                    <br>
-                    <small>Terakhir diperbarui: <?= date('d M Y H:i') ?></small>
-                </p>
-
+            <div class="sys-status-footer">
+                <span class="dot-live"></span>
+                <span class="status-text">Sistem berjalan normal</span>
+                <span class="status-time">
+                    <i class="fa fa-refresh"></i>
+                    Terakhir diperbarui: <?= date('d M Y H:i') ?>
+                </span>
             </div>
         </div>
-
     </div>
 
 </div>
