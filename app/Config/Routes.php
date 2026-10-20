@@ -16,6 +16,7 @@ $routes->group('kontak', function ($routes) {
     $routes->post('store', 'KontakController::store');
     $routes->post('update/(:num)', 'KontakController::update/$1');
     $routes->post('delete/(:num)', 'KontakController::delete/$1');
+    $routes->post('import', 'KontakController::import');
 });
 
 $routes->get('template-email', 'TemplateController::index');
