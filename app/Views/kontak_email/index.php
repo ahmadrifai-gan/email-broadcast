@@ -54,6 +54,20 @@ $error   = session()->getFlashdata('error');
         </div>
     </div>
 
+    <form action="<?= site_url('kontak/import') ?>" method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
+    <input type="file" name="file_excel" accept=".xlsx,.xls" required>
+    <button type="submit">Import Excel</button>
+</form>
+
+<?php if (session()->getFlashdata('import_errors')): ?>
+    <ul>
+        <?php foreach (session()->getFlashdata('import_errors') as $e): ?>
+            <li><?= esc($e) ?></li>
+        <?php endforeach ?>
+    </ul>
+<?php endif ?>
+
     <div class="box-body">
         <div class="table-responsive">
             <table id="kontakTable" class="table table-bordered table-striped table-hover">
