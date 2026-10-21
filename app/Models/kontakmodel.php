@@ -12,6 +12,10 @@ class KontakModel extends Model
     protected $returnType       = 'array';
     protected $allowedFields    = ['nama_perusahaan', 'email', 'domisili'];
 
+    // Dijalankan otomatis sebelum insert/update
+    protected $beforeInsert = ['bersihkan'];
+    protected $beforeUpdate = ['bersihkan'];
+
     // Validasi (email unik, sesuai ikon kunci di database)
     protected $validationRules = [
         'id'              => 'permit_empty|is_natural_no_zero', // wajib ada untuk placeholder {id}
@@ -26,6 +30,19 @@ class KontakModel extends Model
             'is_unique'   => 'Email sudah terdaftar.',
         ],
     ];
+
+    // Rapikan spasi dan ubah string kosong menjadi NULL
+    // (agar tidak bentrok dengan unique key email)
+    protected function bersihkan(array $event)
+    {
+        foreach (['nama_perusahaan', 'email', 'domisili'] as $f) {
+            if (isset($event['data'][$f])) {
+                $v = trim((string) $event['data'][$f]);
+                $event['data'][$f] = ($v === '') ? null : $v;
+            }
+        }
+        return $event;
+    }
 
     // ---------- CRUD ----------
 
