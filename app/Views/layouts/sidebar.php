@@ -38,8 +38,8 @@
 
         <!-- Menu -->
         <ul class="sidebar-menu" data-widget="tree" id="sidebarMenu">
-            <li class="<?= url_is('dashboard*') ? 'active' : '' ?>">
-                <a href="<?= site_url('dashboard') ?>">
+            <li class="<?= url_is('*') ? 'active' : '' ?>">
+                <a href="<?= site_url('') ?>">
                     <i class="fa fa-dashboard"></i> <span>Dashboard</span>
                 </a>
             </li>

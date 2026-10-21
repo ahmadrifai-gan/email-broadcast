@@ -22,8 +22,9 @@
   <div class="content-wrapper">
     <section class="content-header">
       <h1>
-        <?= esc($pageTitle ?? 'Dashboard') ?>
-        <small><?= esc($pageSubtitle ?? '') ?></small>
+        <!-- PERBAIKAN: Gunakan renderSection agar membaca dari View -->
+        <?= $this->renderSection('page_title') ?>
+        <small><?= $this->renderSection('page_subtitle') ?></small>
       </h1>
       <ol class="breadcrumb">
         <?= $this->renderSection('breadcrumb') ?>

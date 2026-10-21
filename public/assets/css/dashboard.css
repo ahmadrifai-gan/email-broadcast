@@ -617,3 +617,14 @@ body {
     padding-right: 12px;
 }
 .mt-28 { margin-top: 28px; }
+
+/* Tambahan agar tombol quick action di Bootstrap 3 tidak berantakan */
+.qa-btn {
+    height: calc(100% - 10px);
+    margin-bottom: 10px;
+}
+
+/* Jika ingin menggunakan warna biru pada card */
+.stat-blue::before    { background: var(--grad-blue); }
+.stat-blue .stat-icon { background: var(--grad-blue); }
+.stat-blue .stat-footer { color: #3b82f6; }
