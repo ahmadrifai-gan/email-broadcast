@@ -19,12 +19,14 @@
         padding: 15px;
         margin-top: 10px;
     }
+
     .placeholder-box .box-title {
         font-weight: 600;
         color: #555;
         margin-bottom: 10px;
         font-size: 13px;
     }
+
     .placeholder-badge {
         display: inline-block;
         background: #ffffff;
@@ -40,15 +42,18 @@
         transition: all 0.2s ease;
         user-select: none;
     }
+
     .placeholder-badge:hover {
         background: #3c8dbc;
         color: #ffffff;
         transform: translateY(-2px);
         box-shadow: 0 3px 6px rgba(60, 141, 188, 0.3);
     }
+
     .placeholder-badge:active {
         transform: translateY(0);
     }
+
     .placeholder-desc {
         font-size: 12px;
         color: #888;
@@ -56,15 +61,18 @@
         padding-top: 10px;
         border-top: 1px solid #e0e0e0;
     }
+
     .placeholder-desc li {
         margin-bottom: 4px;
     }
+
     .placeholder-desc code {
         background: #f0f0f0;
         padding: 2px 6px;
         border-radius: 3px;
         color: #c7254e;
     }
+
     /* Toast notif */
     .toast-notif {
         position: fixed;
@@ -74,13 +82,14 @@
         color: white;
         padding: 12px 20px;
         border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         opacity: 0;
         transform: translateY(20px);
         transition: all 0.3s ease;
         z-index: 9999;
         font-size: 14px;
     }
+
     .toast-notif.show {
         opacity: 1;
         transform: translateY(0);
@@ -92,50 +101,81 @@
         padding-top: 15px;
         border-top: 1px dashed #ddd;
     }
+
     .spam-result {
         padding: 20px;
         border-radius: 8px;
         margin-top: 10px;
         animation: fadeInSpam 0.3s ease;
     }
+
     .spam-result.spam {
         background: #fdecea;
         border-left: 5px solid #e74c3c;
     }
+
     .spam-result.inbox {
         background: #eafaf1;
         border-left: 5px solid #27ae60;
     }
+
     .spam-result.error {
         background: #fef5e7;
         border-left: 5px solid #f39c12;
     }
+
     .spam-result h4 {
         margin: 0 0 10px 0;
         font-size: 18px;
     }
-    .spam-result.spam h4 { color: #c0392b; }
-    .spam-result.inbox h4 { color: #1e8449; }
-    .spam-result.error h4 { color: #b9770e; }
+
+    .spam-result.spam h4 {
+        color: #c0392b;
+    }
+
+    .spam-result.inbox h4 {
+        color: #1e8449;
+    }
+
+    .spam-result.error h4 {
+        color: #b9770e;
+    }
+
     .spam-result .alasan-list {
         margin: 10px 0 0 0;
         padding-left: 20px;
     }
+
     .spam-result .alasan-list li {
         margin-bottom: 6px;
         color: #555;
     }
+
     .spam-loading {
         display: inline-block;
         animation: spinSpam 1s linear infinite;
     }
+
     @keyframes fadeInSpam {
-        from { opacity: 0; transform: translateY(-10px); }
-        to   { opacity: 1; transform: translateY(0); }
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
+
     @keyframes spinSpam {
-        from { transform: rotate(0deg); }
-        to   { transform: rotate(360deg); }
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
     }
 </style>
 <?= $this->endSection() ?>
@@ -205,24 +245,24 @@
                             </div>
 
                             <div>
-                                <span class="placeholder-badge" 
-                                      data-placeholder="{{nama}}"
-                                      title="Nama lengkap penerima">
+                                <span class="placeholder-badge"
+                                    data-placeholder="{{nama}}"
+                                    title="Nama lengkap penerima">
                                     {{nama}}
                                 </span>
-                                <span class="placeholder-badge" 
-                                      data-placeholder="{{nama_perusahaan}}"
-                                      title="Nama perusahaan penerima">
+                                <span class="placeholder-badge"
+                                    data-placeholder="{{nama_perusahaan}}"
+                                    title="Nama perusahaan penerima">
                                     {{nama_perusahaan}}
                                 </span>
-                                <span class="placeholder-badge" 
-                                      data-placeholder="{{no_hp}}"
-                                      title="Nomor HP penerima">
+                                <span class="placeholder-badge"
+                                    data-placeholder="{{no_hp}}"
+                                    title="Nomor HP penerima">
                                     {{no_hp}}
                                 </span>
-                                <span class="placeholder-badge" 
-                                      data-placeholder="{{email}}"
-                                      title="Email penerima">
+                                <span class="placeholder-badge"
+                                    data-placeholder="{{email}}"
+                                    title="Email penerima">
                                     {{email}}
                                 </span>
                             </div>
@@ -310,130 +350,228 @@
 
 <?= $this->section('scripts') ?>
 <script>
-$(document).ready(function() {
+    $(document).ready(function() {
 
-    // ==========================================
-    // KLIK PLACEHOLDER → COPY KE CLIPBOARD
-    // ==========================================
-    $(document).on('click', '.placeholder-badge', function() {
-        const placeholder = $(this).data('placeholder');
-        const $textarea = $('#isiHtml');
+        // ==========================================
+        // KLIK PLACEHOLDER → COPY KE CLIPBOARD
+        // ==========================================
+        $(document).on('click', '.placeholder-badge', function() {
+            const placeholder = $(this).data('placeholder');
+            const $textarea = $('#isiHtml');
 
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(placeholder).then(function() {
-                showToast('✅ "' + placeholder + '" tersalin ke clipboard!');
-            }).catch(function() {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(placeholder).then(function() {
+                    showToast('✅ "' + placeholder + '" tersalin ke clipboard!');
+                }).catch(function() {
+                    fallbackCopy($textarea, placeholder);
+                });
+            } else {
                 fallbackCopy($textarea, placeholder);
-            });
-        } else {
-            fallbackCopy($textarea, placeholder);
-        }
-    });
-
-    function fallbackCopy($textarea, placeholder) {
-        const textarea = $textarea[0];
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const currentValue = textarea.value;
-
-        textarea.value = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
-        textarea.focus();
-
-        showToast('✅ "' + placeholder + '" dimasukkan ke editor!');
-    }
-
-    function showToast(message) {
-        const $toast = $('#toastNotif');
-        $toast.text(message).addClass('show');
-        setTimeout(function() {
-            $toast.removeClass('show');
-        }, 2000);
-    }
-
-    // ==========================================
-    // CEK SPAM AI
-    // ==========================================
-    $('#btnCekSpam').on('click', function() {
-        const $btn = $(this);
-        const subjek  = $('input[name="subjek_email"]').val();
-        const isiHtml = $('textarea[name="isi_html"]').val();
-        const isiTeks = $('textarea[name="isi_teks"]').val();
-        const $hasil  = $('#hasilCekSpam');
-
-        if (!subjek || !isiHtml) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Belum Lengkap',
-                text: 'Isi Subjek Email dan Isi HTML terlebih dahulu sebelum cek spam.',
-            });
-            return;
-        }
-
-        $btn.prop('disabled', true).html('<i class="fa fa-spinner spam-loading"></i> Menganalisis...');
-        $hasil.hide().empty();
-
-        $.ajax({
-            url: '<?= base_url("template-email/cek-spam") ?>',
-            method: 'POST',
-            data: {
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-                subjek_email: subjek,
-                isi_html: isiHtml,
-                isi_teks: isiTeks,
-            },
-            dataType: 'json',
-            success: function(res) {
-                $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Cek Spam (AI)');
-
-                if (!res.success) {
-                    $hasil.show().html(
-                        '<div class="spam-result error">' +
-                        '<h4><i class="fa fa-exclamation-triangle"></i> Gagal Menganalisis</h4>' +
-                        '<p style="margin:0;">' + (res.message || 'Terjadi kesalahan.') + '</p>' +
-                        '</div>'
-                    );
-                    return;
-                }
-
-                if (res.status === 'spam') {
-                    let alasanHtml = '';
-                    if (res.alasan && res.alasan.length > 0) {
-                        alasanHtml = '<ul class="alasan-list">';
-                        res.alasan.forEach(function(a) {
-                            alasanHtml += '<li>' + a + '</li>';
-                        });
-                        alasanHtml += '</ul>';
-                    }
-                    $hasil.show().html(
-                        '<div class="spam-result spam">' +
-                        '<h4><i class="fa fa-times-circle"></i> Berisiko Masuk SPAM</h4>' +
-                        '<p style="margin:0 0 5px 0;">Email ini kemungkinan masuk ke folder <strong>Spam</strong> penerima.</p>' +
-                        '<p style="margin:8px 0 0 0; font-weight:600;">Alasan:</p>' +
-                        alasanHtml +
-                        '</div>'
-                    );
-                } else {
-                    $hasil.show().html(
-                        '<div class="spam-result inbox">' +
-                        '<h4><i class="fa fa-check-circle"></i> Aman — Masuk INBOX</h4>' +
-                        '<p style="margin:0;">Email ini kemungkinan masuk ke <strong>Inbox</strong> penerima. Tidak ada masalah signifikan yang terdeteksi.</p>' +
-                        '</div>'
-                    );
-                }
-            },
-            error: function(xhr) {
-                $btn.prop('disabled', false).html('<i class="fa fa-search"></i> Cek Spam (AI)');
-                $hasil.show().html(
-                    '<div class="spam-result error">' +
-                    '<h4><i class="fa fa-exclamation-triangle"></i> Gagal Menganalisis</h4>' +
-                    '<p style="margin:0;">Terjadi kesalahan pada server: ' + (xhr.statusText || 'Unknown error') + '</p>' +
-                    '</div>'
-                );
             }
         });
-    });
 
-});
+        function fallbackCopy($textarea, placeholder) {
+            const textarea = $textarea[0];
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const currentValue = textarea.value;
+
+            textarea.value = currentValue.substring(0, start) + placeholder + currentValue.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start + placeholder.length;
+            textarea.focus();
+
+            showToast('✅ "' + placeholder + '" dimasukkan ke editor!');
+        }
+
+        function showToast(message) {
+            const $toast = $('#toastNotif');
+            $toast.text(message).addClass('show');
+            setTimeout(function() {
+                $toast.removeClass('show');
+            }, 2000);
+        }
+
+
+        // ==========================================
+        // CEK SPAM AI
+        // ==========================================
+        const csrfName = '<?= csrf_token() ?>';
+        let csrfHash = '<?= csrf_hash() ?>';
+
+        $('#btnCekSpam').on('click', function() {
+            const $btn = $(this);
+            const $hasil = $('#hasilCekSpam');
+
+            const subjek = ($('input[name="subjek_email"]').val() || '').trim();
+            const isiHtml = ($('textarea[name="isi_html"]').val() || '').trim();
+            const isiTeks = $('textarea[name="isi_teks"]').val() || '';
+
+            const tombolAwal = '<i class="fa fa-search"></i> Cek Spam (AI)';
+
+            if (!subjek || !isiHtml) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Belum Lengkap',
+                    text: 'Isi Subjek Email dan Isi HTML terlebih dahulu sebelum cek spam.'
+                });
+                return;
+            }
+
+            $btn.prop('disabled', true)
+                .html('<i class="fa fa-spinner spam-loading"></i> Menganalisis...');
+
+            $hasil.hide().empty();
+
+            $.ajax({
+                url: '<?= base_url("template-email/cek-spam") ?>',
+                method: 'POST',
+                dataType: 'json',
+                timeout: 60000,
+                data: {
+                    [csrfName]: csrfHash,
+                    subjek_email: subjek,
+                    isi_html: isiHtml,
+                    isi_teks: isiTeks
+                },
+
+                success: function(res) {
+                    if (res.csrfHash) {
+                        csrfHash = res.csrfHash;
+                    }
+
+                    if (!res.success) {
+                        showError(res.message || 'Analisis tidak berhasil.');
+                        return;
+                    }
+
+                    if (res.status === 'spam') {
+                        const $card = $('<div>', {
+                            class: 'spam-result spam'
+                        });
+
+                        $card.append(
+                            $('<h4>').html(
+                                '<i class="fa fa-times-circle"></i> Berisiko Masuk SPAM'
+                            )
+                        );
+
+                        $card.append(
+                            $('<p>').css('margin', '0 0 5px 0').text(
+                                'Email ini memiliki indikasi risiko masuk ke folder Spam penerima.'
+                            )
+                        );
+
+                        $card.append(
+                            $('<p>').css({
+                                margin: '8px 0 0',
+                                fontWeight: '600'
+                            }).text('Alasan:')
+                        );
+
+                        const $list = $('<ul>', {
+                            class: 'alasan-list'
+                        });
+
+                        if (Array.isArray(res.alasan) && res.alasan.length > 0) {
+                            res.alasan.forEach(function(alasan) {
+                                // .text() mencegah teks dari AI dieksekusi sebagai HTML.
+                                $list.append($('<li>').text(String(alasan)));
+                            });
+                        } else {
+                            $list.append(
+                                $('<li>').text('Tidak ada alasan yang diberikan.')
+                            );
+                        }
+
+                        $card.append($list);
+                        $hasil.empty().append($card).show();
+
+                    } else if (res.status === 'inbox') {
+                        const $card = $('<div>', {
+                            class: 'spam-result inbox'
+                        });
+
+                        $card.append(
+                            $('<h4>').html(
+                                '<i class="fa fa-check-circle"></i> Tidak Ada Indikasi Spam Signifikan'
+                            )
+                        );
+
+                        $card.append(
+                            $('<p>').css('margin', '0').text(
+                                'Tidak ditemukan indikasi spam yang signifikan. Hasil ini bukan jaminan email pasti masuk Inbox.'
+                            )
+                        );
+
+                        $hasil.empty().append($card).show();
+
+                    } else {
+                        showError('Format hasil analisis tidak dikenali.');
+                    }
+                },
+
+                error: function(xhr, textStatus) {
+                    if (xhr.responseJSON && xhr.responseJSON.csrfHash) {
+                        csrfHash = xhr.responseJSON.csrfHash;
+                    }
+
+                    console.error('Cek spam gagal:', {
+                        status: xhr.status,
+                        statusText: xhr.statusText,
+                        textStatus: textStatus,
+                        response: xhr.responseText
+                    });
+
+                    let message = 'Terjadi kesalahan saat menganalisis email.';
+
+                    if (xhr.status === 400) {
+                        message = 'Request tidak valid. Periksa route dan data yang dikirim.';
+                    } else if (xhr.status === 403) {
+                        message = 'Akses ditolak atau token CSRF tidak valid. Muat ulang halaman lalu coba kembali.';
+                    } else if (xhr.status === 422) {
+                        message = xhr.responseJSON?.message ||
+                            'Subjek email dan isi HTML harus diisi dengan benar.';
+                    } else if (xhr.status === 502) {
+                        message = xhr.responseJSON?.message ||
+                            'Layanan analisis sedang bermasalah. Coba kembali beberapa saat.';
+                    } else if (xhr.status === 500) {
+                        message = 'Terjadi kesalahan internal server. Periksa log CI4.';
+                    } else if (xhr.status === 0 && textStatus === 'timeout') {
+                        message = 'Koneksi ke server Google terlalu lama (Timeout). Silakan klik Cek Spam sekali lagi.';
+                    } else if (xhr.status === 0) {
+                        message = 'Tidak dapat terhubung ke server. Periksa koneksi dan server CI4.';
+                    } else if (xhr.responseJSON?.message) {
+                        message = xhr.responseJSON.message;
+                    }
+
+                    showError(message);
+                },
+
+                complete: function() {
+                    $btn.prop('disabled', false).html(tombolAwal);
+                }
+            });
+
+            function showError(message) {
+                const $card = $('<div>', {
+                    class: 'spam-result error'
+                });
+
+                $card.append(
+                    $('<h4>').html(
+                        '<i class="fa fa-exclamation-triangle"></i> Gagal Menganalisis'
+                    )
+                );
+
+                $card.append(
+                    $('<p>').css('margin', '0').text(message)
+                );
+
+                $hasil.empty().append($card).show();
+            }
+        });
+
+
+    });
 </script>
 <?= $this->endSection() ?>

@@ -2,178 +2,129 @@
 
 namespace App\Libraries;
 
-use Exception;
+use RuntimeException;
 
 class SpamChecker
 {
-  protected $apiKey;
-  protected $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
+  private string $model;
+  private string $apiUrl;
 
   public function __construct()
   {
-    $this->apiKey = env('GEMINI_API_KEY');
-
-    if (empty($this->apiKey)) {
-      throw new Exception('GEMINI_API_KEY belum di-set di file .env');
-    }
+    $this->model = trim((string) (getenv('GEMINI_MODEL') ?: 'gemini-3.8-flash'));
+    $this->apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' . $this->model . ':generateContent';
   }
 
-  /**
-   * Cek apakah template email masuk spam atau inbox
-   *
-   * @param string $subjek Subjek email
-   * @param string $isiHtml Isi HTML template
-   * @param string $isiTeks Isi teks (opsional)
-   * @return array ['status' => 'spam'|'inbox', 'alasan' => array]
-   */
-  public function check($subjek, $isiHtml, $isiTeks = '')
+  public function check(string $subjek, string $isiHtml, string $isiTeks = ''): array
   {
-    $prompt = $this->buildPrompt($subjek, $isiHtml, $isiTeks);
+    // AMBIL KEDUA API KEY
+    $keys = [
+      trim((string) getenv('GEMINI_API_KEY_1')),
+      trim((string) getenv('GEMINI_API_KEY_2')),
+    ];
+    
+    // Bersihkan jika ada yang kosong
+    $keys = array_values(array_unique(array_filter($keys)));
 
-    try {
-      $response = $this->callGemini($prompt);
-      return $this->parseResponse($response);
-    } catch (Exception $e) {
-      return [
-        'status'  => 'error',
-        'alasan'  => ['Gagal menganalisis: ' . $e->getMessage()],
-        'success' => false,
-      ];
+    if (empty($keys)) {
+      throw new RuntimeException('Konfigurasi layanan analisis belum tersedia.');
     }
+
+    $errorDetails = [];
+
+    // LOOPING: Coba Key 1, kalau gagal coba Key 2
+    foreach ($keys as $index => $apiKey) {
+      $label = 'KEY_' . ($index + 1);
+      try {
+        // Jika berhasil, langsung kembalikan hasilnya
+        return $this->callGemini($apiKey, $subjek, $isiHtml, $isiTeks);
+      } catch (\Throwable $e) {
+        // Jika error (limit/timeout), catat pesannya lalu lanjut ke Key berikutnya
+        $errorDetails[] = "{$label}: " . $e->getMessage();
+        continue; 
+      }
+    }
+
+    // Jika Key 1 dan Key 2 gagal semua, tampilkan error
+    throw new RuntimeException(implode(' | ', $errorDetails));
   }
 
-  /**
-   * Build prompt untuk Gemini
-   */
-  protected function buildPrompt($subjek, $isiHtml, $isiTeks)
+  private function callGemini(string $apiKey, string $subjek, string $isiHtml, string $isiTeks): array
   {
-    // Bersihkan HTML untuk analisis teks
+    // Ambil teks murni tanpa tag HTML agar ringan
     $textOnly = strip_tags($isiHtml);
+    
+    // Gunakan isi teks jika ada, jika tidak gunakan teks dari HTML
+    $finalTeks = !empty(trim($isiTeks)) ? $isiTeks : $textOnly;
+    
+    // Batasi panjang teks maksimal 500 karakter (anti-timeout)
+    $finalTeks = substr($finalTeks, 0, 500);
 
-    return <<<PROMPT
-Anda adalah ahli email marketing yang berpengalaman menganalisis email spam.
-
-Analisis template email berikut dan tentukan apakah email ini kemungkinan besar akan masuk ke **SPAM** atau **INBOX** penerima.
-
-=== DATA EMAIL ===
-SUBJEK: {$subjek}
-
-ISI HTML:
-{$isiHtml}
-
-ISI TEKS:
-{$isiTeks}
-
-TEKS MURNI (tanpa HTML):
-{$textOnly}
-=== END DATA ===
-
-Kriteria penilaian SPAM:
-1. Kata-kata pemicu spam (GRATIS, KLIK SEKARANG, 100%, JAMINAN, ACT NOW, dll.)
-2. Huruf kapital berlebihan
-3. Tanda seru berlebihan (!!!)
-4. Rasio gambar vs teks tidak seimbang (terlalu banyak gambar, sedikit teks)
-5. Link mencurigakan atau terlalu banyak link
-6. Tidak ada link unsubscribe
-7. HTML rusak atau tidak valid
-8. Subjek mencurigakan (misal pakai "RE:" padahal bukan reply)
-9. Penggunaan font/warna mencolok berlebihan
-10. Placeholder tidak wajar (misal {{nama}} tapi tidak ada konteks personalisasi)
-
-Aturan output:
-- Jika email AMAN (tidak ada masalah signifikan), status = "inbox", alasan = []
-- Jika email BERISIKO SPAM, status = "spam", alasan = daftar masalah yang ditemukan (dalam bahasa Indonesia, singkat, jelas)
-
-Balas HANYA dengan format JSON berikut, tanpa penjelasan tambahan:
-
-{
-  "status": "spam" atau "inbox",
-  "alasan": ["alasan 1", "alasan 2", ...]
-}
-
-Jika status = "inbox", alasan HARUS array kosong [].
-PROMPT;
-  }
-
-  /**
-   * Panggil Gemini API
-   */
-  protected function callGemini($prompt)
-  {
-    $url = $this->apiUrl . '?key=' . $this->apiKey;
+    $prompt = "Tentukan SPAM atau INBOX. Subjek: {$subjek}. Isi: {$finalTeks}. Balas JSON: {\"status\": \"spam\" atau \"inbox\", \"alasan\": [\"alasan\"]}";
 
     $payload = [
-      'contents' => [
-        [
-          'parts' => [
-            ['text' => $prompt]
-          ]
-        ]
-      ],
+      'contents' => [['parts' => [['text' => $prompt]]]],
       'generationConfig' => [
-        'temperature'      => 0.3,
-        'maxOutputTokens'  => 500,
+        'temperature' => 0.2,
         'responseMimeType' => 'application/json',
-      ]
+      ],
     ];
 
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-      'Content-Type: application/json',
+    $jsonPayload = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    $urlWithKey = $this->apiUrl . '?key=' . $apiKey;
+    
+    $ch = curl_init($urlWithKey);
+
+    curl_setopt_array($ch, [
+      CURLOPT_RETURNTRANSFER => true,
+      CURLOPT_POST => true,
+      CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+      CURLOPT_POSTFIELDS => $jsonPayload,
+      CURLOPT_CONNECTTIMEOUT => 15, 
+      CURLOPT_TIMEOUT => 30,        // 30 detik cukup karena teks sudah pendek
+      CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+      CURLOPT_SSL_VERIFYPEER => false,
+      CURLOPT_SSL_VERIFYHOST => 0,
     ]);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 
     $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrno = curl_errno($ch);
     $curlError = curl_error($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
     curl_close($ch);
 
-    if ($curlError) {
-      throw new Exception('cURL error: ' . $curlError);
+    if ($response === false) {
+      throw new RuntimeException('cURL error: ' . $curlError, $curlErrno);
     }
 
-    if ($httpCode !== 200) {
-      $decoded = json_decode($response, true);
-      $errorMsg = $decoded['error']['message'] ?? 'HTTP ' . $httpCode;
-      throw new Exception('API error: ' . $errorMsg);
+    $data = json_decode($response, true);
+
+    if ($httpCode < 200 || $httpCode >= 300) {
+      $apiMessage = is_array($data) ? ($data['error']['message'] ?? 'Tidak ada detail') : 'Bukan JSON';
+      throw new RuntimeException("HTTP {$httpCode}: {$apiMessage}", $httpCode);
     }
 
-    return $response;
-  }
+    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
-  /**
-   * Parse response dari Gemini
-   */
-  protected function parseResponse($rawResponse)
-  {
-    $decoded = json_decode($rawResponse, true);
-
-    if (!isset($decoded['candidates'][0]['content']['parts'][0]['text'])) {
-      throw new Exception('Format response Gemini tidak valid');
+    if (!is_string($text) || trim($text) === '') {
+      throw new RuntimeException('Respons analisis kosong.');
     }
 
-    $text = $decoded['candidates'][0]['content']['parts'][0]['text'];
-
-    // Bersihkan jika ada markdown code block
     $text = trim($text);
-    $text = preg_replace('/^```json\s*/i', '', $text);
+    $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
     $text = preg_replace('/\s*```$/', '', $text);
-    $text = trim($text);
+    
+    $result = json_decode(trim($text), true);
 
-    $result = json_decode($text, true);
-
-    if (!$result || !isset($result['status'])) {
-      throw new Exception('Gagal parse JSON dari Gemini: ' . $text);
+    if (!is_array($result) || !isset($result['status'])) {
+      throw new RuntimeException('Hasil analisis tidak sesuai format JSON.');
     }
 
     return [
-      'status'  => $result['status'],           // 'spam' atau 'inbox'
-      'alasan'  => $result['alasan'] ?? [],     // array
       'success' => true,
+      'status'  => strtolower(trim($result['status'])),
+      'alasan'  => $result['alasan'] ?? [],
     ];
   }
 }
