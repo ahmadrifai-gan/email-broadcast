@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\TemplateEmailModel;
 use App\Models\KategoriTemplateEmailModel;
+use App\Libraries\SpamChecker;
 
 class TemplateController extends BaseController
 {
@@ -126,37 +127,38 @@ class TemplateController extends BaseController
         return redirect()->to('template-email')->with('success', 'Template email berhasil dihapus.');
     }
 
+
     public function cekSpam()
     {
-        // Hanya terima AJAX request
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(403)->setJSON([
-                'success' => false,
-                'message' => 'Akses ditolak.',
-            ]);
-        }
+        // KITA HAPUS PENGECEKAN isAJAX AGAR TIDAK DI-BLOCK
+        $subjek = trim((string) $this->request->getPost('subjek_email'));
+        $isiHtml = trim((string) $this->request->getPost('isi_html'));
+        $isiTeks = trim((string) $this->request->getPost('isi_teks'));
 
-        $subjek   = $this->request->getPost('subjek_email');
-        $isiHtml  = $this->request->getPost('isi_html');
-        $isiTeks  = $this->request->getPost('isi_teks') ?? '';
-
-        if (empty($subjek) || empty($isiHtml)) {
+        if ($subjek === '' || $isiHtml === '') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Subjek email dan Isi HTML wajib diisi terlebih dahulu.',
+                'message' => 'Subjek email dan isi HTML wajib diisi.',
             ]);
         }
 
         try {
-            $checker = new \App\Libraries\SpamChecker();
-            $result  = $checker->check($subjek, $isiHtml, $isiTeks);
+            $spamChecker = new SpamChecker();
+            $hasil = $spamChecker->check($subjek, $isiHtml, $isiTeks);
 
-            return $this->response->setJSON($result);
-        } catch (\Exception $e) {
             return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'success' => true,
+                'status'  => $hasil['status'],
+                'alasan'  => $hasil['alasan'],
             ]);
+        } catch (\Throwable $e) {
+            // TAMPILKAN ERROR ASLI KE LAYAR
+            return $this->response
+                ->setStatusCode(502)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Detail Error: ' . $e->getMessage(),
+                ]);
         }
     }
 }
