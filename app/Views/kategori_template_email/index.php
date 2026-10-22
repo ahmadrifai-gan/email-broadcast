@@ -15,6 +15,7 @@
 
 <?= $this->section('content') ?>
 
+<!-- LANGSUNG KE BOX, TANPA CONTENT-HEADER MANUAL -->
 <div class="box box-primary">
     <div class="box-header with-border">
         <h3 class="box-title"><i class="fa fa-envelope-o"></i> Data Kategori Template Email</h3>
@@ -26,7 +27,6 @@
     </div>
 
     <div class="box-body">
-
         <div class="table-responsive">
             <table id="kategoriTable" class="table table-bordered table-striped table-hover">
                 <thead>
@@ -99,7 +99,6 @@
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4 class="modal-title">Tambah Kategori Template Email</h4>
                 </div>
-
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Nama Kategori <span class="text-danger">*</span></label>
@@ -119,7 +118,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary"><i class="fa fa-save"></i> Simpan</button>
@@ -139,7 +137,6 @@
                     <button type="button" class="close" data-dismiss="modal">&times;</button>
                     <h4 class="modal-title">Edit Kategori Template Email</h4>
                 </div>
-
                 <div class="modal-body">
                     <div class="form-group">
                         <label>Nama Kategori <span class="text-danger">*</span></label>
@@ -159,7 +156,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-warning"><i class="fa fa-save"></i> Update</button>
@@ -174,31 +170,22 @@
 <?= $this->section('scripts') ?>
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js"></script>
-<!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
 $(document).ready(function () {
 
-    /* ===============================
-     * DataTables
-     * =============================== */
     $('#kategoriTable').DataTable({
         autoWidth: false,
         pageLength: 10,
         lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Semua']],
         columnDefs: [
-            { targets: 0,  orderable: false, searchable: false },  // No
-            { targets: -1, orderable: false, searchable: false }   // Aksi
+            { targets: 0,  orderable: false, searchable: false },
+            { targets: -1, orderable: false, searchable: false }
         ],
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
-        }
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json' }
     });
 
-    /* ===============================
-     * Populate modal edit
-     * =============================== */
     $(document).on('click', '.btn-edit', function () {
         let id        = $(this).data('id');
         let nama      = $(this).data('nama');
@@ -208,46 +195,24 @@ $(document).ready(function () {
         $('#edit_nama').val(nama);
         $('#edit_deskripsi').val(deskripsi);
         $('#edit_status').val(status);
-
         $('#editForm').attr('action', '<?= base_url('kategori-template-email/update') ?>/' + id);
     });
 
-    /* ===============================
-     * Flash message → SweetAlert2
-     * =============================== */
     <?php if (session()->getFlashdata('success')) : ?>
-        Swal.fire({
-            icon: 'success',
-            title: 'Berhasil!',
-            text: <?= json_encode(session()->getFlashdata('success')) ?>,
-            timer: 2000,
-            showConfirmButton: false
-        });
+        Swal.fire({ icon: 'success', title: 'Berhasil!', text: <?= json_encode(session()->getFlashdata('success')) ?>, timer: 2000, showConfirmButton: false });
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('error')) : ?>
-        Swal.fire({
-            icon: 'error',
-            title: 'Gagal!',
-            text: <?= json_encode(session()->getFlashdata('error')) ?>
-        });
+        Swal.fire({ icon: 'error', title: 'Gagal!', text: <?= json_encode(session()->getFlashdata('error')) ?> });
     <?php endif; ?>
 
     <?php if (session()->getFlashdata('errors')) : ?>
-        Swal.fire({
-            icon: 'warning',
-            title: 'Validasi Gagal',
-            html: `<?= implode('<br>', array_map('esc', session()->getFlashdata('errors'))) ?>`
-        });
+        Swal.fire({ icon: 'warning', title: 'Validasi Gagal', html: `<?= implode('<br>', array_map('esc', session()->getFlashdata('errors'))) ?>` });
     <?php endif; ?>
 
-    /* ===============================
-     * Konfirmasi Hapus (SweetAlert2)
-     * =============================== */
     $(document).on('submit', '.form-delete', function (e) {
         e.preventDefault();
         let form = this;
-
         Swal.fire({
             title: 'Yakin ingin menghapus?',
             text: 'Data yang dihapus tidak dapat dikembalikan!',
@@ -258,9 +223,7 @@ $(document).ready(function () {
             confirmButtonText: 'Ya, Hapus!',
             cancelButtonText: 'Batal'
         }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
+            if (result.isConfirmed) form.submit();
         });
     });
 
