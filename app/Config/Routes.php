@@ -41,3 +41,7 @@ $routes->group('kirim-email', function ($routes) {
     $routes->post('kirim-ulang/(:num)', 'KirimEmailController::kirimUlang/$1');
     $routes->post('hapus/(:num)',       'KirimEmailController::hapus/$1');
 });
+
+$routes->group('riwayat-pengiriman', function ($routes) {
+    $routes->get('/', 'RiwayatPengirimanController::index');
+});
