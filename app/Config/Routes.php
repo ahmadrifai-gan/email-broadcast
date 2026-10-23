@@ -28,6 +28,7 @@ $routes->group('template-email', ['namespace' => 'App\Controllers'], function ($
     $routes->post('update/(:num)', 'TemplateController::update/$1');
     $routes->post('delete/(:num)', 'TemplateController::delete/$1');
     $routes->post('cek-spam',      'TemplateController::cekSpam');
+    $routes->post('upload-gambar', 'TemplateController::uploadGambar');
 });
 
 $routes->group('kirim-email', function ($routes) {

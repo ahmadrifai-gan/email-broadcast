@@ -127,6 +127,57 @@ class TemplateController extends BaseController
         return redirect()->to('template-email')->with('success', 'Template email berhasil dihapus.');
     }
 
+    public function uploadGambar()
+    {
+        if ($this->request->isAJAX()) {
+            $file = $this->request->getFile('file');
+
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                // 1. Ambil ekstensi asli file (huruf kecil semua)
+                $ext = strtolower($file->getClientExtension());
+
+                // 2. Validasi berdasarkan ekstensi (bukan MIME)
+                $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+
+                if (in_array($ext, $allowedExts)) {
+                    // 3. Beri nama random dan pastikan ekstensinya tetap sama
+                    $newName = $file->getRandomName();
+
+                    // 4. Tentukan tipe untuk dikirim ke JS
+                    $type = ($ext === 'pdf') ? 'application/pdf' : 'image/' . $ext;
+
+                    // 5. Pindahkan file ke public/uploads
+                    if ($file->move(FCPATH . 'uploads', $newName)) {
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'url'     => base_url('uploads/' . $newName),
+                            'type'    => $type
+                        ]);
+                    } else {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Gagal memindahkan file ke folder uploads.'
+                        ]);
+                    }
+                } else {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Format file tidak didukung. Gunakan JPG, PNG, GIF, atau PDF.'
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'File tidak valid atau gagal diunggah.'
+                ]);
+            }
+        }
+
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Request tidak valid.'
+        ]);
+    }
 
     public function cekSpam()
     {
