@@ -60,6 +60,11 @@ $error   = session()->getFlashdata('error');
     <button type="submit">Import Excel</button>
 </form>
 
+<a href="<?= base_url('templates/template_import_kontak.xlsx') ?>"
+   class="btn btn-default btn-sm" download>
+    <i class="fa fa-download"></i> Download Template
+</a>
+
 <?php if (session()->getFlashdata('import_errors')): ?>
     <ul>
         <?php foreach (session()->getFlashdata('import_errors') as $e): ?>
