@@ -54,6 +54,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
+            
+            // TAMBAHKAN 2 BARIS INI
+            'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
+            'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
+            
             'status'               => $this->request->getPost('status') ?? 'draf',
             'versi'                => $this->request->getPost('versi') ?? 1,
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan') ?? 'belum_diperiksa',
@@ -103,6 +108,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
+            
+            // TAMBAHKAN 2 BARIS INI
+            'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
+            'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
+            
             'status'               => $this->request->getPost('status'),
             'versi'                => $this->request->getPost('versi'),
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan'),
@@ -133,20 +143,13 @@ class TemplateController extends BaseController
             $file = $this->request->getFile('file');
 
             if ($file && $file->isValid() && !$file->hasMoved()) {
-                // 1. Ambil ekstensi asli file (huruf kecil semua)
                 $ext = strtolower($file->getClientExtension());
-
-                // 2. Validasi berdasarkan ekstensi (bukan MIME)
                 $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
 
                 if (in_array($ext, $allowedExts)) {
-                    // 3. Beri nama random dan pastikan ekstensinya tetap sama
                     $newName = $file->getRandomName();
-
-                    // 4. Tentukan tipe untuk dikirim ke JS
                     $type = ($ext === 'pdf') ? 'application/pdf' : 'image/' . $ext;
 
-                    // 5. Pindahkan file ke public/uploads
                     if ($file->move(FCPATH . 'uploads', $newName)) {
                         return $this->response->setJSON([
                             'success' => true,
@@ -181,7 +184,6 @@ class TemplateController extends BaseController
 
     public function cekSpam()
     {
-        // KITA HAPUS PENGECEKAN isAJAX AGAR TIDAK DI-BLOCK
         $subjek = trim((string) $this->request->getPost('subjek_email'));
         $isiHtml = trim((string) $this->request->getPost('isi_html'));
         $isiTeks = trim((string) $this->request->getPost('isi_teks'));
@@ -203,7 +205,6 @@ class TemplateController extends BaseController
                 'alasan'  => $hasil['alasan'],
             ]);
         } catch (\Throwable $e) {
-            // TAMPILKAN ERROR ASLI KE LAYAR
             return $this->response
                 ->setStatusCode(502)
                 ->setJSON([

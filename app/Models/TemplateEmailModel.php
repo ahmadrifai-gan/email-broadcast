@@ -21,7 +21,9 @@ class TemplateEmailModel extends Model
         'isi_teks', 
         'status', 
         'versi', 
-        'status_pemeriksaan'
+        'status_pemeriksaan',
+        'attachment_pdf_url', // TAMBAHKAN INI
+        'tipe_pdf'            // TAMBAHKAN INI
     ];
 
     protected $useTimestamps = true;
