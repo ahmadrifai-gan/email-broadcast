@@ -12,12 +12,16 @@ $routes->group('kategori-template-email', function ($routes) {
     $routes->post('delete/(:num)', 'KategoriController::delete/$1');
 });
 
-$routes->group('kontak', function ($routes) {
-    $routes->get('/',              'KontakController::index');
-    $routes->post('store',         'KontakController::store');
-    $routes->post('update/(:num)', 'KontakController::update/$1');
-    $routes->post('delete/(:num)', 'KontakController::delete/$1');
-    $routes->post('import',        'KontakController::import');
+// Kontak
+$routes->group('kontak', static function ($routes) {
+    $routes->get('/', 'KontakController::index');
+    $routes->post('simpan', 'KontakController::simpan');
+    $routes->post('perbarui/(:num)', 'KontakController::perbarui/$1');
+    $routes->post('hapus/(:num)', 'KontakController::hapus/$1');
+
+    // Import Excel
+    $routes->get('template', 'KontakController::template');
+    $routes->post('import', 'KontakController::import');
 });
 
 $routes->group('template-email', ['namespace' => 'App\Controllers'], function ($routes) {
@@ -45,4 +49,11 @@ $routes->group('kirim-email', function ($routes) {
 
 $routes->group('riwayat-pengiriman', function ($routes) {
     $routes->get('/', 'RiwayatPengirimanController::index');
+});
+
+$routes->group('kategori', static function ($routes) {
+    $routes->get('/', 'KategoriKontakController::index');
+    $routes->post('simpan', 'KategoriKontakController::simpan');
+    $routes->post('perbarui/(:num)', 'KategoriKontakController::perbarui/$1');
+    $routes->post('hapus/(:num)', 'KategoriKontakController::hapus/$1');
 });

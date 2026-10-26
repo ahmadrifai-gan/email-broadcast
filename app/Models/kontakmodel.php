@@ -4,75 +4,28 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class KontakModel extends Model
+class Kontakmodel extends Model
 {
-    protected $table            = 'kontak_email';
-    protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
-    protected $allowedFields    = ['nama_perusahaan', 'email', 'domisili'];
-
-    // Dijalankan otomatis sebelum insert/update
-    protected $beforeInsert = ['bersihkan'];
-    protected $beforeUpdate = ['bersihkan'];
-
-    // Validasi (email unik, sesuai ikon kunci di database)
-    protected $validationRules = [
-        'id'              => 'permit_empty|is_natural_no_zero', // wajib ada untuk placeholder {id}
-        'nama_perusahaan' => 'permit_empty|max_length[150]',
-        'email'           => 'permit_empty|valid_email|max_length[254]|is_unique[kontak_email.email,id,{id}]',
-        'domisili'        => 'permit_empty|max_length[150]',
+    protected $table         = 'kontak_email';
+    protected $primaryKey    = 'id';
+    protected $returnType    = 'array';
+    protected $allowedFields = [
+        'kategori_id',
+        'nama',
+        'nama_perusahaan',
+        'no_hp',
+        'email',
+        'website',
+        'kota_kabupaten',
+        'provinsi',
+        'produk_perusahaan',
+        'sumber_data',
+        'catatan',
+        'jumlah_tidak_terkirim',
     ];
 
-    protected $validationMessages = [
-        'email' => [
-            'valid_email' => 'Format email tidak valid.',
-            'is_unique'   => 'Email sudah terdaftar.',
-        ],
-    ];
-
-    // Rapikan spasi dan ubah string kosong menjadi NULL
-    // (agar tidak bentrok dengan unique key email)
-    protected function bersihkan(array $event)
-    {
-        foreach (['nama_perusahaan', 'email', 'domisili'] as $f) {
-            if (isset($event['data'][$f])) {
-                $v = trim((string) $event['data'][$f]);
-                $event['data'][$f] = ($v === '') ? null : $v;
-            }
-        }
-        return $event;
-    }
-
-    // ---------- CRUD ----------
-
-    // Create
-    public function tambah(array $data)
-    {
-        return $this->insert($data);
-    }
-
-    // Read (semua data)
-    public function semua()
-    {
-        return $this->orderBy('id', 'DESC')->findAll();
-    }
-
-    // Read (satu data)
-    public function cari(int $id)
-    {
-        return $this->find($id);
-    }
-
-    // Update
-    public function ubah(int $id, array $data)
-    {
-        return $this->update($id, $data);
-    }
-
-    // Delete
-    public function hapus(int $id)
-    {
-        return $this->delete($id);
-    }
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'dibuat_pada';
+    protected $updatedField  = 'diperbarui_pada';
 }
