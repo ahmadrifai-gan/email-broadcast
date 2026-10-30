@@ -44,7 +44,12 @@
                 </a>
             </li>
 
-            <li class="header">MANAJEMEN KONTAK</li>
+            <li class="header">Kategori KONTAK</li>
+            <li class="<?= url_is('kategori*') ? 'active' : '' ?>">
+                <a href="<?= site_url('kategori') ?>">
+                    <i class="fa fa-address-book"></i> <span>Kategori Kontak</span>
+                </a>
+            </li>
             <li class="<?= url_is('kontak*') ? 'active' : '' ?>">
                 <a href="<?= site_url('kontak') ?>">
                     <i class="fa fa-address-book"></i> <span>Data Kontak</span>

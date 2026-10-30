@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\TemplateEmailModel;
 use App\Models\KategoriTemplateEmailModel;
+use App\Libraries\SpamChecker;
 
 class TemplateController extends BaseController
 {
@@ -53,6 +54,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
+            
+            // TAMBAHKAN 2 BARIS INI
+            'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
+            'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
+            
             'status'               => $this->request->getPost('status') ?? 'draf',
             'versi'                => $this->request->getPost('versi') ?? 1,
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan') ?? 'belum_diperiksa',
@@ -102,6 +108,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
+            
+            // TAMBAHKAN 2 BARIS INI
+            'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
+            'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
+            
             'status'               => $this->request->getPost('status'),
             'versi'                => $this->request->getPost('versi'),
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan'),
@@ -126,37 +137,80 @@ class TemplateController extends BaseController
         return redirect()->to('template-email')->with('success', 'Template email berhasil dihapus.');
     }
 
-    public function cekSpam()
+    public function uploadGambar()
     {
-        // Hanya terima AJAX request
-        if (!$this->request->isAJAX()) {
-            return $this->response->setStatusCode(403)->setJSON([
-                'success' => false,
-                'message' => 'Akses ditolak.',
-            ]);
+        if ($this->request->isAJAX()) {
+            $file = $this->request->getFile('file');
+
+            if ($file && $file->isValid() && !$file->hasMoved()) {
+                $ext = strtolower($file->getClientExtension());
+                $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+
+                if (in_array($ext, $allowedExts)) {
+                    $newName = $file->getRandomName();
+                    $type = ($ext === 'pdf') ? 'application/pdf' : 'image/' . $ext;
+
+                    if ($file->move(FCPATH . 'uploads', $newName)) {
+                        return $this->response->setJSON([
+                            'success' => true,
+                            'url'     => base_url('uploads/' . $newName),
+                            'type'    => $type
+                        ]);
+                    } else {
+                        return $this->response->setJSON([
+                            'success' => false,
+                            'message' => 'Gagal memindahkan file ke folder uploads.'
+                        ]);
+                    }
+                } else {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Format file tidak didukung. Gunakan JPG, PNG, GIF, atau PDF.'
+                    ]);
+                }
+            } else {
+                return $this->response->setJSON([
+                    'success' => false,
+                    'message' => 'File tidak valid atau gagal diunggah.'
+                ]);
+            }
         }
 
-        $subjek   = $this->request->getPost('subjek_email');
-        $isiHtml  = $this->request->getPost('isi_html');
-        $isiTeks  = $this->request->getPost('isi_teks') ?? '';
+        return $this->response->setJSON([
+            'success' => false,
+            'message' => 'Request tidak valid.'
+        ]);
+    }
 
-        if (empty($subjek) || empty($isiHtml)) {
+    public function cekSpam()
+    {
+        $subjek = trim((string) $this->request->getPost('subjek_email'));
+        $isiHtml = trim((string) $this->request->getPost('isi_html'));
+        $isiTeks = trim((string) $this->request->getPost('isi_teks'));
+
+        if ($subjek === '' || $isiHtml === '') {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'Subjek email dan Isi HTML wajib diisi terlebih dahulu.',
+                'message' => 'Subjek email dan isi HTML wajib diisi.',
             ]);
         }
 
         try {
-            $checker = new \App\Libraries\SpamChecker();
-            $result  = $checker->check($subjek, $isiHtml, $isiTeks);
+            $spamChecker = new SpamChecker();
+            $hasil = $spamChecker->check($subjek, $isiHtml, $isiTeks);
 
-            return $this->response->setJSON($result);
-        } catch (\Exception $e) {
             return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'success' => true,
+                'status'  => $hasil['status'],
+                'alasan'  => $hasil['alasan'],
             ]);
+        } catch (\Throwable $e) {
+            return $this->response
+                ->setStatusCode(502)
+                ->setJSON([
+                    'success' => false,
+                    'message' => 'Detail Error: ' . $e->getMessage(),
+                ]);
         }
     }
 }
