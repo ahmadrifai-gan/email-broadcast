@@ -11,7 +11,7 @@ class PenerimaKampanyeModel extends Model
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $allowedFields    = [
-        'kampanye_email_id', 'kontak_email_id', 'alamat_email_penerima',
+        'kampanye_email_id', 'kontak_email_id', 'jadwal_kampanye_id', 'alamat_email_penerima',
         'nama_penerima', 'status_pengiriman', 'jumlah_percobaan',
         'id_pesan_penyedia', 'terkirim_pada', 'pesan_kesalahan',
     ];
@@ -28,32 +28,41 @@ class PenerimaKampanyeModel extends Model
             . " OR (status_pengiriman = 'mengirim' AND diperbarui_pada < '{$batas}'))";
     }
 
+    /** Batasi ke 1 pengiriman (putaran). Data lama tanpa tautan (NULL) ikut dianggap bagian pengiriman. */
+    private function kondisiPutaran(?int $jadwalId): ?string
+    {
+        return $jadwalId ? '(jadwal_kampanye_id = ' . (int) $jadwalId . ' OR jadwal_kampanye_id IS NULL)' : null;
+    }
+
     public function getByKampanye(int $kampanyeId)
     {
         return $this->where('kampanye_email_id', $kampanyeId)
             ->orderBy('id', 'ASC')->findAll();
     }
 
-    public function getPendingBatch(int $kampanyeId, int $limit = 5)
+    public function getPendingBatch(int $kampanyeId, int $limit = 5, ?int $jadwalId = null)
     {
-        return $this->where('kampanye_email_id', $kampanyeId)
-            ->where($this->kondisiAntrian(), null, false)
-            ->orderBy('id', 'ASC')
-            ->findAll($limit);
+        $q = $this->where('kampanye_email_id', $kampanyeId)
+            ->where($this->kondisiAntrian(), null, false);
+        if ($k = $this->kondisiPutaran($jadwalId)) {
+            $q->where($k, null, false);
+        }
+        return $q->orderBy('id', 'ASC')->findAll($limit);
     }
 
-    // Sisa = masih antre + sedang dikirim proses lain
-    public function getPendingCount(int $kampanyeId): int
+    // Sisa = masih antre + sedang dikirim proses lain. $jadwalId null = seluruh kampanye.
+    public function getPendingCount(int $kampanyeId, ?int $jadwalId = null): int
     {
-        return $this->where('kampanye_email_id', $kampanyeId)
+        $q = $this->where('kampanye_email_id', $kampanyeId)
             ->where("(status_pengiriman IN ('menunggu','mengirim')"
-                . " OR (status_pengiriman = 'gagal' AND jumlah_percobaan < 3))", null, false)
-            ->countAllResults();
+                . " OR (status_pengiriman = 'gagal' AND jumlah_percobaan < 3))", null, false);
+        if ($k = $this->kondisiPutaran($jadwalId)) {
+            $q->where($k, null, false);
+        }
+        return $q->countAllResults();
     }
 
-    /**
-     * "Kunci" 1 penerima agar tidak dikirim ganda oleh 2 proses (mis. 2 tab / cron + browser).
-     */
+    /** "Kunci" 1 penerima agar tidak dikirim ganda oleh 2 proses (mis. 2 tab / cron + browser). */
     public function klaim(int $id): bool
     {
         $this->db->table($this->table)

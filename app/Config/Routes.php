@@ -39,5 +39,18 @@ $routes->group('kirim-email', function ($routes) {
     $routes->post('proses-terjadwal',   'KirimEmailController::prosesTerjadwal');
     $routes->get('cron/(:segment)',     'KirimEmailController::cron/$1');   // dipanggil cron eksternal (GET)
     $routes->post('kirim-ulang/(:num)', 'KirimEmailController::kirimUlang/$1');
+    $routes->post('jeda/(:num)',        'KirimEmailController::jeda/$1');
+    $routes->post('lanjut/(:num)',      'KirimEmailController::lanjut/$1');
+    $routes->post('batal/(:num)',       'KirimEmailController::batal/$1');
     $routes->post('hapus/(:num)',       'KirimEmailController::hapus/$1');
 });
+
+// SMTP Settings
+$routes->get('smtp',                   'SmtpSettingsController::index');
+$routes->get('smtp/create',            'SmtpSettingsController::create');
+$routes->post('smtp',                  'SmtpSettingsController::store');
+$routes->get('smtp/(:num)/edit',       'SmtpSettingsController::edit/$1');
+$routes->post('smtp/(:num)',           'SmtpSettingsController::update/$1');
+$routes->get('smtp/(:num)/activate',   'SmtpSettingsController::activate/$1');
+$routes->get('smtp/(:num)/delete',     'SmtpSettingsController::delete/$1');
+$routes->post('smtp/(:num)/test',      'SmtpSettingsController::test/$1');

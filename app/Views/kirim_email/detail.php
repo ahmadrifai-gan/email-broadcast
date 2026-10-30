@@ -1,8 +1,8 @@
 <?= $this->extend('layouts/main') ?>
 
-<?= $this->section('title') ?>Detail Kampanye Email<?= $this->endSection() ?>
+<?= $this->section('title') ?>Detail Kampanye<?= $this->endSection() ?>
 <?= $this->section('page_title') ?>Detail Kampanye<?= $this->endSection() ?>
-<?= $this->section('page_subtitle') ?>Detail Kampanye Email<?= $this->endSection() ?>
+<?= $this->section('page_subtitle') ?><?= esc($kampanye['nama_kampanye']) ?><?= $this->endSection() ?>
 
 <?= $this->section('breadcrumb') ?>
 <li><a href="#"><i class="fa fa-dashboard"></i> Home</a></li>
@@ -11,15 +11,33 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
-
 <?php
     $status  = $kampanye['status'];
+    $tipe    = $kampanye['tipe_pengiriman'] ?? 'sekarang';
     $total   = (int) $kampanye['jumlah_penerima'];
+    $totalP  = (int) ($kampanye['total_putaran'] ?? 1);
     $pctAwal = $total > 0 ? (int) round((($total - (int) $sisa) / $total) * 100) : 100;
-    $bisaKirim = in_array($status, ['draf', 'sedang_dikirim', 'terjadwal'], true);
-    $badgeCls = match ($status) {
-        'selesai' => 'label-success', 'sedang_dikirim' => 'label-warning', 'terjadwal' => 'label-info', default => 'label-default',
+
+    $lblStatus = match ($status) {
+        'selesai' => 'label-success', 'sedang_dikirim' => 'label-warning', 'terjadwal' => 'label-info',
+        'dijeda' => 'label-primary', 'dibatalkan' => 'label-danger', default => 'label-default',
     };
+    [$tipeTeks, $tipeCls, $tipeIco] = match ($tipe) {
+        'sekarang_berulang' => ['Kirim langsung + berulang', 'label-danger',  'fa-repeat'],
+        'terjadwal_berulang', 'berulang' => ['Terjadwal + berulang', 'label-success', 'fa-calendar-plus-o'],
+        'terjadwal'         => ['Terjadwal (sekali)',        'label-info',    'fa-clock-o'],
+        default             => ['Kirim langsung',            'label-default', 'fa-bolt'],
+    };
+    $lblRound = ['menunggu' => 'label-default', 'berjalan' => 'label-warning', 'selesai' => 'label-success', 'dilewati' => 'label-danger'];
+    $bisaJalan = in_array($status, ['draf', 'terjadwal', 'sedang_dikirim'], true);
+
+    // pengiriman (putaran) -> nomor urut, dan daftar akun tiap pengiriman
+    $noPutaran = [];
+    foreach ($jadwal as $jd) { $noPutaran[(int) $jd['id']] = (int) $jd['putaran_ke']; }
+    $akunPutaran = [];
+    foreach ($penerima as $pn) {
+        $akunPutaran[(int) ($pn['jadwal_kampanye_id'] ?? 0)][] = $pn['nama_penerima'] ?: $pn['alamat_email_penerima'];
+    }
 ?>
 
 <?php if (session()->getFlashdata('success')): ?>
@@ -35,7 +53,7 @@
     </div>
 <?php endif; ?>
 
-<!-- Ringkasan angka -->
+<!-- Ringkasan -->
 <div class="row">
     <div class="col-md-3 col-sm-6 col-xs-12">
         <div class="info-box">
@@ -48,7 +66,7 @@
     </div>
     <div class="col-md-3 col-sm-6 col-xs-12">
         <div class="info-box">
-            <span class="info-box-icon bg-green"><i class="fa fa-check-circle"></i></span>
+            <span class="info-box-icon bg-green"><i class="fa fa-check"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Berhasil</span>
                 <span class="info-box-number" id="berhasilText"><?= (int) $kampanye['jumlah_berhasil'] ?></span>
@@ -57,7 +75,7 @@
     </div>
     <div class="col-md-3 col-sm-6 col-xs-12">
         <div class="info-box">
-            <span class="info-box-icon bg-red"><i class="fa fa-times-circle"></i></span>
+            <span class="info-box-icon bg-red"><i class="fa fa-times"></i></span>
             <div class="info-box-content">
                 <span class="info-box-text">Gagal</span>
                 <span class="info-box-number" id="gagalText"><?= (int) $kampanye['jumlah_gagal'] ?></span>
@@ -76,28 +94,70 @@
 </div>
 
 <div class="row">
-    <!-- Informasi kampanye -->
-    <div class="col-lg-5">
+    <!-- Informasi -->
+    <div class="col-md-5">
         <div class="box box-primary">
             <div class="box-header with-border">
                 <h3 class="box-title"><i class="fa fa-info-circle"></i> Informasi Kampanye</h3>
                 <div class="box-tools pull-right">
-                    <a href="<?= base_url('kirim-email') ?>" class="btn btn-default btn-sm">
-                        <i class="fa fa-arrow-left"></i> Kembali
-                    </a>
+                    <a href="<?= base_url('kirim-email') ?>" class="btn btn-default btn-xs"><i class="fa fa-arrow-left"></i> Kembali</a>
                 </div>
             </div>
             <div class="box-body no-padding">
-                <table class="table table-striped">
-                    <tr><th style="width:140px">Template</th><td><?= esc($template['nama_template'] ?? '-') ?></td></tr>
+                <table class="table">
+                    <tr><th style="width:150px">Template</th><td><?= esc($template['nama_template'] ?? '-') ?></td></tr>
+
+                    <?php /* ▼▼ SMTP ▼▼ */ ?>
+                    <tr>
+                        <th>SMTP Pengirim</th>
+                        <td>
+                            <?php if (! empty($smtpInfo)): ?>
+                                <span class="label label-primary">
+                                    <i class="fa fa-server"></i> <?= esc($smtpInfo['nama']) ?>
+                                </span>
+                                <small class="text-muted">(<?= esc($smtpInfo['from_email']) ?>)</small>
+                                <?php if (! empty($kampanye['smtp_setting_id'])): ?>
+                                    <br><small class="text-muted"><i class="fa fa-check"></i> dipilih khusus untuk kampanye ini</small>
+                                <?php else: ?>
+                                    <br><small class="text-muted"><i class="fa fa-info-circle"></i> default aktif (kampanye tidak memilih SMTP sendiri)</small>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="text-muted"><i class="fa fa-file-text-o"></i> Menggunakan konfigurasi .env</span>
+                                <br><small class="text-muted">Belum ada SMTP tersimpan yang dipilih / aktif.</small>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php /* ▲▲ SMTP ▲▲ */ ?>
+
                     <tr><th>Subjek</th><td><?= esc($kampanye['subjek_email']) ?></td></tr>
+                    <tr><th>Tipe</th><td><span class="label <?= $tipeCls ?>"><i class="fa <?= $tipeIco ?>"></i> <?= $tipeTeks ?></span></td></tr>
                     <tr><th>Status</th>
-                        <td><span id="statusText" class="label <?= $badgeCls ?>"><?= esc($status) ?></span></td></tr>
-                    <?php if (! empty($kampanye['jadwal_pengiriman'])): ?>
-                        <tr><th>Jadwal</th><td><?= esc($kampanye['jadwal_pengiriman']) ?></td></tr>
+                        <td><span id="statusText" class="label <?= $lblStatus ?>"><?= esc(str_replace('_', ' ', $status)) ?></span></td></tr>
+                    <?php $kec = (int) ($kampanye['kecepatan_per_menit'] ?? 0); $kecMaks = (int) ($kampanye['kecepatan_maks'] ?? 0); ?>
+                    <?php if ($totalP <= 1): ?>
+                    <tr><th>Kecepatan kirim</th>
+                        <td>
+                            <?php if ($kec > 0 && $kecMaks > $kec): ?>
+                                <span class="label label-danger"><i class="fa fa-random"></i> acak <?= $kec ?>&ndash;<?= $kecMaks ?> email / menit</span>
+                                <small class="text-muted">(± <?= (int) ceil($total / (($kec + $kecMaks) / 2)) ?> menit)</small>
+                            <?php elseif ($kec > 0): ?>
+                                <span class="label label-danger"><i class="fa fa-tachometer"></i> <?= $kec ?> email / menit</span>
+                                <small class="text-muted">(± <?= (int) ceil($total / $kec) ?> menit)</small>
+                            <?php else: ?>
+                                Secepatnya <small class="text-muted">(tanpa batas per menit)</small>
+                            <?php endif; ?>
+                        </td></tr>
+                    <?php endif; ?>
+                    <?php if ($totalP > 1): ?>
+                        <tr><th>Pola</th>
+                            <td>Penerima <strong>dibagi</strong> ke <?= $totalP ?> pengiriman <small class="text-muted">(tiap akun menerima 1 kali)</small></td></tr>
+                        <tr><th>Pengiriman selesai</th><td id="putaranText"><?= (int) $kampanye['jumlah_putaran'] ?> / <?= $totalP ?></td></tr>
+                    <?php endif; ?>
+                    <?php if ($status === 'terjadwal' && ! empty($kampanye['jadwal_pengiriman'])): ?>
+                        <tr><th>Pengiriman berikutnya</th><td><?= esc($kampanye['jadwal_pengiriman']) ?></td></tr>
                     <?php endif; ?>
                     <?php if (! empty($kampanye['mulai_dikirim_pada'])): ?>
-                        <tr><th>Mulai Dikirim</th><td><?= esc($kampanye['mulai_dikirim_pada']) ?></td></tr>
+                        <tr><th>Mulai dikirim</th><td><?= esc($kampanye['mulai_dikirim_pada']) ?></td></tr>
                     <?php endif; ?>
                     <?php if (! empty($kampanye['selesai_dikirim_pada'])): ?>
                         <tr><th>Selesai</th><td><?= esc($kampanye['selesai_dikirim_pada']) ?></td></tr>
@@ -107,37 +167,107 @@
         </div>
     </div>
 
-    <!-- Kontrol pengiriman -->
-    <div class="col-lg-7">
+    <!-- Kontrol -->
+    <div class="col-md-7">
         <div class="box box-success">
             <div class="box-header with-border">
                 <h3 class="box-title"><i class="fa fa-send"></i> Pengiriman</h3>
             </div>
             <div class="box-body">
+
                 <?php if ($status === 'terjadwal'): ?>
-                    <div class="alert alert-info">
-                        <i class="fa fa-clock-o"></i>
-                        Dijadwalkan pada <strong><?= esc($kampanye['jadwal_pengiriman']) ?></strong>.
-                        Dikirim otomatis saat waktunya tiba (cron, atau selama halaman ini terbuka).
+                    <div class="callout callout-info" style="margin-bottom:10px;">
+                        <p><i class="fa fa-clock-o"></i>
+                            <?= $totalP > 1 ? 'Pengiriman berikutnya' : 'Dijadwalkan' ?> pada
+                            <strong><?= esc($kampanye['jadwal_pengiriman']) ?></strong>.
+                            Dikirim otomatis (cron, atau selama halaman ini terbuka).</p>
                     </div>
-                    <button id="btnKirim" class="btn btn-warning mb-3">
-                        <i class="fa fa-bolt"></i> Kirim Sekarang (lewati jadwal)
-                    </button>
-                <?php elseif ($bisaKirim): ?>
-                    <button id="btnKirim" class="btn btn-success mb-3">
-                        <i class="fa fa-play"></i> Kirim Sekarang
-                    </button>
+                <?php elseif ($status === 'dijeda'): ?>
+                    <div class="callout callout-warning" style="margin-bottom:10px;">
+                        <p><i class="fa fa-pause"></i> Kampanye <strong>dijeda</strong>. Tidak ada email yang dikirim sampai dilanjutkan.</p>
+                    </div>
+                <?php elseif ($status === 'dibatalkan'): ?>
+                    <div class="callout callout-danger" style="margin-bottom:10px;">
+                        <p><i class="fa fa-ban"></i> Kampanye <strong>dibatalkan</strong>. Sisa jadwal tidak akan dikirim.</p>
+                    </div>
                 <?php endif; ?>
 
-                <div class="progress active mb-3" style="height: 24px;">
-                    <div id="progressBar" class="progress-bar progress-bar-success progress-bar-striped"
-                         role="progressbar" style="width: <?= $pctAwal ?>%"><?= $pctAwal ?>%</div>
+                <div style="margin-bottom:12px;">
+                    <?php if ($status === 'terjadwal'): ?>
+                        <button id="btnKirim" type="button" class="btn btn-warning"><i class="fa fa-bolt"></i> Kirim Sekarang (lewati jadwal)</button>
+                    <?php elseif ($status === 'draf'): ?>
+                        <button id="btnKirim" type="button" class="btn btn-success"><i class="fa fa-play"></i> Kirim Sekarang</button>
+                    <?php elseif ($status === 'sedang_dikirim'): ?>
+                        <button id="btnKirim" type="button" class="btn btn-success"><i class="fa fa-play"></i> Lanjutkan Kirim</button>
+                    <?php endif; ?>
+
+                    <?php if (in_array($status, ['terjadwal', 'sedang_dikirim'], true)): ?>
+                        <form action="<?= base_url('kirim-email/jeda/' . $kampanye['id']) ?>" method="post" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-default"><i class="fa fa-pause"></i> Jeda</button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if ($status === 'dijeda'): ?>
+                        <form action="<?= base_url('kirim-email/lanjut/' . $kampanye['id']) ?>" method="post" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-success"><i class="fa fa-play"></i> Lanjutkan</button>
+                        </form>
+                    <?php endif; ?>
+                    <?php if (in_array($status, ['terjadwal', 'sedang_dikirim', 'dijeda'], true)): ?>
+                        <form action="<?= base_url('kirim-email/batal/' . $kampanye['id']) ?>" method="post" style="display:inline;"
+                              onsubmit="return confirm('Batalkan kampanye? Sisa jadwal tidak akan dikirim.')">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-danger"><i class="fa fa-ban"></i> Batalkan</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
 
-                <div class="small text-muted mb-1">Log pengiriman</div>
-                <div id="logBox" class="small rounded p-2 bg-dark text-light"
-                     style="height:160px;overflow-y:auto;font-family:Consolas,monospace;"></div>
+                <div class="progress progress-striped" style="height:22px;">
+                    <div id="progressBar" class="progress-bar progress-bar-success" role="progressbar"
+                         style="width: <?= $pctAwal ?>%; line-height:22px;"><?= $pctAwal ?>%</div>
+                </div>
+
+                <small class="text-muted">Log pengiriman</small>
+                <div id="logBox" style="height:150px;overflow-y:auto;background:#1e1e1e;color:#ddd;padding:8px;border-radius:3px;font-family:Consolas,monospace;font-size:12px;"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Jadwal pengiriman -->
+<div class="box box-warning">
+    <div class="box-header with-border">
+        <h3 class="box-title"><i class="fa fa-calendar"></i> Jadwal Pengiriman</h3>
+        <div class="box-tools pull-right"><span class="label label-primary"><?= (int) $kampanye['jumlah_putaran'] ?> / <?= $totalP ?> selesai</span></div>
+    </div>
+    <div class="box-body no-padding">
+        <div class="table-responsive">
+            <table class="table table-striped" style="margin-bottom:0;">
+                <thead>
+                    <tr><th width="70">Ke-</th><th>Waktu kirim</th><th>Status</th><th class="text-center">Akun</th><th>Daftar akun</th><th>Dimulai</th><th>Selesai</th>
+                        <th class="text-center">Berhasil</th><th class="text-center">Gagal</th></tr>
+                </thead>
+                <tbody>
+                <?php if (empty($jadwal)): ?>
+                    <tr><td colspan="9" class="text-center text-muted">Tidak ada data jadwal.</td></tr>
+                <?php else: foreach ($jadwal as $j): ?>
+                    <tr>
+                        <td><strong><?= (int) $j['putaran_ke'] ?></strong></td>
+                        <td><?= esc($j['waktu_kirim']) ?></td>
+                        <td><span class="label <?= $lblRound[$j['status']] ?? 'label-default' ?>"><?= esc($j['status']) ?></span></td>
+                        <?php $lst = $akunPutaran[(int) $j['id']] ?? []; ?>
+                        <td class="text-center"><strong><?= (int) $j['jumlah_penerima'] ?></strong></td>
+                        <td class="small" title="<?= esc(implode(', ', $lst)) ?>">
+                            <?= esc(implode(', ', array_slice($lst, 0, 3))) ?><?= count($lst) > 3 ? ' <span class="text-muted">+' . (count($lst) - 3) . ' lainnya</span>' : '' ?>
+                        </td>
+                        <td><?= esc($j['dimulai_pada'] ?? '-') ?></td>
+                        <td><?= esc($j['selesai_pada'] ?? '-') ?></td>
+                        <td class="text-center text-green"><?= (int) $j['jumlah_berhasil'] ?></td>
+                        <td class="text-center text-red"><?= (int) $j['jumlah_gagal'] ?></td>
+                    </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -145,15 +275,15 @@
 <!-- Daftar penerima -->
 <div class="box box-default">
     <div class="box-header with-border">
-        <h3 class="box-title"><i class="fa fa-list-check"></i> Daftar Penerima</h3>
+        <h3 class="box-title"><i class="fa fa-list"></i> Daftar Penerima</h3>
     </div>
-    <div class="box-body no-padding">
+    <div class="box-body">
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-hover">
                 <thead>
                     <tr>
-                        <th width="50">#</th><th>Email</th><th>Nama</th><th>Status</th>
-                        <th class="text-center" width="90">Percobaan</th><th>Terkirim Pada</th><th>Pesan</th><th width="130">Aksi</th>
+                        <th width="50">#</th><th>Email</th><th>Nama</th><th class="text-center">Pengiriman</th><th>Status</th>
+                        <th class="text-center">Percobaan</th><th>Terkirim Pada</th><th>Pesan</th><th width="120">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -162,6 +292,7 @@
                         <td><?= $i + 1 ?></td>
                         <td><?= esc($p['alamat_email_penerima']) ?></td>
                         <td><?= esc($p['nama_penerima'] ?? '-') ?></td>
+                        <td class="text-center"><?= isset($noPutaran[(int) ($p['jadwal_kampanye_id'] ?? 0)]) ? 'Ke-' . $noPutaran[(int) $p['jadwal_kampanye_id']] : '-' ?></td>
                         <td>
                             <?php $cls = match ($p['status_pengiriman']) {
                                 'terkirim' => 'label-success', 'gagal' => 'label-danger', 'mengirim' => 'label-warning', default => 'label-default',
@@ -172,12 +303,10 @@
                         <td><?= esc($p['terkirim_pada'] ?? '-') ?></td>
                         <td class="small text-muted"><?= esc(mb_substr($p['pesan_kesalahan'] ?? '-', 0, 100)) ?></td>
                         <td>
-                            <?php if ($p['status_pengiriman'] === 'gagal'): ?>
-                                <form action="<?= base_url('kirim-email/kirim-ulang/' . $p['id']) ?>" method="post" class="d-inline">
+                            <?php if ($p['status_pengiriman'] === 'gagal' && $status === 'selesai'): ?>
+                                <form action="<?= base_url('kirim-email/kirim-ulang/' . $p['id']) ?>" method="post" style="display:inline;">
                                     <?= csrf_field() ?>
-                                    <button type="submit" class="btn btn-warning btn-xs">
-                                        <i class="fa fa-refresh"></i> Kirim Ulang
-                                    </button>
+                                    <button type="submit" class="btn btn-warning btn-xs"><i class="fa fa-refresh"></i> Kirim Ulang</button>
                                 </form>
                             <?php endif; ?>
                         </td>
@@ -188,12 +317,14 @@
         </div>
     </div>
 </div>
-
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
 <script>
 (function () {
+'use strict';
+
+function mulai() {
     const URL_PROSES  = '<?= base_url('kirim-email/proses/' . $kampanye['id']) ?>';
     const URL_JADWAL  = '<?= base_url('kirim-email/proses-terjadwal') ?>';
     const ID          = <?= (int) $kampanye['id'] ?>;
@@ -207,14 +338,21 @@
 
     const btn    = document.getElementById('btnKirim');
     const logBox = document.getElementById('logBox');
+    const el     = id => document.getElementById(id);
     const sleep  = ms => new Promise(r => setTimeout(r, ms));
 
-    function log(teks, cls) {
+    function log(teks, warna) {
         const d = document.createElement('div');
-        if (cls) d.className = cls;
-        d.textContent = teks;
+        if (warna) d.style.color = warna;
+        d.textContent = teks;                 // textContent -> aman dari HTML injection
         logBox.appendChild(d);
         logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    function setStatus(teks, kelas) {
+        const st = el('statusText');
+        st.textContent = teks.replace(/_/g, ' ');
+        st.className = 'label ' + kelas;
     }
 
     async function post(url) {
@@ -227,82 +365,136 @@
         return data;
     }
 
-    function setBtn(disabled, teks) {
+    function setBtn(disabled, html) {
         if (!btn) return;
         btn.disabled = disabled;
-        btn.innerHTML = teks;
+        btn.innerHTML = html;
+    }
+
+    // Kuota email/menit habis -> tunggu menit berikutnya dengan hitung mundur di tombol
+    async function tungguKuota(detik) {
+        log('⏳ Batas email per menit tercapai. Menunggu menit berikutnya (± ' + detik + ' detik)...', '#f0ad4e');
+        for (let s = detik + 1; s > 0; s--) {
+            setBtn(true, '<i class="fa fa-hourglass-half"></i> Menunggu kuota menit berikutnya (' + s + ' dtk)');
+            await sleep(1000);
+        }
+        setBtn(true, '<i class="fa fa-spinner fa-spin"></i> Mengirim...');
     }
 
     async function mulaiKirim() {
         if (sedangJalan) return;
         sedangJalan = true;
         setBtn(true, '<i class="fa fa-spinner fa-spin"></i> Mengirim...');
+        setStatus('sedang_dikirim', 'label-warning');
 
-        const st = document.getElementById('statusText');
-        st.textContent = 'sedang_dikirim';
-        st.className = 'label label-warning';
-
+        let pertama = true;
         while (true) {
             let data;
             try {
-                data = await post(URL_PROSES);
+                // panggilan pertama membawa ?mulai=1 (memulai putaran walau belum waktunya)
+                data = await post(URL_PROSES + (pertama ? '?mulai=1' : ''));
+                pertama = false;
             } catch (e) {
-                log('Error jaringan / token: ' + e.message + ' (muat ulang halaman)', 'text-danger');
+                log('Error jaringan / token: ' + e.message + ' (muat ulang halaman)', '#ff6b6b');
                 break;
             }
 
             if (!data.success) {
-                log('ERROR: ' + data.message, 'text-danger');
+                log('ERROR: ' + data.message, '#ff6b6b');
                 break;
             }
 
             (data.batch || []).forEach(b => {
-                log(b.email + ' — ' + (b.sukses ? '✅ terkirim' : '❌ ' + b.pesan), b.sukses ? 'text-success' : 'text-danger');
+                log(b.email + ' — ' + (b.sukses ? '✅ terkirim' : '❌ ' + b.pesan), b.sukses ? '#5fd38d' : '#ff6b6b');
             });
 
-            document.getElementById('berhasilText').textContent = data.berhasil;
-            document.getElementById('gagalText').textContent    = data.gagal;
-            document.getElementById('sisaText').textContent     = data.sisa;
+            el('berhasilText').textContent = data.berhasil;
+            el('gagalText').textContent    = data.gagal;
+            el('sisaText').textContent     = data.sisa;
 
             const pct = TOTAL > 0 ? Math.round(((TOTAL - data.sisa) / TOTAL) * 100) : 100;
-            const bar = document.getElementById('progressBar');
+            const bar = el('progressBar');
             bar.style.width = pct + '%';
             bar.textContent = pct + '%';
 
+            if (data.batas_harian) {
+                log('⚠ Batas kirim harian (EMAIL_DAILY_LIMIT) tercapai. Sisa akan dilanjutkan otomatis oleh cron bila jatah sudah tersedia.', '#f0ad4e');
+                break;
+            }
+
             if (data.selesai) {
-                st.textContent = 'selesai';
-                st.className = 'label label-success';
-                setBtn(true, '<i class="fa fa-check"></i> Selesai');
-                log('— SELESAI —', 'fw-bold text-primary');
-                setTimeout(() => { location.href = location.pathname; }, 1500);
+                if (data.status === 'terjadwal') {
+                    setStatus('terjadwal', 'label-info');
+                    setBtn(true, '<i class="fa fa-check"></i> Pengiriman selesai');
+                    log('— PENGIRIMAN ' + data.putaran + '/' + data.total_putaran + ' SELESAI. Berikutnya: ' + data.berikutnya + ' —', '#5bc0de');
+                } else {
+                    setStatus('selesai', 'label-success');
+                    setBtn(true, '<i class="fa fa-check"></i> Selesai');
+                    log('— SELESAI —', '#5bc0de');
+                }
+                setTimeout(() => { location.href = location.pathname; }, 1800);
                 return;
             }
 
+            // kuota per menit habis -> tunggu sampai menit berikutnya
+            if (data.tunggu_detik > 0 && !(data.batch || []).length) {
+                await tungguKuota(data.tunggu_detik);
+                continue;
+            }
+
+            // batch kosong = penerima sedang dipegang proses lain -> tunggu agak lama
             await sleep((data.batch || []).length ? 300 : 2000);
         }
 
         sedangJalan = false;
-        setBtn(false, '<i class="fa fa-play"></i> Kirim Sekarang');
+        setBtn(false, '<i class="fa fa-play"></i> Lanjutkan Kirim');
+    }
+
+    // Proses kampanye lain (hasil klaim polling) tanpa mengubah tampilan halaman ini
+    async function prosesTanpaTampilan(cid) {
+        while (true) {
+            try {
+                const d = await post('<?= base_url('kirim-email/proses') ?>/' + cid);
+                if (!d.success || d.selesai || d.batas_harian) break;
+                await sleep(d.tunggu_detik > 0 ? (d.tunggu_detik + 1) * 1000 : ((d.batch || []).length ? 300 : 2000));
+            } catch (e) { break; }
+        }
     }
 
     if (btn) btn.addEventListener('click', mulaiKirim);
 
-    if (AUTO && btn && STATUS_AWAL !== 'selesai') {
+    // Dari form "Kirim langsung" / "Kirim ulang" -> mulai otomatis
+    if (AUTO && btn && ['draf', 'terjadwal', 'sedang_dikirim'].includes(STATUS_AWAL)) {
         mulaiKirim();
     }
 
-    if (STATUS_AWAL === 'terjadwal') {
+    // Kampanye terjadwal: selama halaman terbuka, cek tiap 15 detik lalu kirim otomatis saat waktunya tiba
+    if (STATUS_AWAL === 'terjadwal' && !AUTO) {
         setInterval(async () => {
             if (sedangJalan) return;
             try {
                 const d = await post(URL_JADWAL);
-                if (d.success && (d.ids || []).includes(ID)) {
-                    log('Waktu pengiriman tiba, memulai kirim otomatis...', 'text-info');
-                    mulaiKirim();
+                if (d.success && (d.ids || []).length) {
+                    for (const cid of d.ids) {
+                        if (cid === ID) {
+                            log('Waktu pengiriman tiba, memulai kirim otomatis...', '#5bc0de');
+                            await mulaiKirim();
+                        } else {
+                            await prosesTanpaTampilan(cid);   // kampanye lain yang ikut jatuh tempo
+                        }
+                    }
                 }
-            } catch (e) { }
+            } catch (e) { /* coba lagi 15 detik */ }
         }, 15000);
     }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mulai);
+} else {
+    mulai();
+}
+
 })();
 </script>
 <?= $this->endSection() ?>
