@@ -17,8 +17,6 @@
     .placeholder-box .box-title { font-weight: 600; color: #555; margin-bottom: 10px; font-size: 13px; }
     .placeholder-badge { display: inline-block; background: #ffffff; border: 1px solid #f39c12; color: #f39c12; padding: 6px 12px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px; transition: all 0.2s ease; user-select: none; }
     .placeholder-badge:hover { background: #f39c12; color: #ffffff; transform: translateY(-2px); box-shadow: 0 3px 6px rgba(243, 156, 18, 0.3); }
-    .placeholder-desc { font-size: 12px; color: #888; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e0e0e0; }
-    .placeholder-desc code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; color: #c7254e; }
     .toast-notif { position: fixed; bottom: 30px; right: 30px; background: #28a745; color: white; padding: 12px 20px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; font-size: 14px; }
     .toast-notif.show { opacity: 1; transform: translateY(0); }
     .spam-check-wrapper { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd; }
@@ -114,12 +112,20 @@
                         <textarea name="isi_teks" class="form-control" rows="4" placeholder="Masukkan isi teks (opsional)"><?= old('isi_teks', esc($template['isi_teks'])) ?></textarea>
                     </div>
 
-                    <!-- TOMBOL PREVIEW & SPAM -->
+                    <!-- TOMBOL PREVIEW & SPAM (SISTEM & AI) -->
                     <div class="spam-check-wrapper">
                         <button type="button" class="btn btn-default" id="btnPreview"><i class="fa fa-eye"></i> Preview Email</button>
-                        <button type="button" class="btn btn-info" id="btnCekSpam" style="margin-left: 5px;"><i class="fa fa-search"></i> Cek Spam (AI)</button>
+                        
+                        <button type="button" class="btn btn-warning" id="btnCekSistem" style="margin-left: 5px;">
+                            <i class="fa fa-cogs"></i> Cek Spam (Sistem)
+                        </button>
+                        
+                        <button type="button" class="btn btn-info" id="btnCekAI" style="margin-left: 5px;">
+                            <i class="fa fa-search"></i> Cek Spam (AI)
+                        </button>
                     </div>
-                    <div id="hasilCekSpam" style="display:none;"></div>
+                    <div id="hasilCekSpamSistem" style="display:none; margin-top: 10px;"></div>
+                    <div id="hasilCekSpamAI" style="display:none; margin-top: 10px;"></div>
 
                     <div class="row">
                         <div class="col-md-4"><div class="form-group"><label>Status</label><select name="status" class="form-control"><option value="draf" <?= old('status', $template['status']) === 'draf' ? 'selected' : '' ?>>Draf</option><option value="aktif" <?= old('status', $template['status']) === 'aktif' ? 'selected' : '' ?>>Aktif</option></select></div></div>
@@ -130,10 +136,10 @@
 
                 <div class="box-footer">
                     <a href="<?= base_url('template-email') ?>" class="btn btn-default"><i class="fa fa-arrow-left"></i> Kembali</a>
-                    <button type="submit" class="btn btn-warning pull-right" id="btnSimpan" disabled title="Lakukan Cek Spam terlebih dahulu">
+                    <button type="submit" class="btn btn-warning pull-right" id="btnSimpan" disabled title="Lakukan Cek Spam Sistem dan AI terlebih dahulu">
                         <i class="fa fa-save"></i> Update
                     </button>
-                    <small class="text-danger pull-right" id="infoSimpan" style="margin: 10px 15px 0 0;">*Wajib Cek Spam sebelum Update</small>
+                    <small class="text-danger pull-right" id="infoSimpan" style="margin: 10px 15px 0 0;">*Wajib Cek Spam Sistem & AI sebelum Update</small>
                 </div>
             </form>
         </div>
@@ -182,9 +188,7 @@
             callbacks: {
                 onChange: function(contents) { 
                     $('#isiHtml').val(contents); 
-                    // Jika user mengubah desain, matikan tombol simpan lagi
-                    $('#btnSimpan').prop('disabled', true);
-                    $('#infoSimpan').show();
+                    resetSpamStatus(); 
                 },
                 onImageUpload: function(files) { for (let i = 0; i < files.length; i++) uploadImage(files[i], this); }
             }
@@ -225,7 +229,7 @@
             $('#editorIsiHtml').summernote('editor.saveRange');
             $('#inputLinkPdf').val('');
             showToast('✅ Link PDF disisipkan ke Editor!');
-            $('#btnSimpan').prop('disabled', true); // Wajib Cek Spam ulang
+            resetSpamStatus();
         });
 
         // 3. FITUR UPLOAD PDF (LAMPIRAN SMTP)
@@ -277,76 +281,113 @@
         $(document).on('click', '.placeholder-badge', function() {
             $('#editorIsiHtml').summernote('insertText', $(this).data('placeholder'));
             showToast('✅ Dimasukkan ke editor!');
-            $('#btnSimpan').prop('disabled', true); // Wajib Cek Spam ulang
+            resetSpamStatus();
         });
 
         function showToast(msg) { const $t = $('#toastNotif'); $t.text(msg).addClass('show'); setTimeout(() => $t.removeClass('show'), 2000); }
 
-        // 6. CEK SPAM AI (DENGAN LOGIKA VALIDASI & AUTO-SET STATUS)
+        // 6. LOGIKA SPAM (SISTEM & AI)
         const csrfName = '<?= csrf_token() ?>'; let csrfHash = '<?= csrf_hash() ?>';
-        
-        $('#btnCekSpam').on('click', function() {
-            const $btn = $(this), $hasil = $('#hasilCekSpam');
+        let isSistemAman = false, isAIAman = false;
+        let isSistemDone = false, isAIDone = false;
+
+        function resetSpamStatus() {
+            isSistemDone = false; isAIDone = false;
+            isSistemAman = false; isAIAman = false;
+            $('#btnSimpan').prop('disabled', true);
+            $('#infoSimpan').show();
+            $('#hasilCekSpamSistem').hide().empty();
+            $('#hasilCekSpamAI').hide().empty();
+        }
+
+        // Reset jika ada perubahan input (selain yang sudah di-handle summernote)
+        $('input[name="subjek_email"]').on('input change', function() { resetSpamStatus(); });
+
+        function updateTombolSimpan() {
+            if (isSistemDone && isAIDone && isSistemAman && isAIAman) {
+                $('#btnSimpan').prop('disabled', false);
+                $('#infoSimpan').hide();
+                $('#status_pemeriksaan').val('sudah_diperiksa');
+            } else if (isSistemDone && isAIDone) {
+                $('#btnSimpan').prop('disabled', true);
+                $('#infoSimpan').text('*Terdapat indikasi spam, perbaiki template terlebih dahulu.').show();
+                $('#status_pemeriksaan').val('perlu_perbaikan');
+            } else {
+                $('#btnSimpan').prop('disabled', true);
+                $('#infoSimpan').text('*Wajib Cek Spam Sistem & AI sebelum Update').show();
+            }
+        }
+
+        // A. CEK SISTEM
+        $('#btnCekSistem').on('click', function() {
+            const $btn = $(this), $hasil = $('#hasilCekSpamSistem');
+            const subjek = $('input[name="subjek_email"]').val().trim();
+            const isiHtml = $('#editorIsiHtml').summernote('code').trim();
+            const isiTeks = $('textarea[name="isi_teks"]').val() || '';
+            const tombolAwal = '<i class="fa fa-cogs"></i> Cek Spam (Sistem)';
+
+            if (!subjek || !isiHtml || isiHtml === '<p><br></p>') { Swal.fire({ icon: 'warning', title: 'Belum Lengkap', text: 'Isi Subjek dan Desain Email.' }); return; }
+
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner spam-loading"></i> Memeriksa...');
+            $hasil.hide().empty();
+
+            $.ajax({
+                url: '<?= base_url("template-email/cek-spam-sistem") ?>', method: 'POST', dataType: 'json', timeout: 30000,
+                data: { [csrfName]: csrfHash, subjek_email: subjek, isi_html: isiHtml, isi_teks: isiTeks },
+                success: function(res) {
+                    if (!res.success) { $hasil.html(`<div class="spam-result error"><h4>Gagal Sistem</h4><p>${res.message}</p></div>`).show(); return; }
+                    isSistemDone = true;
+                    if (res.status === 'spam') {
+                        isSistemAman = false;
+                        let $card = $('<div class="spam-result spam">');
+                        $card.append('<h4><i class="fa fa-times-circle"></i> Sistem: Terindikasi SPAM</h4>');
+                        let $list = $('<ul class="alasan-list">'); res.alasan.forEach(a => $list.append($('<li>').text(a))); $card.append($list);
+                        $hasil.append($card).show();
+                    } else {
+                        isSistemAman = true;
+                        $hasil.html('<div class="spam-result inbox"><h4><i class="fa fa-check-circle"></i> Sistem: Aman</h4><p>Tidak ada pelanggaran aturan dasar.</p></div>').show();
+                    }
+                    updateTombolSimpan();
+                },
+                error: function(xhr) { $hasil.html(`<div class="spam-result error"><h4>Gagal Sistem</h4><p>${xhr.responseJSON?.message || 'Kesalahan jaringan.'}</p></div>`).show(); },
+                complete: function() { $btn.prop('disabled', false).html(tombolAwal); }
+            });
+        });
+
+        // B. CEK AI
+        $('#btnCekAI').on('click', function() {
+            const $btn = $(this), $hasil = $('#hasilCekSpamAI');
             const subjek = $('input[name="subjek_email"]').val().trim();
             const isiHtml = $('#editorIsiHtml').summernote('code').trim();
             const isiTeks = $('textarea[name="isi_teks"]').val() || '';
             const tombolAwal = '<i class="fa fa-search"></i> Cek Spam (AI)';
 
-            if (!subjek || !isiHtml || isiHtml === '<p><br></p>') {
-                Swal.fire({ icon: 'warning', title: 'Belum Lengkap', text: 'Isi Subjek Email dan Desain Email terlebih dahulu.' });
-                return;
-            }
+            if (!subjek || !isiHtml || isiHtml === '<p><br></p>') { Swal.fire({ icon: 'warning', title: 'Belum Lengkap', text: 'Isi Subjek dan Desain Email.' }); return; }
 
             $btn.prop('disabled', true).html('<i class="fa fa-spinner spam-loading"></i> Menganalisis...');
             $hasil.hide().empty();
 
             $.ajax({
-                url: '<?= base_url("template-email/cek-spam") ?>', method: 'POST', dataType: 'json', timeout: 120000,
+                url: '<?= base_url("template-email/cek-spam-ai") ?>', method: 'POST', dataType: 'json', timeout: 120000,
                 data: { [csrfName]: csrfHash, subjek_email: subjek, isi_html: isiHtml, isi_teks: isiTeks },
                 success: function(res) {
-                    if (res.csrfHash) csrfHash = res.csrfHash;
-                    if (!res.success) { showError(res.message); return; }
-
-                    // JIKA BERHASIL DICEK, BUKA TOMBOL SIMPAN
-                    $('#btnSimpan').prop('disabled', false);
-                    $('#infoSimpan').hide();
-
+                    if (!res.success) { $hasil.html(`<div class="spam-result error"><h4>Gagal AI</h4><p>${res.message}</p></div>`).show(); return; }
+                    isAIDone = true;
                     if (res.status === 'spam') {
+                        isAIAman = false;
                         let $card = $('<div class="spam-result spam">');
-                        $card.append('<h4><i class="fa fa-times-circle"></i> Berisiko Masuk SPAM</h4>');
-                        $card.append('<p>Email ini memiliki indikasi risiko masuk ke folder Spam.</p>');
-                        let $list = $('<ul class="alasan-list">');
-                        if (res.alasan.length > 0) { res.alasan.forEach(a => $list.append($('<li>').text(a))); } else { $list.append('<li>Tidak ada alasan spesifik.</li>'); }
-                        $card.append($list);
+                        $card.append('<h4><i class="fa fa-times-circle"></i> AI: Berisiko SPAM</h4>');
+                        let $list = $('<ul class="alasan-list">'); res.alasan.forEach(a => $list.append($('<li>').text(a))); $card.append($list);
                         $hasil.append($card).show();
-                        
-                        // AUTO SET STATUS JIKA SPAM
-                        $('#status_pemeriksaan').val('perlu_perbaikan');
-                        
                     } else {
-                        let $card = $('<div class="spam-result inbox">');
-                        $card.append('<h4><i class="fa fa-check-circle"></i> Tidak Ada Indikasi Spam</h4>');
-                        $card.append('<p>Tidak ditemukan indikasi spam yang signifikan.</p>');
-                        $hasil.append($card).show();
-                        
-                        // AUTO SET STATUS JIKA AMAN
-                        $('#status_pemeriksaan').val('sudah_diperiksa');
+                        isAIAman = true;
+                        $hasil.html('<div class="spam-result inbox"><h4><i class="fa fa-check-circle"></i> AI: Tidak Ada Indikasi Spam</h4><p>Konten email terlihat aman.</p></div>').show();
                     }
+                    updateTombolSimpan();
                 },
-                error: function(xhr, textStatus) {
-                    if (xhr.responseJSON && xhr.responseJSON.csrfHash) csrfHash = xhr.responseJSON.csrfHash;
-                    let msg = textStatus === 'timeout' ? 'Koneksi ke server Google terlalu lama (Timeout).' : (xhr.responseJSON?.message || 'Terjadi kesalahan.');
-                    showError(msg);
-                },
+                error: function(xhr) { $hasil.html(`<div class="spam-result error"><h4>Gagal AI</h4><p>${xhr.responseJSON?.message || 'Kesalahan jaringan.'}</p></div>`).show(); },
                 complete: function() { $btn.prop('disabled', false).html(tombolAwal); }
             });
-
-            function showError(msg) { 
-                $hasil.html(`<div class="spam-result error"><h4><i class="fa fa-exclamation-triangle"></i> Gagal Menganalisis</h4><p>${msg}</p></div>`).show(); 
-                // Jika error, tombol simpan tetap terkunci
-                $('#btnSimpan').prop('disabled', true);
-                $('#infoSimpan').show();
-            }
         });
     });
 </script>

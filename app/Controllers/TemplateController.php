@@ -208,22 +208,20 @@ class TemplateController extends BaseController
         ]);
     }
 
-    public function cekSpam()
+    public function cekSpamSistem()
     {
         $subjek = trim((string) $this->request->getPost('subjek_email'));
         $isiHtml = trim((string) $this->request->getPost('isi_html'));
         $isiTeks = trim((string) $this->request->getPost('isi_teks'));
 
         if ($subjek === '' || $isiHtml === '') {
-            return $this->response->setJSON([
-                'success' => false,
-                'message' => 'Subjek email dan isi HTML wajib diisi.',
-            ]);
+            return $this->response->setJSON(['success' => false, 'message' => 'Subjek dan HTML wajib diisi.']);
         }
 
         try {
-            $spamChecker = new SpamChecker();
-            $hasil = $spamChecker->check($subjek, $isiHtml, $isiTeks);
+            // Pastikan Anda sudah membuat file SystemSpamChecker.php di folder Libraries
+            $checker = new \App\Libraries\SystemSpamChecker();
+            $hasil = $checker->check($subjek, $isiHtml, $isiTeks);
 
             return $this->response->setJSON([
                 'success' => true,
@@ -231,12 +229,32 @@ class TemplateController extends BaseController
                 'alasan'  => $hasil['alasan'],
             ]);
         } catch (\Throwable $e) {
-            return $this->response
-                ->setStatusCode(502)
-                ->setJSON([
-                    'success' => false,
-                    'message' => 'Detail Error: ' . $e->getMessage(),
-                ]);
+            return $this->response->setJSON(['success' => false, 'message' => 'Error Sistem: ' . $e->getMessage()]);
+        }
+    }
+
+    public function cekSpamAI()
+    {
+        $subjek = trim((string) $this->request->getPost('subjek_email'));
+        $isiHtml = trim((string) $this->request->getPost('isi_html'));
+        $isiTeks = trim((string) $this->request->getPost('isi_teks'));
+
+        if ($subjek === '' || $isiHtml === '') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Subjek dan HTML wajib diisi.']);
+        }
+
+        try {
+            // Menggunakan SpamChecker AI yang sudah ada
+            $checker = new SpamChecker();
+            $hasil = $checker->check($subjek, $isiHtml, $isiTeks);
+
+            return $this->response->setJSON([
+                'success' => true,
+                'status'  => $hasil['status'],
+                'alasan'  => $hasil['alasan'],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Error AI: ' . $e->getMessage()]);
         }
     }
 }
