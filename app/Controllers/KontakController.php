@@ -7,7 +7,7 @@ use App\Models\KontakModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 class KontakController extends BaseController
 {
     protected KontakModel $model;
@@ -28,7 +28,7 @@ class KontakController extends BaseController
         'email'               => 'email',
         'website'             => 'website',
         'kotakabupaten'       => 'kota_kabupaten',
-        'kota'                => 'kota_kabupaten',
+        'kota'                => 'kota_kabupaten', 
         'kabupaten'           => 'kota_kabupaten',
         'domisili'            => 'kota_kabupaten',
         'provinsi'            => 'provinsi',
@@ -232,7 +232,7 @@ class KontakController extends BaseController
 
         return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil dihapus.');
     }
-        public function import()
+      public function import()
     {
         $file = $this->request->getFile('file_excel');
 
@@ -279,15 +279,33 @@ class KontakController extends BaseController
                 ->with('gagal', 'Kolom "NAMA PERUSAHAAN" atau "NAMA" tidak ditemukan di baris pertama file.');
         }
 
-        // 3. Data pembanding (email dan kombinasi perusahaan + nama)
-        $emailAda  = [];
-        $usahaAda  = [];
+        // 3. Data pembanding (email, no_hp, dan kombinasi perusahaan + nama)
+        $emailAda = [];
+        $hpAda    = [];
+        $usahaAda = [];
+
         $kunciUsaha = static fn (?string $usaha, ?string $nama) =>
             mb_strtolower(trim((string) $usaha) . '|' . trim((string) $nama));
 
-        foreach ($this->model->select('id, email, nama, nama_perusahaan')->findAll() as $r) {
+        // Normalisasi no HP: 0812-3456 / +62 812 3456 / 62812 3456 -> 628123456
+        $kunciHp = static function (?string $hp): ?string {
+            $digit = preg_replace('/\D+/', '', (string) $hp);
+            if ($digit === '') {
+                return null;
+            }
+            if (str_starts_with($digit, '0')) {
+                $digit = '62' . substr($digit, 1);
+            }
+
+            return $digit;
+        };
+
+        foreach ($this->model->select('id, email, no_hp, nama, nama_perusahaan')->findAll() as $r) {
             if (! empty($r['email'])) {
                 $emailAda[strtolower((string) $r['email'])] = (int) $r['id'];
+            }
+            if (($k = $kunciHp($r['no_hp'])) !== null) {
+                $hpAda[$k] = (int) $r['id'];
             }
             $usahaAda[$kunciUsaha($r['nama_perusahaan'], $r['nama'])] = (int) $r['id'];
         }
@@ -365,20 +383,36 @@ class KontakController extends BaseController
                 'jumlah_tidak_terkirim' => max(0, (int) $this->teks($ambil($row, $indeks, 'jumlah_tidak_terkirim'))),
             ];
 
-            // Cari data yang sudah ada: lewat email jika ada, kalau tidak lewat perusahaan + nama
-            $kunci = $kunciUsaha($data['nama_perusahaan'], $data['nama']);
-            $idAda = $email !== null ? ($emailAda[$email] ?? null) : ($usahaAda[$kunci] ?? null);
+            // Cari data yang sudah ada:
+            // 1) lewat email, 2) lewat no HP, 3) lewat perusahaan + nama (hanya jika email & HP kosong)
+            $hpKunci = $kunciHp($data['no_hp']);
+            $kunci   = $kunciUsaha($data['nama_perusahaan'], $data['nama']);
+
+            $idAda = null;
+            if ($email !== null) {
+                $idAda = $emailAda[$email] ?? null;
+            }
+            if ($idAda === null && $hpKunci !== null) {
+                $idAda = $hpAda[$hpKunci] ?? null;
+            }
+            if ($idAda === null && $email === null && $hpKunci === null) {
+                $idAda = $usahaAda[$kunci] ?? null;
+            }
 
             if ($idAda !== null) {
                 if ($perbarui && $idAda > 0) {
+                    // Jangan menimpa data lama dengan kosong
                     if ($email === null) {
-                        unset($data['email']); // jangan menimpa email lama dengan kosong
+                        unset($data['email']);
+                    }
+                    if ($data['no_hp'] === null) {
+                        unset($data['no_hp']);
                     }
                     $this->model->update($idAda, $data);
                     $jmlUbah++;
                 } else {
                     $jmlLewati++;
-                    $galat[] = "Baris {$noBaris}: data sudah ada (" . ($email ?? $data['nama_perusahaan']) . ').';
+                    $galat[] = "Baris {$noBaris}: data sudah ada (" . ($email ?? $data['no_hp'] ?? $data['nama_perusahaan']) . ').';
                 }
                 continue;
             }
@@ -386,6 +420,9 @@ class KontakController extends BaseController
             // Tandai sudah dipakai di file ini (0 = belum punya ID, tidak bisa diperbarui)
             if ($email !== null) {
                 $emailAda[$email] = 0;
+            }
+            if ($hpKunci !== null) {
+                $hpAda[$hpKunci] = 0;
             }
             $usahaAda[$kunci] = 0;
 
@@ -421,16 +458,20 @@ class KontakController extends BaseController
 
     $header = [
         'NAMA', 'NAMA PERUSAHAAN', 'KATEGORI', 'KOTA KABUPATEN', 'PROVINSI',
-        'PRODUK PERUSAHAAN', 'SUMBER DATA',
+        'PRODUK PERUSAHAAN', 'SUMBER DATA', 'EMAIL', 'NO_HP',
     ];
     $sheet->fromArray($header, null, 'A1');
+
+    // Kolom NO_HP berformat teks supaya angka 0 di depan tidak hilang
+    $sheet->getStyle('I:I')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+
     $sheet->fromArray([
         'Budi Santoso', 'PT Contoh Makmur', 'Distributor', 'Bandung', 'Jawa Barat',
-        'Alat tulis kantor', 'Google Maps',
+        'Alat tulis kantor', 'Google Maps', 'budi@contohmakmur.co.id', '081234567890',
     ], null, 'A2');
 
-    $sheet->getStyle('A1:G1')->getFont()->setBold(true);
-    foreach (range('A', 'G') as $kol) {
+    $sheet->getStyle('A1:I1')->getFont()->setBold(true);
+    foreach (range('A', 'I') as $kol) {
         $sheet->getColumnDimension($kol)->setAutoSize(true);
     }
 
