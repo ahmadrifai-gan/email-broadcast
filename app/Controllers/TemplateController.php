@@ -54,11 +54,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
-            
+
             // TAMBAHKAN 2 BARIS INI
             'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
             'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
-            
+
             'status'               => $this->request->getPost('status') ?? 'draf',
             'versi'                => $this->request->getPost('versi') ?? 1,
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan') ?? 'belum_diperiksa',
@@ -108,11 +108,11 @@ class TemplateController extends BaseController
             'subjek_email'         => $this->request->getPost('subjek_email'),
             'isi_html'             => $this->request->getPost('isi_html'),
             'isi_teks'             => $this->request->getPost('isi_teks'),
-            
+
             // TAMBAHKAN 2 BARIS INI
             'attachment_pdf_url'   => $this->request->getPost('attachment_pdf_url'),
             'tipe_pdf'             => $this->request->getPost('tipe_pdf') ?? 'link',
-            
+
             'status'               => $this->request->getPost('status'),
             'versi'                => $this->request->getPost('versi'),
             'status_pemeriksaan'   => $this->request->getPost('status_pemeriksaan'),
@@ -130,6 +130,23 @@ class TemplateController extends BaseController
 
     public function delete($id)
     {
+        // 🔥 1. Ambil data template dulu untuk mendapatkan URL PDF
+        $template = $this->templateModel->find($id);
+
+        if ($template) {
+            // 🔥 2. Hapus file PDF fisik dari folder uploads jika ada
+            if (!empty($template['attachment_pdf_url'])) {
+                // Ambil nama file dari URL (misal: http://localhost/uploads/123.pdf -> 123.pdf)
+                $filename = basename($template['attachment_pdf_url']);
+                $filePath = FCPATH . 'uploads/' . $filename;
+
+                if (file_exists($filePath)) {
+                    unlink($filePath); // Hapus file fisik
+                }
+            }
+        }
+
+        // 🔥 3. Hapus dari database (Soft Delete)
         if (!$this->templateModel->delete($id)) {
             return redirect()->back()->with('error', 'Gagal menghapus template email.');
         }
@@ -143,6 +160,15 @@ class TemplateController extends BaseController
             $file = $this->request->getFile('file');
 
             if ($file && $file->isValid() && !$file->hasMoved()) {
+
+                // 🔥 VALIDASI UKURAN FILE (Maksimal 5MB = 5.000.000 bytes)
+                if ($file->getSize() > 5000000) {
+                    return $this->response->setJSON([
+                        'success' => false,
+                        'message' => 'Ukuran file terlalu besar. Maksimal 5MB.'
+                    ]);
+                }
+
                 $ext = strtolower($file->getClientExtension());
                 $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
 
