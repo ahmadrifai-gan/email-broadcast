@@ -31,7 +31,8 @@ $routes->group('template-email', ['namespace' => 'App\Controllers'], function ($
     $routes->get('edit/(:num)',    'TemplateController::edit/$1');
     $routes->post('update/(:num)', 'TemplateController::update/$1');
     $routes->post('delete/(:num)', 'TemplateController::delete/$1');
-    $routes->post('cek-spam',      'TemplateController::cekSpam');
+    $routes->post('cek-spam-sistem', 'TemplateController::cekSpamSistem');
+    $routes->post('cek-spam-ai',     'TemplateController::cekSpamAI');
     $routes->post('upload-gambar', 'TemplateController::uploadGambar');
 });
 
