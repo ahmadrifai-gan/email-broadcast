@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Models\SmtpSettingModel;
 use App\Libraries\SmtpConfigurator;
+use App\Models\SmtpSettingModel;
 
 class SmtpSettingsController extends BaseController
 {
@@ -14,6 +14,24 @@ class SmtpSettingsController extends BaseController
     {
         $this->model        = new SmtpSettingModel();
         $this->configurator = new SmtpConfigurator();
+    }
+
+    /**
+     * Aturan validasi di controller (bukan di model) agar update() bisa
+     * melonggarkan password tanpa menyentuh protected $model->validationRules.
+     */
+    private function aturan(bool $wajibPassword): array
+    {
+        return [
+            'nama'       => 'required|min_length[3]|max_length[100]',
+            'host'       => 'required|max_length[150]',
+            'username'   => 'required|max_length[150]',
+            'password'   => $wajibPassword ? 'required|max_length[500]' : 'permit_empty|max_length[500]',
+            'port'       => 'required|integer|greater_than[0]|less_than[65536]',
+            'crypto'     => 'required|in_list[tls,ssl,none]',
+            'from_email' => 'required|valid_email|max_length[150]',
+            'from_name'  => 'required|max_length[100]',
+        ];
     }
 
     public function index()
@@ -37,8 +55,8 @@ class SmtpSettingsController extends BaseController
     {
         $post = $this->request->getPost();
 
-        if (! $this->model->validate($post)) {
-            return redirect()->back()->withInput()->with('errors', $this->model->errors());
+        if (! $this->validate($this->aturan(true))) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         if ($this->model->where('nama', $post['nama'])->first()) {
@@ -46,18 +64,29 @@ class SmtpSettingsController extends BaseController
         }
 
         try {
-            $post['password'] = $this->configurator->encryptPassword((string) ($post['password'] ?? ''));
+            $data = [
+                'nama'       => $post['nama'],
+                'host'       => $post['host'],
+                'username'   => $post['username'],
+                'password'   => $this->configurator->encryptPassword((string) $post['password']),
+                'port'       => (int) $post['port'],
+                'crypto'     => $post['crypto'],
+                'from_email' => $post['from_email'],
+                'from_name'  => $post['from_name'],
+                'is_active'  => ! empty($post['is_active']) ? 1 : 0,
+            ];
         } catch (\Throwable $e) {
-            return redirect()->back()->withInput()->with('error', $e->getMessage());
+            return redirect()->back()->withInput()
+                ->with('error', 'Gagal mengenkripsi password: ' . $e->getMessage());
         }
-        $post['is_active'] = ! empty($post['is_active']) ? 1 : 0;
 
-        $id = $this->model->insert($post);
+        $id = $this->model->insert($data);
         if (! $id) {
-            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan konfigurasi.');
+            return redirect()->back()->withInput()
+                ->with('error', 'Gagal menyimpan konfigurasi: ' . implode(' ', $this->model->errors()));
         }
 
-        if ($post['is_active'] === 1) {
+        if ($data['is_active'] === 1) {
             $this->model->setActive((int) $id);
         }
 
@@ -87,14 +116,8 @@ class SmtpSettingsController extends BaseController
 
         $post = $this->request->getPost();
 
-        $rules = $this->model->validationRules;
-        if (empty($post['password'])) {
-            $rules['password'] = 'permit_empty';
-            unset($post['password']);
-        }
-
-        if (! $this->model->setValidationRules($rules)->validate($post)) {
-            return redirect()->back()->withInput()->with('errors', $this->model->errors());
+        if (! $this->validate($this->aturan(false))) {
+            return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
         $dup = $this->model->where('nama', $post['nama'])->where('id !=', $id)->first();
@@ -102,18 +125,30 @@ class SmtpSettingsController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Nama konfigurasi sudah digunakan.');
         }
 
+        $data = [
+            'nama'       => $post['nama'],
+            'host'       => $post['host'],
+            'username'   => $post['username'],
+            'port'       => (int) $post['port'],
+            'crypto'     => $post['crypto'],
+            'from_email' => $post['from_email'],
+            'from_name'  => $post['from_name'],
+            'is_active'  => ! empty($post['is_active']) ? 1 : 0,
+        ];
+
+        // Password hanya di-update bila diisi (kosong = tidak diubah).
         if (! empty($post['password'])) {
             try {
-                $post['password'] = $this->configurator->encryptPassword($post['password']);
+                $data['password'] = $this->configurator->encryptPassword($post['password']);
             } catch (\Throwable $e) {
-                return redirect()->back()->withInput()->with('error', $e->getMessage());
+                return redirect()->back()->withInput()
+                    ->with('error', 'Gagal mengenkripsi password: ' . $e->getMessage());
             }
         }
 
-        $post['is_active'] = ! empty($post['is_active']) ? 1 : 0;
-        $this->model->update($id, $post);
+        $this->model->update($id, $data);
 
-        if ($post['is_active'] === 1) {
+        if ($data['is_active'] === 1) {
             $this->model->setActive((int) $id);
         }
 
@@ -148,7 +183,13 @@ class SmtpSettingsController extends BaseController
         return redirect()->to(base_url('smtp'))->with('success', 'Konfigurasi SMTP dihapus.');
     }
 
-    /** Kirim email percobaan untuk konfigurasi tertentu. */
+    /**
+     * TEST SMTP — INI BAGIAN YANG DIPERBAIKI.
+     *
+     * Sebelumnya: $mailer->initialize($cfg) dengan asumsi $cfg array.
+     * Sekarang  : $cfg dari applyById() adalah Config\Email → langsung
+     *             dipakai sebagai argumen pertama Services::email().
+     */
     public function test($id)
     {
         $item = $this->model->find($id);
@@ -162,21 +203,31 @@ class SmtpSettingsController extends BaseController
         }
 
         try {
+            /** @var \Config\Email|null $cfg */
             $cfg = $this->configurator->applyById((int) $id);
             if (! $cfg) {
                 return redirect()->to(base_url('smtp'))->with('error', 'Konfigurasi tidak bisa dibaca.');
             }
 
+            // Non-shared Email instance dengan config SMTP hasil resolve.
             $mailer = \Config\Services::email($cfg, false);
+            $mailer->clear(true);
+            $mailer->setMailType('html');
+            $mailer->setFrom(
+                $cfg->fromEmail ?: $item['from_email'],
+                $cfg->fromName  ?: 'email-broadcast'
+            );
             $mailer->setTo($tujuan);
             $mailer->setSubject('Test SMTP - ' . $item['nama']);
             $mailer->setMessage('<p>Ini email percobaan dari konfigurasi <b>' . esc($item['nama']) . '</b>.</p>');
 
-            if ($mailer->send()) {
-                return redirect()->to(base_url('smtp'))->with('success', 'Test email berhasil dikirim ke ' . esc($tujuan));
+            if ($mailer->send(false)) {
+                return redirect()->to(base_url('smtp'))
+                    ->with('success', 'Test email berhasil dikirim ke ' . esc($tujuan));
             }
 
-            return redirect()->to(base_url('smtp'))->with('error', 'Gagal mengirim: ' . $mailer->printDebugger(['headers']));
+            $debug = strip_tags($mailer->printDebugger(['headers', 'subject']));
+            return redirect()->to(base_url('smtp'))->with('error', 'Gagal mengirim: ' . $debug);
         } catch (\Throwable $e) {
             return redirect()->to(base_url('smtp'))->with('error', 'Error: ' . $e->getMessage());
         }

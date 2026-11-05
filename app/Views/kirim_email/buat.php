@@ -483,7 +483,7 @@
         </div>
         <div class="box-body">
             <p class="text-muted" style="margin-bottom:15px;">
-                Pilih salah satu. Untuk mode terjadwal / berulang, tanggal &amp; jam diatur lewat jendela pengaturan.
+                Pilih salah satu. Untuk mode terjadwal / bertahap, tanggal &amp; jam diatur lewat jendela pengaturan.
             </p>
 
             <div class="row">
@@ -491,7 +491,7 @@
                     <label class="mode-card" data-mode="sekarang">
                         <input type="radio" name="mode_kirim" value="sekarang" <?= $modeLama === 'sekarang' ? 'checked' : '' ?>>
                         <span class="mode-icon bg-yellow"><i class="fa fa-bolt"></i></span>
-                        <span class="mode-text"><strong>Kirim langsung</strong>
+                        <span class="mode-text"><strong>Kirim langsung (tidak bertahap)</strong>
                             <small>Dikirim satu kali, segera setelah disimpan.</small></span>
                     </label>
                 </div>
@@ -499,7 +499,7 @@
                     <label class="mode-card" data-mode="sekarang_berulang">
                         <input type="radio" name="mode_kirim" value="sekarang_berulang" <?= $modeLama === 'sekarang_berulang' ? 'checked' : '' ?>>
                         <span class="mode-icon bg-red"><i class="fa fa-repeat"></i></span>
-                        <span class="mode-text"><strong>Kirim langsung + berulang</strong>
+                        <span class="mode-text"><strong>Kirim langsung + bertahap</strong>
                             <small>Mulai sekarang, penerima <strong>dibagi</strong> ke beberapa pengiriman. Jumlah, akun &amp; jarak waktunya diatur sendiri / acak.</small></span>
                     </label>
                 </div>
@@ -507,7 +507,7 @@
                     <label class="mode-card" data-mode="jadwal">
                         <input type="radio" name="mode_kirim" value="jadwal" <?= $modeLama === 'jadwal' ? 'checked' : '' ?>>
                         <span class="mode-icon bg-aqua"><i class="fa fa-clock-o"></i></span>
-                        <span class="mode-text"><strong>Terjadwal (tidak berulang)</strong>
+                        <span class="mode-text"><strong>Terjadwal (tidak bertahap)</strong>
                             <small>Dikirim otomatis satu kali pada tanggal &amp; jam yang dipilih.</small></span>
                     </label>
                 </div>
@@ -515,7 +515,7 @@
                     <label class="mode-card" data-mode="jadwal_berulang">
                         <input type="radio" name="mode_kirim" value="jadwal_berulang" <?= $modeLama === 'jadwal_berulang' ? 'checked' : '' ?>>
                         <span class="mode-icon bg-green"><i class="fa fa-calendar-plus-o"></i></span>
-                        <span class="mode-text"><strong>Terjadwal + berulang</strong>
+                        <span class="mode-text"><strong>Terjadwal + bertahap</strong>
                             <small>Mulai pada waktu tertentu, penerima <strong>dibagi</strong> ke beberapa pengiriman. Jumlah, akun &amp; jarak waktunya diatur sendiri / acak.</small></span>
                     </label>
                 </div>
