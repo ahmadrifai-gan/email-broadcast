@@ -37,11 +37,14 @@ class EmailSender
                 return ['sukses' => true, 'pesan' => 'Terkirim', 'id_pesan' => $idPesan];
             }
 
-            return [
-                'sukses'   => false,
-                'pesan'    => strip_tags($email->printDebugger(['headers', 'subject'])),
-                'id_pesan' => null,
-            ];
+            $pesan = strip_tags($email->printDebugger(['headers', 'subject']));
+
+return [
+    'sukses'         => false,
+    'pesan'          => $pesan,
+    'id_pesan'       => null,
+    'alamat_ditolak' => $this->alamatDitolak($pesan),
+];
         } catch (\Throwable $e) {
             return ['sukses' => false, 'pesan' => $e->getMessage(), 'id_pesan' => null];
         }
@@ -57,4 +60,18 @@ class EmailSender
         ];
         return str_replace(array_keys($map), array_values($map), $teks);
     }
+
+    /**
+ * True jika server tujuan menolak ALAMATNYA (mailbox tidak ada).
+ * Sengaja ketat: gagal login SMTP, koneksi putus, atau ditolak karena
+ * spam/kebijakan (5.7.x) TIDAK dihitung.
+ */
+protected function alamatDitolak(string $pesan): bool
+{
+    return (bool) preg_match(
+        '/\b5\.1\.[1-3]\b|user unknown|no such user|mailbox (unavailable|not found|does not exist)|recipient (address )?rejected|invalid recipient|address rejected|does not exist/i',
+        $pesan
+    );
+}
+
 }

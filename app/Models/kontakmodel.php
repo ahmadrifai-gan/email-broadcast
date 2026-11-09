@@ -6,6 +6,14 @@ use CodeIgniter\Model;
 
 class Kontakmodel extends Model
 {
+    public function catatTidakTerkirim(string $email): void
+    {
+        $this->builder()
+            ->where('email', strtolower($email))
+            ->set('jumlah_tidak_terkirim', 'jumlah_tidak_terkirim + 1', false)
+            ->update();
+    }
+
     protected $table         = 'kontak_email';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
