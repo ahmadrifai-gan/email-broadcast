@@ -12,12 +12,7 @@
 
 <?= $this->section('content') ?>
 
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <i class="icon fa fa-ban"></i> <?= esc(session()->getFlashdata('error')) ?>
-    </div>
-<?php endif; ?>
+<?php /* Flash message ditampilkan lewat SweetAlert2 (lihat section scripts) */ ?>
 
 <?php $errors = session('errors') ?? []; ?>
 
@@ -28,12 +23,12 @@
             <a href="<?= base_url('smtp') ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Kembali</a>
         </div>
     </div>
-    <form method="post" action="<?= $action ?>" autocomplete="off">
+    <form method="post" action="<?= $action ?>" autocomplete="off" id="formSmtp">
         <?= csrf_field() ?>
         <div class="box-body">
             <div class="row">
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['nama']) ? 'has-error' : '' ?>">
                         <label>Nama Konfigurasi <span class="text-danger">*</span></label>
                         <input type="text" name="nama" class="form-control <?= isset($errors['nama']) ? 'is-invalid' : '' ?>"
                                value="<?= esc(old('nama', $item['nama'] ?? '')) ?>" placeholder="cth: Gmail Utama" required>
@@ -41,7 +36,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['host']) ? 'has-error' : '' ?>">
                         <label>Host SMTP <span class="text-danger">*</span></label>
                         <input type="text" name="host" class="form-control <?= isset($errors['host']) ? 'is-invalid' : '' ?>"
                                value="<?= esc(old('host', $item['host'] ?? 'smtp.gmail.com')) ?>" placeholder="smtp.gmail.com" required>
@@ -49,7 +44,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['username']) ? 'has-error' : '' ?>">
                         <label>Username <span class="text-danger">*</span></label>
                         <input type="text" name="username" class="form-control <?= isset($errors['username']) ? 'is-invalid' : '' ?>"
                                value="<?= esc(old('username', $item['username'] ?? '')) ?>" required>
@@ -57,7 +52,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['password']) ? 'has-error' : '' ?>">
                         <label>
                             Password
                             <?php if ($item): ?>
@@ -72,10 +67,11 @@
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['port']) ? 'has-error' : '' ?>">
                         <label>Port <span class="text-danger">*</span></label>
                         <input type="number" name="port" class="form-control"
                                value="<?= esc(old('port', $item['port'] ?? 587)) ?>" required>
+                        <?php if (isset($errors['port'])): ?><small class="text-danger"><?= esc($errors['port']) ?></small><?php endif; ?>
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -90,7 +86,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['from_email']) ? 'has-error' : '' ?>">
                         <label>From Email <span class="text-danger">*</span></label>
                         <input type="email" name="from_email" class="form-control <?= isset($errors['from_email']) ? 'is-invalid' : '' ?>"
                                value="<?= esc(old('from_email', $item['from_email'] ?? '')) ?>" required>
@@ -98,7 +94,7 @@
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="form-group">
+                    <div class="form-group <?= isset($errors['from_name']) ? 'has-error' : '' ?>">
                         <label>From Name <span class="text-danger">*</span></label>
                         <input type="text" name="from_name" class="form-control <?= isset($errors['from_name']) ? 'is-invalid' : '' ?>"
                                value="<?= esc(old('from_name', $item['from_name'] ?? 'email-broadcast')) ?>" required>
@@ -123,4 +119,84 @@
     </form>
 </div>
 
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<?php
+    $flashSwal = [
+        'success' => session()->getFlashdata('success'),
+        'error'   => session()->getFlashdata('error'),
+        'errors'  => (array) session()->getFlashdata('errors'),
+    ];
+?>
+<?= $this->include('layouts/swal_helper') ?>
+<script>
+(function () {
+'use strict';
+
+function mulai() {
+    AppSwal.flash(<?= json_encode($flashSwal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>);
+
+    const form       = document.getElementById('formSmtp');
+    const WAS_ACTIVE = <?= !empty($item['is_active']) ? 'true' : 'false' ?>;
+    const NAMA_AWAL  = <?= json_encode((string) ($item['nama'] ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
+    let sedang = false;
+
+    form.addEventListener('submit', async function (e) {
+        if (form.dataset.lolos === '1') return;      // submit native setelah dikonfirmasi
+        e.preventDefault();
+        if (sedang) return;
+        sedang = true;
+        let lanjut = false;
+
+        try {
+            const cb    = form.querySelector('input[name="is_active"]');
+            const aktif = !!(cb && cb.checked);
+            const nama  = (form.querySelector('input[name="nama"]').value || '').trim();
+
+            if (aktif && !WAS_ACTIVE) {
+                const ok = await AppSwal.konfirmasi({
+                    judul: 'Jadikan konfigurasi aktif?',
+                    html:  'Konfigurasi <b>' + AppSwal.esc(nama || 'ini') + '</b> akan menjadi SMTP aktif. ' +
+                           'Konfigurasi aktif lainnya dinonaktifkan, dan kampanye yang tidak memilih SMTP sendiri akan memakai konfigurasi ini.',
+                    ikon:  'question',
+                    ya:    'Ya, simpan & aktifkan'
+                });
+                if (!ok) return;
+            } else if (!aktif && WAS_ACTIVE) {
+                const ok = await AppSwal.konfirmasi({
+                    judul: 'Nonaktifkan konfigurasi ini?',
+                    html:  'Konfigurasi <b>' + AppSwal.esc(NAMA_AWAL || nama) + '</b> sedang aktif. ' +
+                           'Jika tidak ada konfigurasi aktif, kampanye yang tidak memilih SMTP sendiri akan memakai pengaturan di <code>.env</code>.',
+                    ikon:  'warning',
+                    ya:    'Ya, nonaktifkan',
+                    bahaya: true
+                });
+                if (!ok) return;
+            }
+
+            AppSwal.loading('Menyimpan konfigurasi...', 'Mohon tunggu sebentar.');
+            lanjut = true;
+            form.dataset.lolos = '1';
+            HTMLFormElement.prototype.submit.call(form);
+        } finally {
+            if (!lanjut) sedang = false;
+        }
+    });
+
+    // Tombol "Kembali" browser (bfcache) -> pulihkan form
+    window.addEventListener('pageshow', function (ev) {
+        if (!ev.persisted) return;
+        AppSwal.tutup();
+        form.dataset.lolos = '';
+        sedang = false;
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', mulai);
+} else { mulai(); }
+
+})();
+</script>
 <?= $this->endSection() ?>

@@ -11,18 +11,7 @@
 
 <?= $this->section('content') ?>
 
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <i class="icon fa fa-check"></i> <?= esc(session()->getFlashdata('success')) ?>
-    </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert">&times;</button>
-        <i class="icon fa fa-ban"></i> <?= esc(session()->getFlashdata('error')) ?>
-    </div>
-<?php endif; ?>
+<?php /* Flash message ditampilkan lewat SweetAlert2 (lihat section scripts) */ ?>
 
 <div class="box box-primary">
     <div class="box-header with-border">
@@ -73,7 +62,11 @@
                             <?php if ((int) $row['is_active'] !== 1): ?>
                                 <a href="<?= base_url('smtp/' . $row['id'] . '/activate') ?>"
                                    class="btn btn-success btn-xs"
-                                   onclick="return confirm('Aktifkan konfigurasi ini?')">
+                                   data-swal-konfirmasi data-ikon="question"
+                                   data-judul="Aktifkan konfigurasi SMTP?"
+                                   data-nama="<?= esc($row['nama'], 'attr') ?>"
+                                   data-teks="Konfigurasi {nama} akan menjadi SMTP aktif. Konfigurasi aktif lainnya otomatis dinonaktifkan, dan kampanye yang tidak memilih SMTP sendiri akan memakai konfigurasi ini."
+                                   data-ya="Ya, aktifkan" data-loading="Mengaktifkan konfigurasi...">
                                     <i class="fa fa-power-off"></i> Aktifkan
                                 </a>
                             <?php endif; ?>
@@ -88,8 +81,12 @@
                             </button>
                             <?php if ((int) $row['is_active'] !== 1): ?>
                                 <a href="<?= base_url('smtp/' . $row['id'] . '/delete') ?>"
-                                   class="btn btn-danger btn-xs"
-                                   onclick="return confirm('Hapus konfigurasi ini?')">
+                                   class="btn btn-danger btn-xs" title="Hapus"
+                                   data-swal-konfirmasi data-ikon="warning" data-bahaya="1"
+                                   data-judul="Hapus konfigurasi SMTP?"
+                                   data-nama="<?= esc($row['nama'], 'attr') ?>"
+                                   data-teks="Konfigurasi {nama} akan dihapus. Kampanye yang memakai SMTP ini akan kembali memakai SMTP aktif. Tindakan ini tidak dapat dibatalkan."
+                                   data-ya="Ya, Hapus!" data-loading="Menghapus konfigurasi...">
                                     <i class="fa fa-trash"></i>
                                 </a>
                             <?php endif; ?>
@@ -136,16 +133,63 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+    $flashSwal = [
+        'success' => session()->getFlashdata('success'),
+        'error'   => session()->getFlashdata('error'),
+        'errors'  => (array) session()->getFlashdata('errors'),
+    ];
+?>
+<?= $this->include('layouts/swal_helper') ?>
 <script>
 (function () {
 'use strict';
 
-function mulai() {
+/* DataTables dimuat otomatis bila layout belum menyediakannya */
+const DT_CSS = 'https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap.min.css';
+const DT_JS  = 'https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js';
+const DT_BS  = 'https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap.min.js';
+
+function muatScript(src) {
+    return new Promise((ok, gagal) => {
+        const s = document.createElement('script');
+        s.src = src; s.onload = ok;
+        s.onerror = () => gagal(new Error('Gagal memuat ' + src));
+        document.head.appendChild(s);
+    });
+}
+function muatCss(href) {
+    if (document.querySelector('link[href="' + href + '"]')) return;
+    const l = document.createElement('link');
+    l.rel = 'stylesheet'; l.href = href;
+    document.head.appendChild(l);
+}
+
+async function siapkanDataTables() {
+    const $ = window.jQuery;
+    if (!$) return false;
+    if (!$.fn.DataTable) {
+        try {
+            muatCss(DT_CSS);
+            await muatScript(DT_JS);
+            await muatScript(DT_BS);
+        } catch (e) {
+            console.warn('[SMTP] DataTables gagal dimuat:', e);
+            return false;
+        }
+    }
+    return true;
+}
+
+async function mulai() {
+    AppSwal.flash(<?= json_encode($flashSwal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>);
+
     // DataTables
-    if (window.jQuery && window.jQuery.fn.DataTable) {
+    if (await siapkanDataTables()) {
         window.jQuery('#smtpTable').DataTable({
             autoWidth: false,
             pageLength: 10,
+            order: [],
             columnDefs: [
                 { targets: 0, orderable: false, searchable: false },
                 { targets: -1, orderable: false, searchable: false }
@@ -166,23 +210,54 @@ function mulai() {
         });
     }
 
-    // Modal Test
+    // Test kirim email: popup SweetAlert2 (modal Bootstrap dipakai hanya jika SweetAlert2 gagal dimuat)
     const modal = document.getElementById('modalTest');
     const form  = document.getElementById('formTest');
 
-    document.querySelectorAll('.btn-test').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            const id = this.dataset.id;
-            form.action = '<?= base_url('smtp') ?>/' + id + '/test';
-            document.getElementById('testNama').textContent = this.dataset.nama;
-            document.getElementById('testEmail').value = this.dataset.email;
+    form.addEventListener('submit', function () {
+        AppSwal.loading('Mengirim email test...', 'Menghubungi server SMTP, bisa memakan waktu beberapa detik.');
+    });
 
-            if (window.jQuery && window.jQuery.fn.modal) {
-                window.jQuery(modal).modal('show');
-            } else {
-                modal.style.display = 'block';
-                modal.classList.add('in');
-            }
+    function modalBootstrap(btn) {
+        form.action = '<?= base_url('smtp') ?>/' + btn.dataset.id + '/test';
+        document.getElementById('testNama').textContent = btn.dataset.nama;
+        document.getElementById('testEmail').value = btn.dataset.email;
+        if (window.jQuery && window.jQuery.fn.modal) {
+            window.jQuery(modal).modal('show');
+        } else {
+            modal.style.display = 'block';
+            modal.classList.add('in');
+        }
+    }
+
+    document.querySelectorAll('.btn-test').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+            const S = await AppSwal.muat();
+            if (!S) { modalBootstrap(btn); return; }
+
+            const r = await S.fire({
+                icon: 'info',
+                title: 'Test Kirim Email',
+                html: 'Konfigurasi: <b>' + AppSwal.esc(btn.dataset.nama) + '</b><br>' +
+                      '<small style="color:#667085;">Email percobaan akan dikirim memakai SMTP ini.</small>',
+                input: 'email',
+                inputLabel: 'Email tujuan',
+                inputValue: btn.dataset.email || '',
+                inputPlaceholder: 'nama@contoh.com',
+                validationMessage: 'Masukkan alamat email yang valid',
+                inputValidator: function (v) { return !v ? 'Email tujuan wajib diisi' : undefined; },
+                showCancelButton: true,
+                confirmButtonText: '<i class="fa fa-send"></i> Kirim Test',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#6e7881'
+            });
+            if (!r.isConfirmed) return;
+
+            form.action = '<?= base_url('smtp') ?>/' + btn.dataset.id + '/test';
+            document.getElementById('testEmail').value = r.value;
+            AppSwal.loading('Mengirim email test...', 'Menghubungi server SMTP, bisa memakan waktu beberapa detik.');
+            HTMLFormElement.prototype.submit.call(form);
         });
     });
 }

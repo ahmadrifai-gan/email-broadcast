@@ -18,19 +18,7 @@
     }
 ?>
 
-<!-- Flash Messages -->
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-check"></i> <?= esc(session()->getFlashdata('success')) ?>
-    </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-ban"></i> <?= esc(session()->getFlashdata('error')) ?>
-    </div>
-<?php endif; ?>
+<?php /* Flash message ditampilkan lewat SweetAlert2 (lihat section scripts) */ ?>
 
 <!-- Ringkasan -->
 <div class="row">
@@ -162,7 +150,11 @@
                                 <i class="fa fa-eye"></i>
                             </a>
                             <form action="<?= base_url('kirim-email/hapus/' . $k['id']) ?>" method="post" style="display:inline;"
-                                  onsubmit="return confirm('Hapus kampanye ini?')">
+                                  data-swal-konfirmasi data-ikon="warning" data-bahaya="1"
+                                  data-judul="Hapus kampanye?"
+                                  data-nama="<?= esc($k['nama_kampanye'], 'attr') ?>"
+                                  data-teks="<?= esc('Kampanye {nama} akan dihapus' . ($k['status'] === 'sedang_dikirim' ? ' meskipun sedang dalam proses pengiriman' : '') . '. Tindakan ini tidak dapat dibatalkan.', 'attr') ?>"
+                                  data-ya="Ya, Hapus!" data-loading="Menghapus kampanye...">
                                 <?= csrf_field() ?>
                                 <button type="submit" class="btn btn-danger btn-xs" title="Hapus"><i class="fa fa-trash"></i></button>
                             </form>
@@ -178,6 +170,14 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+    $flashSwal = [
+        'success' => session()->getFlashdata('success'),
+        'error'   => session()->getFlashdata('error'),
+        'errors'  => (array) session()->getFlashdata('errors'),
+    ];
+?>
+<?= $this->include('layouts/swal_helper') ?>
 <script>
 (function () {
 'use strict';
@@ -255,6 +255,7 @@ async function inisialisasiTabel() {
 }
 
 function mulai() {
+    AppSwal.flash(<?= json_encode($flashSwal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>);
     inisialisasiTabel().catch(function (e) { console.error('[Kampanye] DataTables gagal:', e); });
     mulaiPolling();
 }
@@ -280,14 +281,20 @@ function mulaiPolling() {
     async function cekTerjadwal() {
         if (sedangCek) return;
         sedangCek = true;
+        let tutupToast = null;
         try {
             const data = await post('<?= base_url('kirim-email/proses-terjadwal') ?>');
             if (data.success && data.ids && data.ids.length > 0) {
+                tutupToast = AppSwal.progressToast('Mengirim ' + data.ids.length + ' kampanye terjadwal...');
                 for (const id of data.ids) await prosesKampanye(id);
-                setTimeout(() => location.reload(), 1500);
+                tutupToast();
+                tutupToast = null;
+                await AppSwal.toast('success', 'Kampanye terjadwal selesai diproses', 1800);
+                location.reload();
             }
         } catch (e) {
             console.warn('[Auto-Kirim] gagal cek terjadwal:', e);
+            if (tutupToast) { tutupToast(); AppSwal.toast('error', 'Pengiriman terjadwal terhenti. Muat ulang halaman.', 5000); }
         } finally {
             sedangCek = false;
         }
@@ -297,7 +304,8 @@ function mulaiPolling() {
         while (true) {
             try {
                 const data = await post('<?= base_url('kirim-email/proses') ?>/' + id);
-                if (!data.success || data.selesai) break;
+                // berhenti juga saat batas harian tercapai (sebelumnya loop tidak pernah berhenti)
+                if (!data.success || data.selesai || data.batas_harian) break;
                 await new Promise(r => setTimeout(r, data.tunggu_detik > 0 ? (data.tunggu_detik + 1) * 1000 : ((data.batch || []).length ? 300 : 2000)));
             } catch (e) {
                 console.warn('[Auto-Kirim] proses error:', e);

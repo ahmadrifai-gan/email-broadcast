@@ -40,18 +40,7 @@
     }
 ?>
 
-<?php if (session()->getFlashdata('success')): ?>
-    <div class="alert alert-success alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-check"></i> <?= esc(session()->getFlashdata('success')) ?>
-    </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-ban"></i> <?= esc(session()->getFlashdata('error')) ?>
-    </div>
-<?php endif; ?>
+<?php /* Flash message ditampilkan lewat SweetAlert2 (lihat section scripts) */ ?>
 
 <!-- Ringkasan -->
 <div class="row">
@@ -202,7 +191,11 @@
                     <?php endif; ?>
 
                     <?php if (in_array($status, ['terjadwal', 'sedang_dikirim'], true)): ?>
-                        <form action="<?= base_url('kirim-email/jeda/' . $kampanye['id']) ?>" method="post" style="display:inline;">
+                        <form action="<?= base_url('kirim-email/jeda/' . $kampanye['id']) ?>" method="post" style="display:inline;"
+                              data-swal-konfirmasi data-ikon="question"
+                              data-judul="Jeda kampanye?"
+                              data-teks="Pengiriman dihentikan sementara dan bisa dilanjutkan kapan saja."
+                              data-ya="Ya, jeda" data-loading="Menjeda kampanye...">
                             <?= csrf_field() ?>
                             <button type="submit" class="btn btn-default"><i class="fa fa-pause"></i> Jeda</button>
                         </form>
@@ -215,7 +208,11 @@
                     <?php endif; ?>
                     <?php if (in_array($status, ['terjadwal', 'sedang_dikirim', 'dijeda'], true)): ?>
                         <form action="<?= base_url('kirim-email/batal/' . $kampanye['id']) ?>" method="post" style="display:inline;"
-                              onsubmit="return confirm('Batalkan kampanye? Sisa jadwal tidak akan dikirim.')">
+                              data-swal-konfirmasi data-ikon="warning" data-bahaya="1"
+                              data-judul="Batalkan kampanye?"
+                              data-nama="<?= esc($kampanye['nama_kampanye'], 'attr') ?>"
+                              data-teks="Kampanye {nama} akan dibatalkan. Sisa jadwal dan penerima yang belum menerima email tidak akan dikirim."
+                              data-ya="Ya, batalkan" data-batal="Kembali" data-loading="Membatalkan kampanye...">
                             <?= csrf_field() ?>
                             <button type="submit" class="btn btn-danger"><i class="fa fa-ban"></i> Batalkan</button>
                         </form>
@@ -304,7 +301,12 @@
                         <td class="small text-muted"><?= esc(mb_substr($p['pesan_kesalahan'] ?? '-', 0, 100)) ?></td>
                         <td>
                             <?php if ($p['status_pengiriman'] === 'gagal' && $status === 'selesai'): ?>
-                                <form action="<?= base_url('kirim-email/kirim-ulang/' . $p['id']) ?>" method="post" style="display:inline;">
+                                <form action="<?= base_url('kirim-email/kirim-ulang/' . $p['id']) ?>" method="post" style="display:inline;"
+                                      data-swal-konfirmasi data-ikon="question"
+                                      data-judul="Kirim ulang email?"
+                                      data-nama="<?= esc($p['alamat_email_penerima'] ?? '', 'attr') ?>"
+                                      data-teks="Email ke {nama} akan dikirim ulang."
+                                      data-ya="Ya, kirim ulang" data-loading="Menyiapkan pengiriman ulang...">
                                     <?= csrf_field() ?>
                                     <button type="submit" class="btn btn-warning btn-xs"><i class="fa fa-refresh"></i> Kirim Ulang</button>
                                 </form>
@@ -320,11 +322,20 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+    $flashSwal = [
+        'success' => session()->getFlashdata('success'),
+        'error'   => session()->getFlashdata('error'),
+        'errors'  => (array) session()->getFlashdata('errors'),
+    ];
+?>
+<?= $this->include('layouts/swal_helper') ?>
 <script>
 (function () {
 'use strict';
 
 function mulai() {
+    AppSwal.flash(<?= json_encode($flashSwal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>);
     const URL_PROSES  = '<?= base_url('kirim-email/proses/' . $kampanye['id']) ?>';
     const URL_JADWAL  = '<?= base_url('kirim-email/proses-terjadwal') ?>';
     const ID          = <?= (int) $kampanye['id'] ?>;
@@ -374,6 +385,7 @@ function mulai() {
     // Kuota email/menit habis -> tunggu menit berikutnya dengan hitung mundur di tombol
     async function tungguKuota(detik) {
         log('⏳ Batas email per menit tercapai. Menunggu menit berikutnya (± ' + detik + ' detik)...', '#f0ad4e');
+        AppSwal.toast('warning', 'Batas email per menit tercapai. Menunggu menit berikutnya...', 4500);
         for (let s = detik + 1; s > 0; s--) {
             setBtn(true, '<i class="fa fa-hourglass-half"></i> Menunggu kuota menit berikutnya (' + s + ' dtk)');
             await sleep(1000);
@@ -386,6 +398,7 @@ function mulai() {
         sedangJalan = true;
         setBtn(true, '<i class="fa fa-spinner fa-spin"></i> Mengirim...');
         setStatus('sedang_dikirim', 'label-warning');
+        AppSwal.toast('info', 'Pengiriman dimulai', 2200);
 
         let pertama = true;
         while (true) {
@@ -396,11 +409,13 @@ function mulai() {
                 pertama = false;
             } catch (e) {
                 log('Error jaringan / token: ' + e.message + ' (muat ulang halaman)', '#ff6b6b');
+                AppSwal.info({ ikon: 'error', judul: 'Koneksi terputus', teks: 'Pengiriman terhenti karena gangguan jaringan atau token kedaluwarsa. Muat ulang halaman lalu klik "Lanjutkan Kirim".', tombol: 'Mengerti' });
                 break;
             }
 
             if (!data.success) {
                 log('ERROR: ' + data.message, '#ff6b6b');
+                AppSwal.info({ ikon: 'error', judul: 'Pengiriman terhenti', teks: data.message || 'Terjadi kesalahan pada server.', tombol: 'Mengerti' });
                 break;
             }
 
@@ -419,6 +434,7 @@ function mulai() {
 
             if (data.batas_harian) {
                 log('⚠ Batas kirim harian (EMAIL_DAILY_LIMIT) tercapai. Sisa akan dilanjutkan otomatis oleh cron bila jatah sudah tersedia.', '#f0ad4e');
+                AppSwal.info({ ikon: 'warning', judul: 'Batas kirim harian tercapai', teks: 'Sisa penerima akan dilanjutkan otomatis bila jatah harian sudah tersedia.', tombol: 'Mengerti' });
                 break;
             }
 
@@ -432,7 +448,20 @@ function mulai() {
                     setBtn(true, '<i class="fa fa-check"></i> Selesai');
                     log('— SELESAI —', '#5bc0de');
                 }
-                setTimeout(() => { location.href = location.pathname; }, 1800);
+                const nBerhasil = parseInt(el('berhasilText').textContent, 10) || 0;
+                const nGagal    = parseInt(el('gagalText').textContent, 10) || 0;
+                const judulSelesai = (data.status === 'terjadwal')
+                    ? 'Pengiriman ' + data.putaran + '/' + data.total_putaran + ' selesai'
+                    : 'Pengiriman selesai';
+                let htmlSelesai = '<table class="swal-ringkasan">' +
+                    '<tr><th>Berhasil</th><td style="color:#00a65a;font-weight:700;">' + nBerhasil + ' email</td></tr>' +
+                    '<tr><th>Gagal</th><td style="color:' + (nGagal > 0 ? '#dd4b39' : '#667085') + ';font-weight:700;">' + nGagal + ' email</td></tr>';
+                if (data.status === 'terjadwal' && data.berikutnya) {
+                    htmlSelesai += '<tr><th>Berikutnya</th><td>' + AppSwal.esc(data.berikutnya) + '</td></tr>';
+                }
+                htmlSelesai += '</table>';
+                await AppSwal.info({ ikon: nGagal > 0 ? 'warning' : 'success', judul: judulSelesai, html: htmlSelesai, tombol: 'Lihat Hasil', timer: 4000 });
+                location.href = location.pathname;
                 return;
             }
 
@@ -461,7 +490,27 @@ function mulai() {
         }
     }
 
-    if (btn) btn.addEventListener('click', mulaiKirim);
+    // Klik tombol kirim -> minta konfirmasi dulu (mode AUTO dari halaman sebelumnya tidak perlu konfirmasi)
+    async function klikKirim() {
+        if (sedangJalan) return;
+        const sisa = parseInt(el('sisaText').textContent, 10) || 0;
+        let judul = 'Mulai kirim sekarang?', ikon = 'question', ya = 'Ya, kirim';
+        let html  = 'Email akan dikirim ke <b>' + sisa + '</b> penerima yang belum menerima. Jangan tutup halaman ini selama proses berjalan.';
+
+        if (STATUS_AWAL === 'terjadwal') {
+            judul = 'Lewati jadwal & kirim sekarang?';
+            ikon  = 'warning';
+            html  = 'Kampanye ini terjadwal. Jika dilanjutkan, email dikirim <b>sekarang</b> ke <b>' + sisa + '</b> penerima tanpa menunggu jadwal.';
+        } else if (STATUS_AWAL === 'sedang_dikirim') {
+            judul = 'Lanjutkan pengiriman?';
+            ya    = 'Ya, lanjutkan';
+            html  = 'Pengiriman dilanjutkan ke <b>' + sisa + '</b> penerima yang tersisa.';
+        }
+        const ok = await AppSwal.konfirmasi({ judul: judul, html: html, ikon: ikon, ya: ya });
+        if (ok) mulaiKirim();
+    }
+
+    if (btn) btn.addEventListener('click', klikKirim);
 
     // Dari form "Kirim langsung" / "Kirim ulang" -> mulai otomatis
     if (AUTO && btn && ['draf', 'terjadwal', 'sedang_dikirim'].includes(STATUS_AWAL)) {

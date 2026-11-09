@@ -99,6 +99,9 @@ class KirimEmailController extends BaseController
             'subjek'      => $t['subjek_email'],
             'html'        => $t['isi_html'],
             'teks'        => $t['isi_teks'] ?? '',
+            // ▼▼ PDF ▼▼ dibutuhkan preview "Contoh Isi Email"
+            'attachment_pdf_url' => $t['attachment_pdf_url'] ?? '',
+            'tipe_pdf'           => $t['tipe_pdf'] ?? '',
         ], $templates);
 
         $kontak = $this->kontakModel
@@ -106,6 +109,38 @@ class KirimEmailController extends BaseController
             ->where('email !=', '')
             ->orderBy('nama_perusahaan', 'ASC')
             ->findAll();
+
+        // ▼▼ KATEGORI KONTAK ▼▼ untuk filter/pengelompokan di modal "Pilih Penerima"
+        //    Jumlah dihitung dari kontak yang tampil di modal (punya email).
+        $kategoriKontak     = [];
+        $jumlahTanpaKategori = 0;
+        try {
+            $semuaKategori = db_connect()->table('kategori')->orderBy('nama', 'ASC')->get()->getResultArray();
+        } catch (\Throwable $e) {
+            log_message('warning', '[Kampanye] Gagal ambil kategori kontak: ' . $e->getMessage());
+            $semuaKategori = [];
+        }
+
+        $hitungPerKategori = [];
+        foreach ($kontak as $k) {
+            $kid = (int) ($k['kategori_id'] ?? 0);
+            $hitungPerKategori[$kid] = ($hitungPerKategori[$kid] ?? 0) + 1;
+        }
+        foreach ($semuaKategori as $kat) {
+            $kid = (int) $kat['id'];
+            $kategoriKontak[] = [
+                'id'     => $kid,
+                'nama'   => $kat['nama'],
+                'jumlah' => $hitungPerKategori[$kid] ?? 0,
+            ];
+        }
+        // kontak yang kategori_id-nya kosong / kategorinya sudah dihapus
+        $idKategoriAda = array_column($kategoriKontak, 'id');
+        foreach ($hitungPerKategori as $kid => $jml) {
+            if ($kid === 0 || !in_array($kid, $idKategoriAda, true)) {
+                $jumlahTanpaKategori += $jml;
+            }
+        }
 
         // ▼▼ SMTP ▼▼ daftar SMTP untuk dropdown (aktif dulu, lalu urut nama)
         $smtpList = $this->smtpModel
@@ -117,6 +152,8 @@ class KirimEmailController extends BaseController
             'kategori'       => $kategori,
             'templateJs'     => $templateJs,
             'kontak'         => $kontak,
+            'kategoriKontak' => $kategoriKontak,          // ▼▼ KATEGORI KONTAK ▼▼
+            'tanpaKategori'  => $jumlahTanpaKategori,     // ▼▼ KATEGORI KONTAK ▼▼
             'smtpList'       => $smtpList,               // ▼▼ SMTP ▼▼
             'minGap'         => $this->minGapMenit(),
             'maksPengiriman' => self::MAKS_PENGIRIMAN,
@@ -269,7 +306,9 @@ class KirimEmailController extends BaseController
                     'kontak_email_id'       => $k['id'],
                     'jadwal_kampanye_id'    => $idPutaran[$assign[(int) $k['id']]] ?? null,
                     'alamat_email_penerima' => $k['email'],
-                    'nama_penerima'         => $k['nama_perusahaan'],
+                    // ✅ FIX #1: simpan NAMA ORANG, bukan nama perusahaan.
+                    //    Fallback ke nama_perusahaan / email hanya jika nama kosong.
+                    'nama_penerima'         => $k['nama'] ?? $k['nama_perusahaan'] ?? $k['email'],
                     'status_pengiriman'     => 'menunggu',
                     'jumlah_percobaan'      => 0,
                 ];
@@ -888,7 +927,7 @@ class KirimEmailController extends BaseController
         $kontakMap = [];
         if (! empty($kontakIds)) {
             foreach ($this->kontakModel->whereIn('id', $kontakIds)->findAll() as $k) {
-                $kontakMap[$k['id']] = $k;
+                $kontakMap[(int) $k['id']] = $k;
             }
         }
 
@@ -902,10 +941,26 @@ class KirimEmailController extends BaseController
                 continue;
             }
 
-            $kontak       = $kontakMap[$p['kontak_email_id']] ?? [];
+            // ✅ FIX #2: kirim SEMUA field yang dibutuhkan EmailSender, bukan hanya nama_perusahaan.
+            //    Sebelumnya hanya 'nama_perusahaan' & 'domisili' yang diisi, sehingga:
+            //      - {nama} kosong (fallback ke nama_perusahaan di EmailSender lama)
+            //      - {nama_perusahaan} kosong karena key yang dipakai EmailSender = 'nama_perusahaan'
+            //        padahal kontak sudah punya kolom itu
+            //      - {no_hp}, {email}, {kota} tidak pernah terkirim
+            //    Sekarang semua field dipetakan dengan jelas dari kontak_email.
+            $kontak = $kontakMap[(int) ($p['kontak_email_id'] ?? 0)] ?? [];
+
             $penerimaData = array_merge($p, [
-                'nama_perusahaan' => $kontak['nama_perusahaan'] ?? ($p['nama_penerima'] ?? ''),
-                'domisili'        => $kontak['domisili'] ?? '',
+                // Nama orang (kontak_email.nama). Fallback ke nama_penerima (legacy).
+                'nama'            => $kontak['nama']            ?? ($p['nama_penerima'] ?? ''),
+                // Nama perusahaan dari kontak
+                'nama_perusahaan' => $kontak['nama_perusahaan'] ?? '',
+                // Nomor HP
+                'no_hp'           => $kontak['no_hp']           ?? '',
+                // Email (fallback ke kolom alamat_email_penerima di penerima_kampanye)
+                'email'           => $kontak['email']           ?? ($p['alamat_email_penerima'] ?? ''),
+                // Domisili berasal dari kolom kontak_email.kota_kabupaten
+                'domisili'        => $kontak['kota_kabupaten']  ?? ($kontak['domisili'] ?? ''),
             ]);
 
             // ▼▼ SMTP ▼▼ kirim dengan config SMTP yang sudah di-resolve

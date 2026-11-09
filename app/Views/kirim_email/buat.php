@@ -85,6 +85,7 @@
     }
     .penerima-empty .fa { font-size: 34px; display: block; margin-bottom: 10px; color: #bdc7d2; }
     .penerima-name { font-weight: 600; color: #344054; }
+    .penerima-company { color: #475467; font-size: 12px; }
     .penerima-email { color: #667085; font-size: 12px; overflow-wrap: anywhere; }
     .btn-hapus-penerima { padding: 4px 8px; border-radius: 4px; }
 
@@ -165,6 +166,148 @@
         font-size: 12px; color: #8a96a3; font-weight: normal; margin-left: 8px;
     }
 
+    /* ====== PREVIEW ENHANCED ====== */
+    .preview-info-strip {
+        background: linear-gradient(135deg, #f8fafc 0%, #f2f7fb 100%);
+        border: 1px solid #d9e6f2;
+        border-radius: 8px;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        font-size: 13px;
+    }
+    .preview-info-strip .pi-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 20px;
+    }
+    @media (max-width: 767px) {
+        .preview-info-strip .pi-grid { grid-template-columns: 1fr; }
+    }
+    .preview-info-strip .pi-label {
+        color: #667085;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 3px;
+    }
+    .preview-info-strip .pi-value {
+        color: #2c3e50;
+        font-weight: 500;
+        word-break: break-word;
+        line-height: 1.45;
+    }
+    .preview-info-strip .pi-value .pi-email {
+        color: #667085; font-weight: 400; font-size: 12px;
+    }
+    .preview-attachment {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+        padding: 11px 14px;
+        background: #fff9e6;
+        border: 1px solid #ffe082;
+        border-left: 4px solid #f39c12;
+        border-radius: 6px;
+        font-size: 13px;
+        flex-wrap: wrap;
+    }
+    .preview-attachment.inline {
+        background: #e8f5e9;
+        border-color: #a5d6a7;
+        border-left-color: #27ae60;
+    }
+    .preview-attachment .pa-icon {
+        font-size: 22px;
+        color: #f39c12;
+        flex: 0 0 auto;
+    }
+    .preview-attachment.inline .pa-icon { color: #27ae60; }
+    .preview-attachment .pa-body { flex: 1; min-width: 180px; }
+    .preview-attachment .pa-title {
+        font-weight: 600;
+        color: #344054;
+        margin-bottom: 2px;
+    }
+    .preview-attachment .pa-file {
+        color: #667085;
+        font-size: 12px;
+        font-family: Consolas, Menlo, monospace;
+        word-break: break-all;
+    }
+    .preview-attachment .pa-actions {
+        display: flex;
+        gap: 6px;
+        flex: 0 0 auto;
+    }
+    .preview-attachment .pa-actions .btn { font-size: 12px; }
+    /* ====== KATEGORI KONTAK (modal pilih penerima) ====== */
+    .kt-toolbar {
+        display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+        margin-bottom: 10px; padding: 10px 12px;
+        background: #f8fafc; border: 1px solid #e8edf2; border-radius: 6px;
+    }
+    .kt-toolbar .kt-label { font-size: 12px; font-weight: 600; color: #667085; margin-right: 2px; }
+    .kt-toolbar select { width: auto; min-width: 220px; max-width: 100%; }
+    .kt-toolbar .kt-spacer { flex: 1 1 auto; }
+    #tableKontakModal tr.kt-group-row > td {
+        background: #eef4fa !important; border-top: 2px solid #c9dbee !important;
+        font-size: 13px; padding: 8px 10px !important; cursor: default;
+    }
+    #tableKontakModal tr.kt-group-row .check-group { width: 15px; height: 15px; cursor: pointer; margin-right: 8px; vertical-align: middle; }
+    #tableKontakModal tr.kt-group-row .kt-group-sel { margin-left: 8px; color: #667085; font-size: 12px; }
+    #tableKontakModal tr.kt-group-row .kt-group-lihat { margin-left: 10px; font-size: 12px; cursor: pointer; }
+    .kt-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 11px; background: #e7f4fc; color: #2b6a94; border: 1px solid #c4e0f2; }
+    .kt-badge.none { background: #f2f4f7; color: #667085; border-color: #e0e4ea; }
+
+    .preview-attachment.link {
+        background: #e8f1fb;
+        border-color: #b9d4f1;
+        border-left-color: #3c8dbc;
+    }
+    .preview-attachment.link .pa-icon { color: #3c8dbc; }
+    .preview-attachment .pa-note {
+        display: block;
+        margin-top: 3px;
+        font-size: 11px;
+        color: #667085;
+    }
+    .pdf-viewer-wrap { margin-top: 10px; }
+    .pdf-viewer-wrap iframe,
+    .pdf-viewer-wrap embed {
+        width: 100%;
+        height: 520px;
+        border: 1px solid #d9e0e7;
+        border-radius: 6px;
+        background: #f5f6f8;
+    }
+
+    #previewHtml {
+        width: 100%;
+        height: 480px;
+        border: 1px solid #d9e0e7;
+        border-radius: 6px;
+        background: #fff;
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.02);
+    }
+    #previewTeks {
+        font-family: Consolas, Menlo, monospace;
+        font-size: 13px;
+        line-height: 1.55;
+        background: #fbfcfd;
+        border: 1px solid #d9e0e7;
+    }
+    .preview-empty {
+        text-align: center;
+        color: #8a96a3;
+        padding: 40px 20px;
+        border: 2px dashed #e5eaf0;
+        border-radius: 8px;
+        background: #fafbfc;
+    }
+    .preview-empty .fa { font-size: 40px; display: block; margin-bottom: 12px; color: #bdc7d2; }
+
     /* ====== OPSI CARD dalam modal jadwal ====== */
     .opsi-card {
         display: block; margin: 0 0 10px; padding: 12px 14px;
@@ -182,7 +325,6 @@
     #modalJadwal .modal-dialog { width: 1100px; max-width: 96%; }
     #modalJadwal .modal-body { padding: 20px 22px; }
 
-    /* Step header */
     .mj-step-head {
         display: flex; align-items: flex-start; gap: 14px;
         padding: 16px 18px; margin-bottom: 16px;
@@ -199,7 +341,6 @@
     .mj-step-head .mj-step-text h4 { margin: 0 0 4px; font-weight: 600; font-size: 15px; color: #2c3e50; }
     .mj-step-head .mj-step-text p { margin: 0; color: #667085; font-size: 13px; line-height: 1.5; }
 
-    /* Panel per-step */
     .mj-panel {
         border: 1px solid #e5eaf0; border-radius: 8px;
         margin-bottom: 14px; background: #fff; overflow: hidden;
@@ -217,7 +358,6 @@
     .mj-panel-head h5 { margin: 0; font-weight: 600; font-size: 14px; color: #2c3e50; }
     .mj-panel-body { padding: 16px; }
 
-    /* Radio pill (atur sendiri / acak) */
     .mj-pill-group { display: flex; gap: 8px; margin-bottom: 14px; }
     .mj-pill {
         flex: 1; margin: 0; cursor: pointer; position: relative;
@@ -234,7 +374,6 @@
     .mj-pill.selected .fa { color: #3c8dbc; }
     .mj-pill .fa { color: #bdc7d2; }
 
-    /* Input fields di modal */
     .mj-field { margin-bottom: 10px; }
     .mj-field:last-child { margin-bottom: 0; }
     .mj-field label {
@@ -253,7 +392,6 @@
     }
     .mj-help .fa { color: #3c8dbc; margin-right: 4px; }
 
-    /* Action bar */
     .mj-actions {
         display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;
         padding: 12px 14px; background: #f8fafc;
@@ -261,7 +399,6 @@
     }
     .mj-actions .btn { font-weight: 600; font-size: 13px; }
 
-    /* Plan table */
     .mj-plan-wrap {
         border: 1px solid #e5eaf0; border-radius: 8px; overflow: hidden;
     }
@@ -295,17 +432,14 @@
     .mj-plan-wrap .pick-item.dipakai { color: #aaa; cursor: not-allowed; }
     .mj-plan-wrap .pick-cari { margin-bottom: 4px; }
 
-    /* Ringkasan plan */
     #planRingkas { margin-bottom: 14px; }
     #planRingkas .callout { border-radius: 8px; margin-bottom: 0 !important; }
     #planRingkas .callout p { margin: 0 0 4px; }
     #planRingkas .callout p:last-child { margin-bottom: 0; }
 
-    /* ====== KECEPATAN ====== */
     .kc-card { min-height: 96px; }
     .kc-card .mode-text strong { font-size: 15px; }
 
-    /* ====== RESPONSIVE ====== */
     @media (max-width: 767px) {
         .mode-card { min-height: auto; padding: 14px; }
         .mode-icon { width: 44px; height: 44px; flex: 0 0 44px; font-size: 20px; }
@@ -319,27 +453,12 @@
 
 <?= $this->section('content') ?>
 
-<?php if (session()->getFlashdata('error')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-ban"></i> <?= esc(session()->getFlashdata('error')) ?>
-    </div>
-<?php endif; ?>
-<?php if (session()->getFlashdata('errors')): ?>
-    <div class="alert alert-danger alert-dismissible">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="icon fa fa-ban"></i>
-        <?php foreach ((array) session()->getFlashdata('errors') as $e): ?>
-            <div><?= esc($e) ?></div>
-        <?php endforeach; ?>
-    </div>
-<?php endif; ?>
+<?php /* Flash message & error validasi ditampilkan lewat SweetAlert2 (lihat section scripts) */ ?>
 
 <form action="<?= base_url('kirim-email/simpan') ?>" method="post" id="formKampanye">
     <?= csrf_field() ?>
 
     <div class="row">
-        <!-- ============ KARTU 1: PENGATURAN ============ -->
         <div class="col-lg-6">
             <div class="box box-primary">
                 <div class="box-header with-border">
@@ -371,7 +490,6 @@
                         </div>
                     </div>
 
-                    <?php /* ▼▼ SMTP ▼▼ Pilih SMTP pengirim untuk kampanye ini */ ?>
                     <div class="form-group">
                         <label for="smtp_setting_id">3. SMTP Pengirim</label>
                         <div class="input-group">
@@ -391,7 +509,6 @@
                             Kosongkan untuk memakai SMTP yang aktif. Pilih satu untuk menimpa SMTP default pada kampanye ini.
                         </p>
                     </div>
-                    <?php /* ▲▲ SMTP ▲▲ */ ?>
 
                     <div class="form-group">
                         <label>Nama Kampanye</label>
@@ -415,7 +532,6 @@
             </div>
         </div>
 
-        <!-- ============ KARTU 2: PENERIMA ============ -->
         <div class="col-lg-6">
             <div class="box box-success">
                 <div class="box-header with-border">
@@ -446,7 +562,6 @@
         </div>
     </div>
 
-    <!-- ============ KARTU 3: PREVIEW (COLLAPSIBLE, DEFAULT TERTUTUP) ============ -->
     <div class="box box-info box-collapsible collapsed" id="boxPreview">
         <div class="box-header with-border" id="boxPreviewHeader">
             <h3 class="box-title">
@@ -462,20 +577,29 @@
             <span class="toggle-icon"><i class="fa fa-chevron-down"></i></span>
         </div>
         <div class="box-body">
-            <textarea id="previewTeks" class="form-control" rows="14" readonly
-                      placeholder="Pilih kategori & template untuk melihat contoh isi email..."
-                      style="background:#f8f9fa; font-family: Consolas, monospace; font-size:13px;"></textarea>
-            <iframe id="previewHtml" sandbox class="hidden"
-                    style="width:100%;height:380px;border:1px solid #ddd;border-radius:3px;background:#fff;"></iframe>
+            <div id="previewEmpty" class="preview-empty">
+                <i class="fa fa-envelope-o"></i>
+                Pilih kategori &amp; template untuk melihat contoh isi email.
+                <div><small>Tautan, gambar, dan lampiran PDF akan ditampilkan di sini.</small></div>
+            </div>
+
+            <div id="previewBody" class="hidden">
+                <div class="preview-info-strip" id="previewInfoStrip"></div>
+                <textarea id="previewTeks" class="form-control" rows="14" readonly
+                          placeholder="Pilih kategori & template untuk melihat contoh isi email..."></textarea>
+                <iframe id="previewHtml"
+                        sandbox="allow-popups allow-popups-to-escape-sandbox"
+                        class="hidden"></iframe>
+            </div>
         </div>
         <div class="box-footer text-muted small">
             <i class="fa fa-info-circle"></i>
-            Placeholder <code>{nama}</code>, <code>{perusahaan}</code>, <code>{email}</code>, <code>{domisili}</code>
+            Placeholder <code>{nama}</code>, <code>{nama_perusahaan}</code>, <code>{no_hp}</code>,
+            <code>{email}</code>, <code>{domisili}</code>
             diganti dengan data penerima pertama yang dipilih. Isi ini hanya untuk dibaca (read-only).
         </div>
     </div>
 
-    <!-- ============ KARTU 4: WAKTU & POLA PENGIRIMAN ============ -->
     <?php $modeLama = old('mode_kirim') ?: 'sekarang'; ?>
     <div class="box box-warning">
         <div class="box-header with-border">
@@ -526,7 +650,6 @@
         </div>
     </div>
 
-    <!-- ============ KARTU 5: KECEPATAN PENGIRIMAN ============ -->
     <div class="box box-danger hidden" id="kartuKecepatan">
         <div class="box-header with-border">
             <h3 class="box-title"><i class="fa fa-tachometer"></i> 6. Kecepatan Pengiriman <small>— penerima banyak</small></h3>
@@ -620,7 +743,6 @@
         </div>
     </div>
 
-    <!-- ============ TOMBOL SIMPAN ============ -->
     <div class="box box-solid">
         <div class="box-body">
             <a href="<?= base_url('kirim-email') ?>" class="btn btn-default btn-lg"><i class="fa fa-arrow-left"></i> Batal</a>
@@ -632,7 +754,6 @@
 
 </form>
 
-<!-- ============ MODAL ATUR JADWAL (REDESIGN) ============ -->
 <div class="modal fade" id="modalJadwal" tabindex="-1" role="dialog" aria-labelledby="judulModalJadwal">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -643,7 +764,6 @@
             <div class="modal-body">
                 <div id="mjError" class="alert alert-danger hidden"></div>
 
-                <!-- STEP HEADER: penjelasan singkat -->
                 <div class="mj-step-head" id="mjStepHead">
                     <div class="mj-step-icon"><i class="fa fa-cogs"></i></div>
                     <div class="mj-step-text">
@@ -652,7 +772,6 @@
                     </div>
                 </div>
 
-                <!-- Waktu pengiriman pertama (mode terjadwal) -->
                 <div id="mjBoxMulai" class="hidden">
                     <div class="mj-panel">
                         <div class="mj-panel-head">
@@ -664,7 +783,7 @@
                                 <div class="col-sm-6">
                                     <div class="mj-field">
                                         <label><i class="fa fa-calendar"></i> Tanggal &amp; Jam</label>
-                                        <input type="text" class="hidden"><!-- penahan autofill -->
+                                        <input type="text" class="hidden">
                                         <input type="datetime-local" id="mj_mulai" class="form-control input-lg">
                                     </div>
                                 </div>
@@ -680,7 +799,6 @@
                     </div>
                 </div>
 
-                <!-- Rencana pembagian (mode berulang) -->
                 <div id="mjBoxRencana" class="hidden">
                     <div class="callout callout-info" style="margin-bottom:16px; border-radius:8px;">
                         <h4 style="margin-top:0;"><i class="fa fa-info-circle"></i> Cara Kerja Pembagian</h4>
@@ -694,7 +812,6 @@
                     </div>
 
                     <div class="row">
-                        <!-- Step 1: Total pengiriman -->
                         <div class="col-md-4">
                             <div class="mj-panel">
                                 <div class="mj-panel-head">
@@ -738,7 +855,6 @@
                             </div>
                         </div>
 
-                        <!-- Step 2: Akun per pengiriman -->
                         <div class="col-md-4">
                             <div class="mj-panel">
                                 <div class="mj-panel-head">
@@ -783,7 +899,6 @@
                             </div>
                         </div>
 
-                        <!-- Step 3: Jarak waktu -->
                         <div class="col-md-4">
                             <div class="mj-panel">
                                 <div class="mj-panel-head">
@@ -876,7 +991,6 @@
     </div>
 </div>
 
-<!-- ============ MODAL PILIH KONTAK ============ -->
 <div class="modal fade" id="modalKontak" tabindex="-1" role="dialog" aria-labelledby="modalKontakLabel">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -893,13 +1007,49 @@
                     <div class="input-group">
                         <span class="input-group-addon"><i class="fa fa-search"></i></span>
                         <input type="text" id="searchKontakModal" class="form-control" autocomplete="off"
-                               placeholder="Cari nama / email / domisili...">
+                               placeholder="Cari nama / perusahaan / email / domisili...">
                         <span class="input-group-btn">
                             <button type="button" class="btn btn-default" id="btnResetSearch" title="Bersihkan pencarian">
                                 <i class="fa fa-times"></i>
                             </button>
                         </span>
                     </div>
+                </div>
+
+                <?php
+                    $katNama = [];
+                    foreach (($kategoriKontak ?? []) as $kt) { $katNama[(int) $kt['id']] = $kt['nama']; }
+                    $totalKontak = !empty($kontak) ? count($kontak) : 0;
+                ?>
+                <div class="kt-toolbar">
+                    <span class="kt-label"><i class="fa fa-eye"></i> Tampilan:</span>
+                    <div class="btn-group btn-group-sm" id="ktViewMode">
+                        <button type="button" class="btn btn-default active" data-mode="semua" title="Semua kontak dalam satu daftar, tanpa pengelompokan">
+                            <i class="fa fa-list"></i> Semua Kontak
+                        </button>
+                        <button type="button" class="btn btn-default" data-mode="kategori" title="Kontak dikelompokkan per kategori">
+                            <i class="fa fa-folder-open"></i> Per Kategori
+                        </button>
+                    </div>
+
+                    <span class="kt-label" style="margin-left:6px;"><i class="fa fa-filter"></i> Kategori:</span>
+                    <select id="ktFilterKategori" class="form-control input-sm">
+                        <option value="">Semua kategori (<?= (int) $totalKontak ?>)</option>
+                        <?php foreach (($kategoriKontak ?? []) as $kt): ?>
+                            <option value="<?= (int) $kt['id'] ?>"><?= esc($kt['nama']) ?> (<?= (int) $kt['jumlah'] ?>)</option>
+                        <?php endforeach; ?>
+                        <?php if (!empty($tanpaKategori)): ?>
+                            <option value="0">Tanpa kategori (<?= (int) $tanpaKategori ?>)</option>
+                        <?php endif; ?>
+                    </select>
+
+                    <span class="kt-spacer"></span>
+                    <button type="button" class="btn btn-info btn-sm" id="btnPilihSemuaTampil" title="Pilih semua kontak yang sedang tampil (sesuai kategori &amp; pencarian)">
+                        <i class="fa fa-check-square-o"></i> Pilih Semua yang Tampil <span id="ktJumlahTampil"></span>
+                    </button>
+                    <button type="button" class="btn btn-default btn-sm" id="btnKosongkanPilihan">
+                        <i class="fa fa-square-o"></i> Kosongkan
+                    </button>
                 </div>
 
                 <div class="table-responsive" style="max-height: 430px; overflow-y: auto;">
@@ -909,24 +1059,43 @@
                                 <th width="40" class="text-center">
                                     <input type="checkbox" id="checkAllModal" title="Pilih semua yang tampil">
                                 </th>
+                                <th>Nama</th>
                                 <th>Nama Perusahaan</th>
                                 <th>Email</th>
                                 <th>Domisili</th>
+                                <th>Kategori</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php if (!empty($kontak)): foreach ($kontak as $k): ?>
+                                <?php
+                                    $kid      = (int) ($k['kategori_id'] ?? 0);
+                                    $namaKat  = $katNama[$kid] ?? '';
+                                    $kidEfektif = ($namaKat !== '') ? $kid : 0;
+                                ?>
                                 <tr class="kontak-modal-row"
-                                    data-id="<?= $k['id'] ?>"
-                                    data-nama="<?= esc($k['nama_perusahaan'] ?? '') ?>"
-                                    data-email="<?= esc($k['email']) ?>"
-                                    data-domisili="<?= esc($k['domisili'] ?? '') ?>">
+                                    data-id="<?= (int) $k['id'] ?>"
+                                    data-kategori="<?= $kidEfektif ?>"
+                                    data-kategori-nama="<?= esc($namaKat !== '' ? $namaKat : 'Tanpa kategori') ?>"
+                                    data-nama="<?= esc($k['nama'] ?? '') ?>"
+                                    data-nama-perusahaan="<?= esc($k['nama_perusahaan'] ?? '') ?>"
+                                    data-no-hp="<?= esc($k['no_hp'] ?? '') ?>"
+                                    data-email="<?= esc($k['email'] ?? '') ?>"
+                                    data-kota="<?= esc($k['kota_kabupaten'] ?? '') ?>">
                                     <td class="text-center">
-                                        <input type="checkbox" class="check-kontak" value="<?= $k['id'] ?>">
+                                        <input type="checkbox" class="check-kontak" value="<?= (int) $k['id'] ?>">
                                     </td>
+                                    <td><?= esc($k['nama'] ?? '-') ?></td>
                                     <td><?= esc($k['nama_perusahaan'] ?? '-') ?></td>
-                                    <td><?= esc($k['email']) ?></td>
-                                    <td><?= esc($k['domisili'] ?? '-') ?></td>
+                                    <td><?= esc($k['email'] ?? '-') ?></td>
+                                    <td><?= esc($k['kota_kabupaten'] ?? '-') ?></td>
+                                    <td>
+                                        <?php if ($namaKat !== ''): ?>
+                                            <span class="kt-badge"><?= esc($namaKat) ?></span>
+                                        <?php else: ?>
+                                            <span class="kt-badge none">Tanpa kategori</span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endforeach; endif; ?>
                         </tbody>
@@ -935,7 +1104,7 @@
 
                 <div class="text-muted small" style="margin-top:12px; padding:10px 12px; background:#f8fafc; border:1px solid #e8edf2; border-radius:5px;">
                     <i class="fa fa-info-circle"></i>
-                    Klik baris atau checkbox untuk memilih. Pilihan diterapkan saat Anda klik <strong>Tambahkan</strong>.
+                    Klik baris atau checkbox untuk memilih. Gunakan <strong>Per Kategori</strong> atau filter kategori untuk memilih seluruh kontak dalam satu kategori sekaligus. Pilihan diterapkan saat Anda klik <strong>Tambahkan</strong>.
                     <span class="pull-right">Terpilih: <strong id="countModalSelected">0</strong></span>
                 </div>
             </div>
@@ -954,6 +1123,14 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
+<?php
+    $flashSwal = [
+        'success' => session()->getFlashdata('success'),
+        'error'   => session()->getFlashdata('error'),
+        'errors'  => (array) session()->getFlashdata('errors'),
+    ];
+?>
+<?= $this->include('layouts/swal_helper') ?>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap.min.js"></script>
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
@@ -966,37 +1143,40 @@ function mulai() {
 
 const $ = id => document.getElementById(id);
 
+AppSwal.flash(<?= json_encode($flashSwal, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>);
+
 /* ==========================================================
    DATA DARI SERVER
    ========================================================== */
 const TEMPLATES    = <?= json_encode($templateJs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?>;
 const OLD_TEMPLATE = <?= (int) old('template_email_id') ?>;
 const OLD_PENERIMA = <?= json_encode(array_map('strval', (array) old('penerima')), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+const BASE_URL     = '<?= base_url() ?>';
+
+/* Debug: cek field template yang tersedia */
+if (TEMPLATES && TEMPLATES.length) {
+    const sample = TEMPLATES[0];
+    console.log('[TEMPLATES] Field yang tersedia pada template pertama:', Object.keys(sample));
+}
 
 /* ==========================================================
    STATE
    ========================================================== */
-const penerimaMap = new Map();
-let   workingSet  = new Set();
+const penerimaMap   = new Map();
+const kontakDataMap = new Map();
+let   workingSet    = new Set();
 
 /* ==========================================================
    UTIL
    ========================================================== */
 function ganti(teks, s) {
     return (teks || '')
-        .split('{nama}').join(s.nama)
-        .split('{perusahaan}').join(s.nama)
-        .split('{email}').join(s.email)
-        .split('{domisili}').join(s.domisili);
-}
-
-function htmlKeTeks(html) {
-    const dulu = (html || '')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/(p|div|h[1-6]|tr|li|table)>/gi, '\n');
-    const doc = new DOMParser().parseFromString(dulu, 'text/html');
-    doc.querySelectorAll('style,script,head,title').forEach(n => n.remove());
-    return (doc.body.textContent || '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        .split('{nama}').join(s.nama || '')
+        .split('{nama_perusahaan}').join(s.nama_perusahaan || '')
+        .split('{perusahaan}').join(s.nama_perusahaan || '')
+        .split('{no_hp}').join(s.no_hp || '')
+        .split('{email}').join(s.email || '')
+        .split('{domisili}').join(s.domisili || '');
 }
 
 function escapeHtml(s) {
@@ -1006,39 +1186,318 @@ function escapeHtml(s) {
 }
 
 /* ==========================================================
-   PREVIEW (COLLAPSIBLE)
+   NORMALISASI URL PDF (relatif → absolut)
+   ========================================================== */
+function normalizePreviewUrl(url) {
+    url = String(url || '').trim();
+    if (!url) return '';
+    // Sudah absolut atau data URI
+    if (/^(https?:)?\/\//i.test(url) || /^data:/i.test(url) || /^blob:/i.test(url)) return url;
+    // Relatif → prepend BASE_URL
+    const base = BASE_URL.replace(/\/+$/, '');
+    const path = url.replace(/^\/+/, '');
+    return base + '/' + path;
+}
+
+/* ==========================================================
+   DETEKSI FIELD PDF DARI BANYAK VARIAN NAMA
+   ========================================================== */
+function getPdfInfo(t) {
+    if (!t) return { url: '', tipe: '', nama: '', hasData: false };
+
+    // Cari field URL dengan banyak kemungkinan nama
+    const rawUrl = t.attachment_pdf_url
+                || t.pdf_url
+                || t.pdf_path
+                || t.pdf_attachment_url
+                || t.lampiran_pdf
+                || t.attachment
+                || '';
+
+    const url = normalizePreviewUrl(rawUrl);
+
+    // Tipe PDF — normalisasi + default
+    //    Harus sama dengan EmailSender: HANYA 'attachment' yang benar-benar dilampirkan,
+    //    selain itu ('link' / kosong) PDF hanya berupa tautan di isi email.
+    let tipe = String(t.tipe_pdf || t.pdf_tipe || t.pdf_type || '').toLowerCase().trim();
+    if (url) {
+        if (['attachment', 'attachments', 'lampiran', 'attach'].includes(tipe)) {
+            tipe = 'attachment';
+        } else if (['inline', 'embed', 'embedded'].includes(tipe)) {
+            tipe = 'inline';
+        } else {
+            tipe = 'link';
+        }
+    }
+
+    // Nama file
+    let nama = '';
+    if (url) {
+        try {
+            const u = new URL(url);
+            nama = decodeURIComponent(u.pathname.split('/').pop() || '');
+        } catch (e) {
+            nama = url.split('/').pop().split('?')[0] || '';
+        }
+    }
+
+    return {
+        url: url,
+        tipe: tipe,
+        nama: nama || 'file.pdf',
+        hasData: !!url,
+        rawUrl: rawUrl
+    };
+}
+
+/* ==========================================================
+   PREVIEW — TEXT EXTRACTION
+   ========================================================== */
+function htmlKeTeks(html, s) {
+    if (!html) return '';
+    const rendered = s ? ganti(html, s) : html;
+
+    const work = rendered
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6]|tr|li|table|thead|tbody|blockquote)>/gi, '\n');
+
+    const doc = new DOMParser().parseFromString(work, 'text/html');
+    doc.querySelectorAll('style,script,head,title,noscript').forEach(n => n.remove());
+
+    const links = [];
+    doc.querySelectorAll('a[href]').forEach(a => {
+        const href = (a.getAttribute('href') || '').trim();
+        if (!href) return;
+        if (/^#/i.test(href) || /^mailto:/i.test(href) || /^tel:/i.test(href)) return;
+        const text = (a.textContent || '').trim().replace(/\s+/g, ' ');
+        links.push({ text, href });
+    });
+
+    const images = [];
+    doc.querySelectorAll('img[src]').forEach(img => {
+        const src = (img.getAttribute('src') || '').trim();
+        if (!src || /^cid:/i.test(src) || /^data:/i.test(src)) return;
+        const alt = (img.getAttribute('alt') || '').trim();
+        images.push({ alt, src });
+    });
+
+    let text = (doc.body.textContent || '')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+
+    if (links.length) {
+        text += '\n\n─────────────────────────\nTAUTAN DALAM EMAIL:\n';
+        links.forEach((l, i) => {
+            text += `${i + 1}. ${l.text ? l.text + '\n   → ' : ''}${l.href}\n`;
+        });
+    }
+    if (images.length) {
+        text += '\n─────────────────────────\nGAMBAR DALAM EMAIL:\n';
+        images.forEach((img, i) => {
+            text += `${i + 1}. ${img.alt ? img.alt + '\n   → ' : ''}${img.src}\n`;
+        });
+    }
+
+    return text;
+}
+
+/* ==========================================================
+   PREVIEW — HTML BUILDER
+   ========================================================== */
+function buildHtmlPreview(html, s) {
+    if (!html) return '';
+    let rendered = ganti(html, s);
+
+    if (!/<base\b/i.test(rendered)) {
+        const baseTag = '<base href="' + BASE_URL + '">';
+        if (/<head\b[^>]*>/i.test(rendered)) {
+            rendered = rendered.replace(/(<head\b[^>]*>)/i, '$1' + baseTag);
+        } else if (/<html\b[^>]*>/i.test(rendered)) {
+            rendered = rendered.replace(/(<html\b[^>]*>)/i, '$1<head>' + baseTag + '</head>');
+        } else {
+            rendered = baseTag + rendered;
+        }
+    }
+
+    rendered = rendered.replace(/<a\b([^>]*)>/gi, function (m, attrs) {
+        if (/\btarget\s*=/i.test(attrs)) return m;
+        return '<a' + attrs + ' target="_blank" rel="noopener noreferrer">';
+    });
+
+    return rendered;
+}
+
+/* ==========================================================
+   PREVIEW — INFO STRIP + LAMPIRAN PDF (FIXED)
+   ========================================================== */
+function renderInfoStrip(t, s, subjek) {
+    const strip = $('previewInfoStrip');
+    if (!strip) return;
+
+    const pdf = getPdfInfo(t);
+
+    // Debug log
+    console.log('[Preview PDF]', {
+        hasUrl: !!pdf.url,
+        url: pdf.url,
+        rawUrl: pdf.rawUrl,
+        tipe: pdf.tipe,
+        nama: pdf.nama,
+        templateFields: t ? Object.keys(t) : []
+    });
+
+    let html = '<div class="pi-grid">';
+    html += '<div>' +
+        '<div class="pi-label"><i class="fa fa-envelope-o"></i> Subjek</div>' +
+        '<div class="pi-value">' + escapeHtml(subjek || '-') + '</div>' +
+    '</div>';
+    html += '<div>' +
+        '<div class="pi-label"><i class="fa fa-user"></i> Kepada</div>' +
+        '<div class="pi-value">' + escapeHtml(s.nama || '-') +
+        (s.email ? ' <span class="pi-email">&lt;' + escapeHtml(s.email) + '&gt;</span>' : '') +
+        '</div>' +
+    '</div>';
+    html += '</div>';
+
+    // Kartu PDF sesuai pengaturan template (lampiran / link / inline)
+    if (pdf.url) {
+        const isInline = (pdf.tipe === 'inline');
+        const isLink   = (pdf.tipe === 'link');
+        const cls      = isInline ? ' inline' : (isLink ? ' link' : '');
+        const icon     = isInline ? 'fa-file-pdf-o' : (isLink ? 'fa-link' : 'fa-paperclip');
+        const judul    = isInline ? 'PDF ditampilkan inline di badan email'
+                       : (isLink  ? 'PDF disisipkan sebagai link (tidak dilampirkan)'
+                                  : 'Lampiran PDF');
+        const catatan  = isLink
+            ? 'Penerima hanya mendapat tautan, file PDF tidak ikut terlampir pada email.'
+            : (isInline ? '' : 'File PDF ini akan terlampir pada email yang dikirim.');
+
+        html += '<div class="preview-attachment' + cls + '">' +
+            '<i class="fa ' + icon + ' pa-icon"></i>' +
+            '<div class="pa-body">' +
+                '<div class="pa-title"><i class="fa fa-file-pdf-o"></i> ' + judul + '</div>' +
+                '<div class="pa-file">' + escapeHtml(pdf.nama) + '</div>' +
+                (catatan ? '<span class="pa-note">' + catatan + '</span>' : '') +
+            '</div>' +
+            '<div class="pa-actions">' +
+                '<button type="button" class="btn btn-default btn-xs" id="btnTogglePdf" title="Tampilkan isi PDF di sini">' +
+                    '<i class="fa fa-eye"></i> Pratinjau PDF' +
+                '</button>' +
+                '<a href="' + escapeHtml(pdf.url) + '" target="_blank" rel="noopener" class="btn btn-default btn-xs" title="Buka PDF di tab baru">' +
+                    '<i class="fa fa-external-link"></i> Buka' +
+                '</a>' +
+                '<a href="' + escapeHtml(pdf.url) + '" download class="btn btn-default btn-xs" title="Unduh PDF">' +
+                    '<i class="fa fa-download"></i> Unduh' +
+                '</a>' +
+            '</div>' +
+        '</div>' +
+        '<div class="pdf-viewer-wrap hidden" id="pdfViewerWrap"></div>';
+    } else if (t && (t.attachment_pdf_url || t.pdf_url || t.pdf_path || t.lampiran_pdf)) {
+        // Ada data mentah tapi URL kosong setelah normalize (mungkin whitespace)
+        console.warn('[Preview PDF] Field PDF ada tapi kosong setelah normalize:', t);
+    }
+
+    strip.innerHTML = html;
+
+    const btnPdf  = document.getElementById('btnTogglePdf');
+    const wrapPdf = document.getElementById('pdfViewerWrap');
+    if (btnPdf && wrapPdf && pdf.url) {
+        btnPdf.addEventListener('click', function () {
+            if (wrapPdf.classList.contains('hidden')) {
+                // iframe dibuat saat diklik saja (hemat bandwidth)
+                wrapPdf.innerHTML = '<iframe src="' + escapeHtml(pdf.url) + '#view=FitH" title="Pratinjau PDF"></iframe>';
+                wrapPdf.classList.remove('hidden');
+                btnPdf.innerHTML = '<i class="fa fa-eye-slash"></i> Tutup Pratinjau';
+            } else {
+                wrapPdf.innerHTML = '';
+                wrapPdf.classList.add('hidden');
+                btnPdf.innerHTML = '<i class="fa fa-eye"></i> Pratinjau PDF';
+            }
+        });
+    }
+}
+
+/* ==========================================================
+   PREVIEW — RENDER UTAMA
    ========================================================== */
 function contohPenerima() {
     if (penerimaMap.size === 0) {
-        return { nama: 'Nama Penerima', email: 'email@contoh.com', domisili: 'Kota', nyata: false };
+        return {
+            nama:            'Nama Penerima',
+            nama_perusahaan: 'PT Contoh Perusahaan',
+            no_hp:           '081234567890',
+            email:           'email@contoh.com',
+            domisili:        'Kota',
+            nyata:           false
+        };
     }
     const first = penerimaMap.values().next().value;
-    return { nama: first.nama || '-', email: first.email, domisili: first.domisili || '', nyata: true };
+    return {
+        nama:            first.nama || '-',
+        nama_perusahaan: first.nama_perusahaan || '-',
+        no_hp:           first.no_hp || '-',
+        email:           first.email || '-',
+        domisili:        first.domisili || '-',
+        nyata:           true
+    };
 }
 
 function renderPreview() {
     const t = TEMPLATES.find(x => x.id === Number($('template_email_id').value));
+    const emptyEl = $('previewEmpty');
+    const bodyEl  = $('previewBody');
+
     if (!t) {
-        $('previewTeks').value = '';
-        $('previewHtml').srcdoc = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        if (bodyEl)  bodyEl.classList.add('hidden');
         $('infoContoh').textContent = '';
         return;
     }
-    const s    = contohPenerima();
-    const teks = (t.teks && t.teks.trim()) ? t.teks : htmlKeTeks(t.html);
-    const subj = $('subjek_email').value || t.subjek;
 
-    $('previewTeks').value = 'Kepada : ' + s.nama + ' <' + s.email + '>\n'
-        + 'Subjek : ' + ganti(subj, s) + '\n'
-        + '------------------------------------------------------------\n\n'
-        + ganti(teks, s);
-    $('previewHtml').srcdoc = ganti(t.html, s);
-    $('infoContoh').textContent = s.nyata ? '(contoh: ' + s.nama + ')' : '(data dummy)';
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (bodyEl)  bodyEl.classList.remove('hidden');
+
+    const s = contohPenerima();
+    const subjRaw      = $('subjek_email').value || t.subjek || '';
+    const subjRendered = ganti(subjRaw, s);
+    const htmlRendered = buildHtmlPreview(t.html || '', s);
+
+    let teksRendered;
+    if (t.teks && t.teks.trim()) {
+        teksRendered = ganti(t.teks, s);
+    } else {
+        teksRendered = htmlKeTeks(t.html || '', s);
+    }
+
+    renderInfoStrip(t, s, subjRendered);
+
+    const pdf = getPdfInfo(t);
+    let pdfLine = '';
+    if (pdf.url) {
+        pdfLine = (pdf.tipe === 'attachment' ? 'Lampiran   : ' : 'PDF (link) : ') + pdf.nama + '\n' +
+                  'URL        : ' + pdf.url + '\n';
+    }
+
+    const header =
+        'Kepada     : ' + (s.nama || '-') + ' <' + (s.email || '-') + '>\n' +
+        'Perusahaan : ' + (s.nama_perusahaan || '-') + '\n' +
+        'No HP      : ' + (s.no_hp || '-') + '\n' +
+        'Domisili   : ' + (s.domisili || '-') + '\n' +
+        'Subjek     : ' + subjRendered + '\n' +
+        pdfLine +
+        '─────────────────────────────────────────────────────────────\n\n';
+
+    $('previewTeks').value = header + teksRendered;
+    $('previewHtml').srcdoc = htmlRendered;
+
+    $('infoContoh').textContent = s.nyata
+        ? '(contoh: ' + (s.nama || 'penerima pertama') + ')' +
+          (pdf.url ? (pdf.tipe === 'link' ? ' • 🔗 ' : ' • 📎 ') + pdf.nama : '')
+        : '(data dummy)' + (pdf.url ? (pdf.tipe === 'link' ? ' • 🔗 ' : ' • 📎 ') + pdf.nama : '');
 }
 
-/* Toggle collapsible preview box */
-$('boxPreviewHeader').addEventListener('click', function(e) {
-    // jangan toggle jika klik pada tombol tab
+$('boxPreviewHeader').addEventListener('click', function (e) {
     if (e.target.closest('#previewTabs') || e.target.closest('button')) return;
     $('boxPreview').classList.toggle('collapsed');
 });
@@ -1062,7 +1521,8 @@ function isiTemplate(kategoriId, pilihId) {
         list.forEach(t => {
             const o = document.createElement('option');
             o.value = t.id;
-            o.textContent = t.nama;
+            const pdf = getPdfInfo(t);
+            o.textContent = t.nama + (pdf.url ? (pdf.tipe === 'link' ? ' 🔗' : ' 📎') : '');
             if (t.id === pilihId) o.selected = true;
             sel.appendChild(o);
         });
@@ -1080,6 +1540,7 @@ $('template_email_id').addEventListener('change', function () {
     const t = TEMPLATES.find(x => x.id === Number(this.value));
     $('subjek_email').value = t ? t.subjek : '';
     renderPreview();
+    if (t) $('boxPreview').classList.remove('collapsed');
 });
 
 $('subjek_email').addEventListener('input', renderPreview);
@@ -1134,7 +1595,8 @@ function renderPenerimaTerpilih() {
         '<table id="tablePenerimaTerpilih" class="table table-bordered table-striped table-hover">' +
         '<thead><tr>' +
         '<th style="width:48px" class="text-center">No.</th>' +
-        '<th>Nama / Perusahaan</th>' +
+        '<th>Nama</th>' +
+        '<th>Nama Perusahaan</th>' +
         '<th>Email</th>' +
         '<th>Domisili</th>' +
         '<th style="width:75px" class="text-center">Aksi</th>' +
@@ -1145,6 +1607,7 @@ function renderPenerimaTerpilih() {
         html += '<tr>' +
             '<td class="text-center text-muted">' + no++ + '</td>' +
             '<td><span class="penerima-name">' + escapeHtml(p.nama || '-') + '</span></td>' +
+            '<td><span class="penerima-company">' + escapeHtml(p.nama_perusahaan || '-') + '</span></td>' +
             '<td><span class="penerima-email">' + escapeHtml(p.email || '-') + '</span></td>' +
             '<td>' + escapeHtml(p.domisili || '-') + '</td>' +
             '<td class="text-center"><button type="button" class="btn btn-danger btn-xs btn-hapus-penerima" title="Hapus penerima" data-id="' + escapeHtml(p.id) + '"><i class="fa fa-trash"></i></button></td>' +
@@ -1157,7 +1620,7 @@ function renderPenerimaTerpilih() {
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
         window.jQuery('#tablePenerimaTerpilih').DataTable({
             pageLength: 5,
-            lengthMenu: [[5, 10, 25, 50], [5, 10, 25, 50]],
+            lengthMenu: [[5, 10, 25, 50, 100, -1], [5, 10, 25, 50, 100, 'Semua']],
             searching: true,
             ordering: true,
             info: true,
@@ -1172,7 +1635,7 @@ function renderPenerimaTerpilih() {
                 emptyTable: 'Belum ada penerima dipilih',
                 paginate: { first: 'Awal', last: 'Akhir', next: '›', previous: '‹' }
             },
-            columnDefs: [{ targets: [0, 4], orderable: false }]
+            columnDefs: [{ targets: [0, 5], orderable: false }]
         });
     }
 
@@ -1195,12 +1658,93 @@ function getModalRows() {
     return Array.from(document.querySelectorAll('#tableKontakModal tbody tr.kontak-modal-row'));
 }
 
-function getModalRowsCurrentPage() {
+/* ---- KATEGORI KONTAK: state filter & mode tampilan ---- */
+let ktFilter = '';          // '' = semua kategori, '0' = tanpa kategori, '<id>' = kategori tertentu
+let ktMode   = 'semua';     // 'semua' (tanpa pengelompokan) | 'kategori' (dikelompokkan)
+const KT_COL = 5;           // indeks kolom "Kategori" di tabel modal
+
+function lolosKategori(tr) {
+    return ktFilter === '' || String(tr.dataset.kategori || '0') === ktFilter;
+}
+
+/** ID kontak yang sedang "tampil": lolos pencarian teks DAN filter kategori (lintas semua halaman). */
+function getAllFilteredIds() {
     if (kontakDataTable) {
-        return kontakDataTable.rows({ page: 'current', search: 'applied' }).nodes().toArray()
-            .filter(tr => tr.classList.contains('kontak-modal-row'));
+        const ids = [];
+        kontakDataTable.rows({ search: 'applied' }).nodes().each(function (tr) {
+            ids.push(String(tr.dataset.id));
+        });
+        return ids;
     }
-    return getModalRows().filter(tr => tr.style.display !== 'none');
+    // Fallback tanpa DataTables
+    const q = ((document.getElementById('searchKontakModal') || {}).value || '').trim().toLowerCase();
+    return getModalRows().filter(tr => {
+        if (!lolosKategori(tr)) return false;
+        if (!q) return true;
+        const hay = ((tr.dataset.nama || '') + ' ' + (tr.dataset.namaPerusahaan || '') + ' ' +
+                     (tr.dataset.noHp || '') + ' ' + (tr.dataset.email || '') + ' ' +
+                     (tr.dataset.kota || '') + ' ' + (tr.dataset.kategoriNama || '')).toLowerCase();
+        return hay.indexOf(q) !== -1;
+    }).map(tr => String(tr.dataset.id));
+}
+
+/** Kelompokkan ID yang tampil per kategori: { '<idKategori>': [ids...] } */
+function idsTampilPerKategori() {
+    const out = {};
+    const ids = getAllFilteredIds();
+    ids.forEach(id => {
+        const d   = kontakDataMap.get(String(id));
+        const kat = d ? String(d.kategori_id || '0') : '0';
+        (out[kat] = out[kat] || []).push(id);
+    });
+    return out;
+}
+
+function sisipkanBarisGrup(api) {
+    if (ktMode !== 'kategori') return;
+    const rows = api.rows({ page: 'current' }).nodes();
+    const perKat = idsTampilPerKategori();
+    let last = null;
+    rows.each(function (tr) {
+        const kat = String(tr.dataset.kategori || '0');
+        if (kat === last) return;
+        last = kat;
+        const total = (perKat[kat] || []).length;
+        const g = document.createElement('tr');
+        g.className = 'kt-group-row';
+        g.dataset.kategori = kat;
+        g.innerHTML =
+            '<td colspan="6">' +
+                '<input type="checkbox" class="check-group" title="Pilih / batalkan semua kontak di kategori ini">' +
+                '<i class="fa fa-folder-open text-primary"></i> ' +
+                '<strong>' + escapeHtml(tr.dataset.kategoriNama || 'Tanpa kategori') + '</strong> ' +
+                '<span class="kt-badge">' + total + ' kontak</span>' +
+                '<span class="kt-group-sel"></span>' +
+                (ktFilter === '' ? '<a class="kt-group-lihat" data-kat="' + kat + '"><i class="fa fa-search"></i> lihat kategori ini saja</a>' : '') +
+            '</td>';
+        tr.parentNode.insertBefore(g, tr);
+    });
+}
+
+function updateStatusGrup() {
+    const grupRows = document.querySelectorAll('#tableKontakModal tbody tr.kt-group-row');
+    if (!grupRows.length) return;
+    const perKat = idsTampilPerKategori();
+    grupRows.forEach(g => {
+        const ids = perKat[g.dataset.kategori] || [];
+        let sel = 0;
+        ids.forEach(id => { if (workingSet.has(id)) sel++; });
+        const cb = g.querySelector('.check-group');
+        cb.checked = ids.length > 0 && sel === ids.length;
+        cb.indeterminate = sel > 0 && sel < ids.length;
+        const lbl = g.querySelector('.kt-group-sel');
+        if (lbl) lbl.textContent = sel > 0 ? '(' + sel + ' dari ' + ids.length + ' terpilih)' : '';
+    });
+}
+
+function updateJumlahTampil() {
+    const el = document.getElementById('ktJumlahTampil');
+    if (el) el.textContent = '(' + getAllFilteredIds().length + ')';
 }
 
 function updateCountModal() {
@@ -1211,11 +1755,14 @@ function updateCountModal() {
 }
 
 function syncCheckAllState() {
-    const rows = getModalRowsCurrentPage();
-    const checked = rows.filter(tr => tr.querySelector('.check-kontak').checked);
+    const ids = getAllFilteredIds();
+    let checkedCount = 0;
+    ids.forEach(id => { if (workingSet.has(id)) checkedCount++; });
     const ca = $('checkAllModal');
-    ca.checked = rows.length > 0 && checked.length === rows.length;
-    ca.indeterminate = checked.length > 0 && checked.length < rows.length;
+    ca.checked = ids.length > 0 && checkedCount === ids.length;
+    ca.indeterminate = checkedCount > 0 && checkedCount < ids.length;
+    updateStatusGrup();
+    updateJumlahTampil();
 }
 
 function syncCheckboxFromWorkingSet() {
@@ -1237,8 +1784,16 @@ function filterRows(q) {
     } else {
         const rows = getModalRows();
         rows.forEach(tr => {
-            const hay = ((tr.dataset.nama || '') + ' ' + (tr.dataset.email || '') + ' ' + (tr.dataset.domisili || '')).toLowerCase();
-            tr.style.display = !q || hay.indexOf(q.toLowerCase().trim()) !== -1 ? '' : 'none';
+            const hay = (
+                (tr.dataset.nama || '') + ' ' +
+                (tr.dataset.namaPerusahaan || '') + ' ' +
+                (tr.dataset.noHp || '') + ' ' +
+                (tr.dataset.email || '') + ' ' +
+                (tr.dataset.kota || '') + ' ' +
+                (tr.dataset.kategoriNama || '')
+            ).toLowerCase();
+            const cocokTeks = !q || hay.indexOf(q.toLowerCase().trim()) !== -1;
+            tr.style.display = (cocokTeks && lolosKategori(tr)) ? '' : 'none';
         });
         syncCheckAllState();
     }
@@ -1255,12 +1810,34 @@ function setRowChecked(tr, checked) {
 (function initModalTable() {
     const tbody = document.querySelector('#tableKontakModal tbody');
 
+    document.querySelectorAll('#tableKontakModal tbody tr.kontak-modal-row').forEach(tr => {
+        const id = String(tr.dataset.id);
+        kontakDataMap.set(id, {
+            id:              id,
+            nama:            tr.dataset.nama           || '',
+            nama_perusahaan: tr.dataset.namaPerusahaan || '',
+            no_hp:           tr.dataset.noHp           || '',
+            email:           tr.dataset.email          || '',
+            domisili:        tr.dataset.kota           || '',
+            kategori_id:     tr.dataset.kategori       || '0',
+            kategori_nama:   tr.dataset.kategoriNama   || 'Tanpa kategori',
+        });
+    });
+
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.DataTable) {
+        // Filter kategori (dipakai bersama pencarian teks bawaan DataTables)
+        window.jQuery.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (settings.nTable.id !== 'tableKontakModal' || ktFilter === '') return true;
+            const tr = settings.aoData[dataIndex] && settings.aoData[dataIndex].nTr;
+            return !tr || String(tr.dataset.kategori || '0') === ktFilter;
+        });
+
         kontakDataTable = window.jQuery('#tableKontakModal').DataTable({
-            pageLength: 10,
-            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, 'Semua']],
             searching: true,
             ordering: true,
+            order: [[1, 'asc']],
             info: true,
             autoWidth: false,
             responsive: true,
@@ -1277,6 +1854,7 @@ function setRowChecked(tr, checked) {
             },
             columnDefs: [{ targets: 0, orderable: false, searchable: false }],
             drawCallback: function () {
+                sisipkanBarisGrup(this.api());
                 syncCheckboxFromWorkingSet();
             }
         });
@@ -1312,9 +1890,68 @@ function setRowChecked(tr, checked) {
 
     $('checkAllModal').addEventListener('change', function () {
         const checked = this.checked;
-        getModalRowsCurrentPage().forEach(tr => setRowChecked(tr, checked));
-        syncCheckAllState();
+        const ids = getAllFilteredIds();
+        if (checked) {
+            ids.forEach(id => workingSet.add(id));
+        } else {
+            ids.forEach(id => workingSet.delete(id));
+        }
+        syncCheckboxFromWorkingSet();
         updateCountModal();
+    });
+
+    /* ---- Kontrol kategori ---- */
+    function terapkanFilterDanMode() {
+        if (kontakDataTable) {
+            // Mode "Per Kategori": urut kategori dulu agar kontak sekategori berkumpul
+            kontakDataTable.order(ktMode === 'kategori' ? [[KT_COL, 'asc'], [1, 'asc']] : [[1, 'asc']]);
+            kontakDataTable.page(0).draw();
+        } else {
+            filterRows($('searchKontakModal').value);
+        }
+        syncCheckboxFromWorkingSet();
+    }
+
+    $('ktFilterKategori').addEventListener('change', function () {
+        ktFilter = this.value;
+        terapkanFilterDanMode();
+    });
+
+    document.querySelectorAll('#ktViewMode button').forEach(btn => {
+        btn.addEventListener('click', function () {
+            ktMode = this.dataset.mode;
+            document.querySelectorAll('#ktViewMode button').forEach(b => b.classList.toggle('active', b === this));
+            terapkanFilterDanMode();
+        });
+    });
+
+    // Pilih / kosongkan semua yang sedang tampil (sesuai kategori + pencarian)
+    $('btnPilihSemuaTampil').addEventListener('click', function () {
+        getAllFilteredIds().forEach(id => workingSet.add(id));
+        syncCheckboxFromWorkingSet();
+    });
+    $('btnKosongkanPilihan').addEventListener('click', function () {
+        workingSet.clear();
+        syncCheckboxFromWorkingSet();
+    });
+
+    // Header grup kategori: centang = pilih semua kontak kategori tsb
+    tbody.addEventListener('change', function (e) {
+        if (!e.target.classList.contains('check-group')) return;
+        const g   = e.target.closest('tr.kt-group-row');
+        const ids = idsTampilPerKategori()[g.dataset.kategori] || [];
+        if (e.target.checked) ids.forEach(id => workingSet.add(id));
+        else ids.forEach(id => workingSet.delete(id));
+        syncCheckboxFromWorkingSet();
+    });
+
+    // "lihat kategori ini saja" → set filter dropdown
+    tbody.addEventListener('click', function (e) {
+        const a = e.target.closest('.kt-group-lihat');
+        if (!a) return;
+        $('ktFilterKategori').value = a.dataset.kat;
+        ktFilter = a.dataset.kat;
+        terapkanFilterDanMode();
     });
 })();
 
@@ -1378,6 +2015,11 @@ if (!adaBs3() && !adaBs5()) {
 function bukaModalKontak() {
     workingSet = new Set(penerimaMap.keys());
     $('searchKontakModal').value = '';
+    // reset filter kategori & mode tampilan ke "Semua Kontak"
+    ktFilter = ''; ktMode = 'semua';
+    $('ktFilterKategori').value = '';
+    document.querySelectorAll('#ktViewMode button').forEach(b => b.classList.toggle('active', b.dataset.mode === 'semua'));
+    if (kontakDataTable) kontakDataTable.order([[1, 'asc']]);
     filterRows('');
     syncCheckboxFromWorkingSet();
     modalTampil(modalKontakEl, 'searchKontakModal');
@@ -1388,17 +2030,13 @@ $('btnBukaModalKontak').addEventListener('click', bukaModalKontak);
 $('btnTambahkanPenerima').addEventListener('click', function () {
     penerimaMap.clear();
     workingSet.forEach(id => {
-        const tr = document.querySelector('#tableKontakModal tbody tr[data-id="' + id + '"]');
-        if (!tr) return;
-        penerimaMap.set(id, {
-            id:       id,
-            nama:     tr.dataset.nama     || '',
-            email:    tr.dataset.email    || '',
-            domisili: tr.dataset.domisili || ''
-        });
+        const data = kontakDataMap.get(String(id));
+        if (!data) return;
+        penerimaMap.set(String(id), { ...data });
     });
     modalTutup(modalKontakEl);
     renderPenerimaTerpilih();
+    AppSwal.toast('success', penerimaMap.size + ' penerima dipilih', 2200);
 });
 
 /* ==========================================================
@@ -1458,7 +2096,10 @@ const bebasIds     = () => { const d = dipakaiSemua(); return poolIds().filter(i
 
 function namaAkun(id) {
     const p = penerimaMap.get(id);
-    return p ? (p.nama || p.email) : ('#' + id);
+    if (!p) return ('#' + id);
+    const nm = p.nama || '';
+    const np = p.nama_perusahaan || '';
+    return nm && np ? (nm + ' (' + np + ')') : (nm || np || p.email || ('#' + id));
 }
 
 function mulaiWaktu() {
@@ -1624,7 +2265,7 @@ function buatPanelAkun(i) {
     penerimaMap.forEach((p, id) => {
         const lbl = document.createElement('label');
         lbl.className = 'pick-item' + (lain[id] ? ' dipakai' : '');
-        lbl.dataset.search = ((p.nama || '') + ' ' + p.email).toLowerCase();
+        lbl.dataset.search = ((p.nama || '') + ' ' + (p.nama_perusahaan || '') + ' ' + p.email).toLowerCase();
 
         const cb = document.createElement('input');
         cb.type = 'checkbox';
@@ -1635,7 +2276,9 @@ function buatPanelAkun(i) {
         cb.disabled = !!lain[id];
         lbl.appendChild(cb);
 
-        lbl.appendChild(document.createTextNode(' ' + (p.nama || '-') + ' <' + p.email + '>'));
+        const nama = p.nama || '-';
+        const perusahaan = p.nama_perusahaan ? (' — ' + p.nama_perusahaan) : '';
+        lbl.appendChild(document.createTextNode(' ' + nama + perusahaan + ' <' + p.email + '>'));
         if (lain[id]) {
             const sm = document.createElement('small');
             sm.textContent = '  — sudah di pengiriman ke-' + lain[id];
@@ -1911,7 +2554,6 @@ function formUpdate() {
     $('mjGapTetap').classList.toggle('hidden', wm === 'acak');
     $('mjGapAcak').classList.toggle('hidden', wm !== 'acak');
 
-    // Update pill selected state
     document.querySelectorAll('.mj-pill').forEach(pill => {
         const name = pill.dataset.pill;
         const val = pill.dataset.value;
@@ -2103,45 +2745,113 @@ document.querySelectorAll('.kc-preset-acak').forEach(b => b.addEventListener('cl
 /* ==========================================================
    VALIDASI SUBMIT
    ========================================================== */
-$('formKampanye').addEventListener('submit', function (e) {
-    if (!$('template_email_id').value) {
-        e.preventDefault();
-        alert('Pilih kategori dan template terlebih dahulu.');
-        return;
-    }
-    if (penerimaMap.size === 0) {
-        e.preventDefault();
-        alert('Pilih minimal 1 penerima.');
-        return;
+let sedangSimpan = false;
+
+function ringkasanKonfirmasi() {
+    const t    = TEMPLATES.find(x => x.id === Number($('template_email_id').value));
+    const m    = modeDipilih();
+    const mi   = MODE_INFO[m];
+    const inp  = document.querySelector('input[name="nama_kampanye"]');
+    const baris = [
+        ['Kampanye',  (inp && inp.value.trim()) || '-'],
+        ['Template',  t ? t.nama : '-'],
+        ['Penerima',  penerimaMap.size + ' kontak'],
+        ['Mode kirim', mi.label]
+    ];
+    if (m !== 'sekarang' && cfg) {
+        if (mi.berulang) {
+            baris.push(['Jumlah pengiriman', cfg.total + ' kali (penerima dibagi)']);
+            baris.push(['Pengiriman pertama', String(cfg.tampil[0] || '-')]);
+        } else {
+            baris.push(['Waktu kirim', String(cfg.tampil[0] || '-')]);
+        }
     }
     if (kcTampil()) {
-        if (kcMode() !== 'cepat') {
-            if (!kcLaju()) {
-                e.preventDefault();
-                alert('Lengkapi pengaturan email per menit terlebih dahulu.');
+        if (kcMode() === 'cepat') {
+            baris.push(['Kecepatan', 'Tanpa pembatasan']);
+        } else {
+            const l = kcLaju();
+            if (l) baris.push(['Kecepatan', (l.min === l.max ? l.min : l.min + '–' + l.max) + ' email/menit']);
+        }
+    }
+    return '<table class="swal-ringkasan">' +
+        baris.map(r => '<tr><th>' + AppSwal.esc(r[0]) + '</th><td>' + AppSwal.esc(r[1]) + '</td></tr>').join('') +
+        '</table>';
+}
+
+$('formKampanye').addEventListener('submit', async function (e) {
+    const form = this;
+    if (form.dataset.sudahDikonfirmasi === '1') return;   // submit native setelah semua dialog disetujui
+    e.preventDefault();
+    if (sedangSimpan) return;
+    sedangSimpan = true;
+    let lanjut = false;
+
+    try {
+        if (!$('template_email_id').value) {
+            await AppSwal.info({ ikon: 'warning', judul: 'Template belum dipilih', teks: 'Pilih kategori dan template terlebih dahulu.' });
+            const k = $('kategori_id'); if (k) k.focus();
+            return;
+        }
+        if (penerimaMap.size === 0) {
+            await AppSwal.info({ ikon: 'warning', judul: 'Belum ada penerima', teks: 'Pilih minimal 1 penerima untuk kampanye ini.', tombol: 'Pilih Penerima' });
+            bukaModalKontak();
+            return;
+        }
+        if (kcTampil() && kcMode() !== 'cepat' && !kcLaju()) {
+            await AppSwal.info({ ikon: 'warning', judul: 'Pengaturan kecepatan belum lengkap', teks: 'Lengkapi pengaturan email per menit terlebih dahulu.' });
+            const f = $('kc_rate'); if (f && !f.disabled) f.focus();
+            return;
+        }
+
+        const m = modeDipilih();
+        if (m !== 'sekarang') {
+            if (!cfg || cfg.mode !== m) {
+                await AppSwal.info({ ikon: 'warning', judul: 'Jadwal belum diatur', teks: 'Atur jadwal pengiriman terlebih dahulu.', tombol: 'Atur Jadwal' });
+                bukaModalJadwal();
                 return;
             }
-        } else if (!confirm('Anda akan mengirim ke ' + penerimaMap.size + ' penerima tanpa pembatasan per menit. Lanjutkan?')) {
-            e.preventDefault();
-            return;
+            const err = validasiJadwal();
+            if (err) {
+                cfg = null; tulisHiddenJadwal(); renderRingkasan();
+                await AppSwal.info({ ikon: 'error', judul: 'Jadwal tidak valid', teks: err, tombol: 'Perbaiki Jadwal' });
+                bukaModalJadwal();
+                return;
+            }
         }
+
+        // Konfirmasi akhir (ringkasan kampanye)
+        const tanpaBatas = kcTampil() && kcMode() === 'cepat';
+        let html = ringkasanKonfirmasi();
+        if (tanpaBatas) {
+            html += '<p style="margin:14px 0 0;color:#c0392b;font-size:13px;"><i class="fa fa-exclamation-triangle"></i> ' +
+                    'Anda akan mengirim ke <b>' + penerimaMap.size + '</b> penerima <b>tanpa pembatasan per menit</b>. ' +
+                    'Akun SMTP bisa terkena limit.</p>';
+        }
+        const ok = await AppSwal.konfirmasi({
+            judul:  tanpaBatas ? 'Kirim tanpa pembatasan?' : (m === 'sekarang' ? 'Kirim kampanye sekarang?' : 'Simpan & jadwalkan kampanye?'),
+            html:   html,
+            ikon:   tanpaBatas ? 'warning' : 'question',
+            ya:     MODE_INFO[m].simpan,
+            bahaya: tanpaBatas
+        });
+        if (!ok) return;
+
+        AppSwal.loading('Menyimpan kampanye...', 'Jangan tutup halaman ini.');
+        lanjut = true;
+        form.dataset.sudahDikonfirmasi = '1';
+        HTMLFormElement.prototype.submit.call(form);
+    } finally {
+        if (!lanjut) sedangSimpan = false;
     }
-    const m = modeDipilih();
-    if (m !== 'sekarang') {
-        if (!cfg || cfg.mode !== m) {
-            e.preventDefault();
-            alert('Atur jadwal pengiriman terlebih dahulu.');
-            bukaModalJadwal();
-            return;
-        }
-        const err = validasiJadwal();
-        if (err) {
-            e.preventDefault();
-            cfg = null; tulisHiddenJadwal(); renderRingkasan();
-            alert(err);
-            bukaModalJadwal();
-        }
-    }
+});
+
+// Tombol "Kembali" browser (bfcache) -> pulihkan form agar bisa dikirim lagi
+window.addEventListener('pageshow', function (ev) {
+    if (!ev.persisted) return;
+    AppSwal.tutup();
+    $('formKampanye').dataset.sudahDikonfirmasi = '';
+    sedangSimpan = false;
 });
 
 /* ==========================================================
@@ -2158,14 +2868,9 @@ $('formKampanye').addEventListener('submit', function (e) {
     if (Array.isArray(OLD_PENERIMA) && OLD_PENERIMA.length > 0) {
         OLD_PENERIMA.forEach(id => {
             const idStr = String(id);
-            const tr = document.querySelector('#tableKontakModal tbody tr[data-id="' + idStr + '"]');
-            if (tr) {
-                penerimaMap.set(idStr, {
-                    id:       idStr,
-                    nama:     tr.dataset.nama     || '',
-                    email:    tr.dataset.email    || '',
-                    domisili: tr.dataset.domisili || ''
-                });
+            const data = kontakDataMap.get(idStr);
+            if (data) {
+                penerimaMap.set(idStr, { ...data });
             }
         });
     }
@@ -2202,6 +2907,6 @@ if (document.readyState === 'loading') {
     mulai();
 }
 
-})();   
+})();
 </script>
 <?= $this->endSection() ?>
