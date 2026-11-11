@@ -120,9 +120,15 @@ class EmailSender
                 return ['sukses' => true, 'pesan' => 'Terkirim' . $pdfNote, 'id_pesan' => $idPesan];
             }
 
-            $errMsg = $this->ambilPesanError($email);
+                        $errMsg = $this->ambilPesanError($email);
             log_message('error', '[EmailSender] GAGAL → ' . $data['email'] . ' | ' . $errMsg);
-            return ['sukses' => false, 'pesan' => $errMsg, 'id_pesan' => null];
+
+            return [
+                'sukses'         => false,
+                'pesan'          => $errMsg,
+                'id_pesan'       => null,
+                'alamat_ditolak' => $this->alamatDitolak($errMsg),
+            ];
         } catch (\Throwable $e) {
             log_message('error', '[EmailSender] Exception: ' . $e->getMessage()
                 . ' @ ' . $e->getFile() . ':' . $e->getLine());
@@ -479,4 +485,18 @@ class EmailSender
         } catch (\Throwable $e) { /* ignore */ }
         return 'Gagal mengirim email (tidak ada detail dari SMTP).';
     }
+
+    /**
+ * True jika server tujuan menolak ALAMATNYA (mailbox tidak ada).
+ * Sengaja ketat: gagal login SMTP, koneksi putus, atau ditolak karena
+ * spam/kebijakan (5.7.x) TIDAK dihitung.
+ */
+protected function alamatDitolak(string $pesan): bool
+{
+    return (bool) preg_match(
+        '/\b5\.1\.[1-3]\b|user unknown|no such user|mailbox (unavailable|not found|does not exist)|recipient (address )?rejected|invalid recipient|address rejected|does not exist/i',
+        $pesan
+    );
+}
+
 }

@@ -190,18 +190,28 @@ class KontakController extends BaseController
     }
 
     // CREATE
-    public function simpan()
-    {
-        if (! $this->validate($this->aturan())) {
-            return redirect()->back()->withInput()
-                ->with('errors', $this->validator->getErrors())
-                ->with('modal_aksi', site_url('kontak/simpan'));
-        }
+   public function simpan()
+{
+    helper('validasi_email');
 
-        $this->model->insert($this->dataForm());
-
-        return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil ditambahkan.');
+    if (! $this->validate($this->aturan())) {
+        return redirect()->back()->withInput()
+            ->with('errors', $this->validator->getErrors())
+            ->with('modal_aksi', site_url('kontak/simpan'));
     }
+
+    // Cek format + domain email (hanya jika diisi)
+    $email = trim((string) $this->request->getPost('email'));
+    if ($email !== '' && ($alasan = cek_email($email)) !== null) {
+        return redirect()->back()->withInput()
+            ->with('errors', ['email' => ucfirst($alasan) . '.'])
+            ->with('modal_aksi', site_url('kontak/simpan'));
+    }
+
+    $this->model->insert($this->dataForm());
+
+    return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil ditambahkan.');
+}
 
     // UPDATE
     public function perbarui(int $id)
@@ -234,6 +244,8 @@ class KontakController extends BaseController
     }
       public function import()
     {
+        helper('validasi_email');
+
         $file = $this->request->getFile('file_excel');
 
         if (! $file || ! $file->isValid() || $file->hasMoved()) {
@@ -347,11 +359,12 @@ class KontakController extends BaseController
             }
 
             // Email opsional, tapi kalau diisi harus valid
-            if ($email !== '' && ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $jmlLewati++;
-                $galat[] = "Baris {$noBaris}: format email tidak valid ({$email}).";
-                continue;
-            }
+            // Email opsional, tapi kalau diisi harus valid dan domainnya ada
+if ($email !== '' && ($alasan = cek_email($email)) !== null) {
+    $jmlLewati++;
+    $galat[] = "Baris {$noBaris}: {$alasan} ({$email}).";
+    continue;
+}
             $email = $email === '' ? null : mb_substr($email, 0, 254);
 
             // Kategori: cari berdasarkan nama, buat jika belum ada

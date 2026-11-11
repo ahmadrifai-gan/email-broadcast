@@ -107,6 +107,7 @@ class KirimEmailController extends BaseController
         $kontak = $this->kontakModel
             ->where('email IS NOT NULL', null, false)
             ->where('email !=', '')
+             ->where('jumlah_tidak_terkirim <', 3)
             ->orderBy('nama_perusahaan', 'ASC')
             ->findAll();
 
@@ -200,6 +201,7 @@ class KirimEmailController extends BaseController
             ->whereIn('id', $penerimaIds)
             ->where('email IS NOT NULL', null, false)
             ->where('email !=', '')
+             ->where('jumlah_tidak_terkirim <', 3) 
             ->findAll();
         if (empty($kontakList)) {
             return redirect()->back()->withInput()->with('error', 'Kontak tidak valid.');
@@ -887,6 +889,7 @@ class KirimEmailController extends BaseController
      */
     protected function prosesBatchInternal(int $kampanyeId, int $limit = 5): array
     {
+        helper('validasi_email'); 
         $this->tungguDetik = 0;
         $kampanye = $this->kampanyeModel->find($kampanyeId);
         if (! $kampanye || $kampanye['status'] !== 'sedang_dikirim') {
@@ -963,8 +966,24 @@ class KirimEmailController extends BaseController
                 'domisili'        => $kontak['kota_kabupaten']  ?? ($kontak['domisili'] ?? ''),
             ]);
 
-            // ▼▼ SMTP ▼▼ kirim dengan config SMTP yang sudah di-resolve
-            $res = $this->emailSender->kirimSatu($penerimaData, $template, $smtpConfig);
+           // Cek format + domain dulu; kalau tidak valid, jangan kirim
+$alasan = cek_email($p['alamat_email_penerima']);
+
+if ($alasan !== null) {
+    $res = [
+        'sukses'   => false,
+        'id_pesan' => null,
+        'pesan'    => 'Tidak dikirim: ' . $alasan . '.',
+    ];
+    $this->kontakModel->catatTidakTerkirim($p['alamat_email_penerima']);
+} else {
+    $res = $this->emailSender->kirimSatu($penerimaData, $template);
+
+    // Hanya alamat yang ditolak server tujuan yang dihitung; masalah SMTP tidak
+    if (! $res['sukses'] && ! empty($res['alamat_ditolak'])) {
+        $this->kontakModel->catatTidakTerkirim($p['alamat_email_penerima']);
+    }
+}
 
             $this->penerimaModel->update($p['id'], [
                 'jumlah_percobaan'  => ((int) $p['jumlah_percobaan']) + 1,
