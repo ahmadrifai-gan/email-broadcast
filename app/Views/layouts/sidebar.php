@@ -38,14 +38,14 @@
 
         <!-- Menu -->
         <ul class="sidebar-menu" data-widget="tree" id="sidebarMenu">
-            <li class="<?= url_is('*') ? 'active' : '' ?>">
+            <li class="<?= url_is('*') && !url_is('kategori*') && !url_is('kontak*') && !url_is('kategori-template-email*') && !url_is('template-email*') && !url_is('kirim-email*') && !url_is('riwayat-pengiriman*') && !url_is('smtp*') && !url_is('laporan-*') ? 'active' : '' ?>">
                 <a href="<?= site_url('') ?>">
                     <i class="fa fa-dashboard"></i> <span>Dashboard</span>
                 </a>
             </li>
 
             <li class="header">Kategori KONTAK</li>
-            <li class="<?= url_is('kategori*') ? 'active' : '' ?>">
+            <li class="<?= url_is('kategori*') && !url_is('kategori-template-email*') ? 'active' : '' ?>">
                 <a href="<?= site_url('kategori') ?>">
                     <i class="fa fa-address-book"></i> <span>Kategori Kontak</span>
                 </a>
@@ -82,8 +82,46 @@
                 </a>
             </li>
 
+            <!-- ============================================== -->
+            <!-- MENU BARU: LAPORAN AKTIVITAS (DROPDOWN) -->
+            <!-- ============================================== -->
+            <li class="header">LAPORAN</li>
+            <li class="treeview <?= url_is('laporan-*') ? 'active' : '' ?>">
+                <a href="#">
+                    <i class="fa fa-bar-chart"></i> <span>Laporan Aktivitas</span>
+                    <i class="fa fa-angle-left pull-right"></i>
+                </a>
+                <ul class="treeview-menu">
+                    <li class="<?= url_is('laporan-ringkasan-kampanye*') ? 'active' : '' ?>">
+                        <a href="<?= site_url('laporan-ringkasan-kampanye') ?>">
+                            <i class="fa fa-circle-o"></i> Ringkasan Kampanye
+                        </a>
+                    </li>
+                    <li class="<?= url_is('laporan-smtp-kuota*') ? 'active' : '' ?>">
+                        <a href="<?= site_url('laporan-smtp-kuota') ?>">
+                            <i class="fa fa-circle-o"></i> Laporan SMTP dan Kuota
+                        </a>
+                    </li>
+                    <li class="<?= url_is('laporan-per-kampanye*') ? 'active' : '' ?>">
+                        <a href="<?= site_url('laporan-per-kampanye') ?>">
+                            <i class="fa fa-circle-o"></i> Laporan per Kampanye
+                        </a>
+                    </li>
+                    <li class="<?= url_is('laporan-template*') ? 'active' : '' ?>">
+                        <a href="<?= site_url('laporan-template') ?>">
+                            <i class="fa fa-circle-o"></i> Laporan Template
+                        </a>
+                    </li>
+                    <li class="<?= url_is('laporan-penerima-kontak*') ? 'active' : '' ?>">
+                        <a href="<?= site_url('laporan-penerima-kontak') ?>">
+                            <i class="fa fa-circle-o"></i> Laporan Penerima dan Kontak
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
             <li class="header">KONFIGURASI</li>
-            <li class="<?= url_is('smtp*') ? 'active' : '' ?>">
+            <li class="<?= url_is('smtp*') && !url_is('laporan-smtp-kuota*') ? 'active' : '' ?>">
                 <a href="<?= site_url('smtp') ?>">
                     <i class="fa fa-server"></i> <span>Konfigurasi SMTP</span>
                 </a>
@@ -105,42 +143,77 @@
     (function() {
         document.addEventListener('DOMContentLoaded', function() {
 
-            var input = document.getElementById('sidebarSearchInput');
+            var input    = document.getElementById('sidebarSearchInput');
             var clearBtn = document.getElementById('sidebarSearchClear');
-            var form = document.getElementById('sidebarSearchForm');
-            var menu = document.getElementById('sidebarMenu');
-            var empty = document.getElementById('sidebarSearchEmpty');
+            var form     = document.getElementById('sidebarSearchForm');
+            var menu     = document.getElementById('sidebarMenu');
+            var empty    = document.getElementById('sidebarSearchEmpty');
 
             if (!input || !menu) return;
 
-            // Filter menu berdasarkan keyword
+            // Filter menu berdasarkan keyword (mendukung submenu treeview)
             function filterMenu() {
                 var keyword = input.value.toLowerCase().trim();
 
                 // Toggle tombol clear
                 clearBtn.style.display = keyword ? 'inline-block' : 'none';
 
-                var items = menu.querySelectorAll('li:not(.header)');
-                var headers = menu.querySelectorAll('li.header');
-                var found = 0;
+                var allItems = menu.querySelectorAll('li:not(.header)');
+                var headers  = menu.querySelectorAll('li.header');
 
-                // Filter item menu
-                items.forEach(function(li) {
-                    var text = (li.textContent || '').toLowerCase();
-                    if (text.indexOf(keyword) !== -1) {
-                        li.style.display = '';
-                        found++;
-                    } else {
-                        li.style.display = 'none';
+                // 1) Tandai tiap item apakah labelnya cocok dengan keyword
+                allItems.forEach(function(li) {
+                    var link  = li.querySelector(':scope > a');
+                    var label = link ? link.textContent : li.textContent;
+                    li.dataset.matched = (!keyword || label.toLowerCase().indexOf(keyword) !== -1) ? '1' : '0';
+                });
+
+                // 2) Sembunyikan dulu leaf (item tanpa submenu) berdasarkan kecocokan label
+                allItems.forEach(function(li) {
+                    var hasChildren = li.querySelector(':scope > ul.treeview-menu');
+                    if (!hasChildren) {
+                        li.style.display = li.dataset.matched === '1' ? '' : 'none';
                     }
                 });
 
-                // Sembunyikan header yang tidak punya item anak yang tampil
+                // 3) Proses treeview dari yang paling dalam ke luar
+                //    Parent tampil jika dirinya cocok ATAU ada anak yang cocok
+                var treeviews = Array.prototype.slice
+                    .call(menu.querySelectorAll('li.treeview'))
+                    .reverse();
+
+                treeviews.forEach(function(tv) {
+                    var submenu = tv.querySelector(':scope > ul.treeview-menu');
+                    var anyChildVisible = false;
+
+                    Array.prototype.forEach.call(
+                        tv.querySelectorAll(':scope > ul.treeview-menu > li'),
+                        function(child) {
+                            if (child.style.display !== 'none') anyChildVisible = true;
+                        }
+                    );
+
+                    var shouldShow = (tv.dataset.matched === '1' || anyChildVisible);
+
+                    tv.style.display = shouldShow ? '' : 'none';
+
+                    if (keyword && shouldShow && submenu) {
+                        // Paksa buka dropdown saat pencarian
+                        submenu.style.display = 'block';
+                        tv.classList.add('search-expanded');
+                    } else if (tv.classList.contains('search-expanded')) {
+                        // Reset ke kondisi semula (mengikuti CSS AdminLTE)
+                        submenu.style.display = '';
+                        tv.classList.remove('search-expanded');
+                    }
+                });
+
+                // 4) Sembunyikan header yang tidak punya item anak yang tampil
                 headers.forEach(function(header) {
                     var next = header.nextElementSibling;
                     var hasVisible = false;
                     while (next && !next.classList.contains('header')) {
-                        if (next.style.display !== 'none' && !next.classList.contains('header')) {
+                        if (next.style.display !== 'none') {
                             hasVisible = true;
                             break;
                         }
@@ -149,8 +222,13 @@
                     header.style.display = hasVisible ? '' : 'none';
                 });
 
-                // Tampilkan pesan "tidak ditemukan"
-                empty.style.display = (found === 0 && keyword) ? 'block' : 'none';
+                // 5) Tampilkan pesan "tidak ditemukan" jika tidak ada yang visible
+                var anyVisible = false;
+                menu.querySelectorAll(':scope > li:not(.header)').forEach(function(li) {
+                    if (li.style.display !== 'none') anyVisible = true;
+                });
+
+                empty.style.display = (!anyVisible && keyword) ? 'block' : 'none';
             }
 
             // Event: ketik
@@ -172,7 +250,9 @@
 
             // Shortcut: tekan "/" untuk fokus ke search box
             document.addEventListener('keydown', function(e) {
-                if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                if (e.key === '/' &&
+                    document.activeElement.tagName !== 'INPUT' &&
+                    document.activeElement.tagName !== 'TEXTAREA') {
                     e.preventDefault();
                     input.focus();
                     input.select();
