@@ -82,6 +82,13 @@
                 </a>
             </li>
 
+            <li class="header">KONFIGURASI</li>
+            <li class="<?= url_is('smtp*') ? 'active' : '' ?>">
+                <a href="<?= site_url('smtp') ?>">
+                    <i class="fa fa-server"></i> <span>Konfigurasi SMTP</span>
+                </a>
+            </li>
+
         </ul>
 
         <!-- Pesan kalau tidak ada hasil -->

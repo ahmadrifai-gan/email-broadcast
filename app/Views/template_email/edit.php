@@ -64,10 +64,11 @@
                         <div class="placeholder-box">
                             <div class="box-title">💡 Placeholder Tersedia <small class="text-muted">(klik untuk memasukkan)</small></div>
                             <div>
-                                <span class="placeholder-badge" data-placeholder="{{nama}}" title="Nama lengkap penerima">{{nama}}</span>
-                                <span class="placeholder-badge" data-placeholder="{{nama_perusahaan}}" title="Nama perusahaan penerima">{{nama_perusahaan}}</span>
-                                <span class="placeholder-badge" data-placeholder="{{no_hp}}" title="Nomor HP penerima">{{no_hp}}</span>
-                                <span class="placeholder-badge" data-placeholder="{{email}}" title="Email penerima">{{email}}</span>
+                                <!-- FORMAT 1 KURUNG KURAWAL -->
+                                <span class="placeholder-badge" data-placeholder="{nama}" title="Nama lengkap penerima">{nama}</span>
+                                <span class="placeholder-badge" data-placeholder="{nama_perusahaan}" title="Nama perusahaan penerima">{nama_perusahaan}</span>
+                                <span class="placeholder-badge" data-placeholder="{no_hp}" title="Nomor HP penerima">{no_hp}</span>
+                                <span class="placeholder-badge" data-placeholder="{email}" title="Email penerima">{email}</span>
                             </div>
                         </div>
                     </div>
@@ -262,7 +263,7 @@
             });
         });
 
-        // 4. FITUR PREVIEW
+        // 4. FITUR PREVIEW (SUDAH 1 KURUNG KURAWAL)
         $('#btnPreview').on('click', function() {
             let subjek = $('input[name="subjek_email"]').val() || '(Tanpa Subjek)';
             let isiHtml = $('#editorIsiHtml').summernote('code');
@@ -270,7 +271,8 @@
             let tipePdf = $('input[name="tipe_pdf"]:checked').val();
 
             $('#previewSubjek').text(subjek);
-            isiHtml = isiHtml.replace(/\{\{nama\}\}/g, 'Ackmal').replace(/\{\{nama_perusahaan\}\}/g, 'PT Binco').replace(/\{\{no_hp\}\}/g, '081234567890').replace(/\{\{email\}\}/g, 'ackmal@binco.com');
+            // GANTI FORMAT MENJADI 1 KURUNG KURAWAL
+            isiHtml = isiHtml.replace(/\{nama\}/g, 'Ackmal').replace(/\{nama_perusahaan\}/g, 'PT Binco').replace(/\{no_hp\}/g, '081234567890').replace(/\{email\}/g, 'ackmal@binco.com');
             $('#previewBody').html(isiHtml);
 
             if (pdfUrl && tipePdf === 'attachment') { $('#previewAttachment').show(); $('#previewAttachmentUrl').attr('href', pdfUrl); } else { $('#previewAttachment').hide(); }
