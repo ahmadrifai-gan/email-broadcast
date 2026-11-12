@@ -74,3 +74,11 @@ $routes->group('kategori', static function ($routes) {
 
 $routes->get('laporan-smtp-kuota', 'LaporanSmtpController::index');
 $routes->get('laporan-template', 'LaporanTemplateController::index');
+
+// Rute untuk Laporan Ringkasan Kampanye
+$routes->get('laporan/ringkasan-kampanye', 'RingkasanKampanyeController::ringkasanKampanye');
+$routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::exportRingkasanKampanye');
+
+// Rute untuk Laporan Penerima & Kontak
+$routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
+$routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
