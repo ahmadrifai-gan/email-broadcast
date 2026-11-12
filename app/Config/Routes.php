@@ -72,4 +72,5 @@ $routes->group('kategori', static function ($routes) {
     $routes->post('hapus/(:num)', 'KategoriKontakController::hapus/$1');
 });
 
+$routes->get('laporan-smtp-kuota', 'LaporanSmtpController::index');
 $routes->get('laporan-template', 'LaporanTemplateController::index');
