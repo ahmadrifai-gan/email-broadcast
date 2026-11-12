@@ -72,6 +72,9 @@ $routes->group('kategori', static function ($routes) {
     $routes->post('hapus/(:num)', 'KategoriKontakController::hapus/$1');
 });
 
+$routes->get('laporan-smtp-kuota', 'LaporanSmtpController::index');
+$routes->get('laporan-template', 'LaporanTemplateController::index');
+
 // Rute untuk Laporan Ringkasan Kampanye
 $routes->get('laporan/ringkasan-kampanye', 'RingkasanKampanyeController::ringkasanKampanye');
 $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::exportRingkasanKampanye');
