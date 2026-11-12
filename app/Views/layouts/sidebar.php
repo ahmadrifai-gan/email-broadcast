@@ -97,11 +97,11 @@
                             <i class="fa fa-circle-o"></i> Ringkasan Kampanye
                         </a>
                     </li>
-                    <li class="<?= url_is('laporan-smtp-kuota*') ? 'active' : '' ?>">
-                        <a href="<?= site_url('laporan-smtp-kuota') ?>">
-                            <i class="fa fa-circle-o"></i> Laporan SMTP dan Kuota
-                        </a>
-                    </li>
+                     <li class="<?= url_is('laporan-smtp-kuota') ? 'active' : '' ?>">
+    <a href="<?= site_url('laporan-smtp-kuota') ?>">
+        <i class="fa fa-circle-o"></i> Laporan SMTP dan Kuota
+    </a>
+</li>
                     <li class="<?= url_is('laporan-per-kampanye*') ? 'active' : '' ?>">
                         <a href="<?= site_url('laporan-per-kampanye') ?>">
                             <i class="fa fa-circle-o"></i> Laporan per Kampanye
