@@ -13,7 +13,7 @@ class SumberAnalisisModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'perusahaan_id',
+        'kontak_email_id',
         'jenis_sumber',
         'url_sumber',
         'status_pengambilan',
@@ -29,7 +29,7 @@ class SumberAnalisisModel extends Model
      */
     public function getByPerusahaan(int $perusahaanId): array
     {
-        return $this->where('perusahaan_id', $perusahaanId)
+        return $this->where('kontak_email_id', $perusahaanId)
             ->orderBy('id', 'DESC')
             ->findAll();
     }
@@ -46,7 +46,7 @@ class SumberAnalisisModel extends Model
         ?string $error = null
     ): int {
         return $this->insert([
-            'perusahaan_id'      => $perusahaanId,
+            'kontak_email_id'      => $perusahaanId,
             'jenis_sumber'       => $jenis,
             'url_sumber'         => $url,
             'status_pengambilan' => $status,

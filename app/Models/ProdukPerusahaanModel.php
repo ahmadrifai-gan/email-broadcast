@@ -6,14 +6,14 @@ use CodeIgniter\Model;
 
 class ProdukPerusahaanModel extends Model
 {
-    protected $table            = 'produk_perusahaan';
+    protected $table            = 'produks';
     protected $primaryKey       = 'id';
     protected $useAutoIncrement = true;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'perusahaan_id',
+        'kontak_email_id',
         'nama_produk_id',
         'nama_produk_en',
         'urutan',
@@ -32,7 +32,7 @@ class ProdukPerusahaanModel extends Model
      */
     public function getByPerusahaan(int $perusahaanId): array
     {
-        return $this->where('perusahaan_id', $perusahaanId)
+        return $this->where('kontak_email_id', $perusahaanId)
             ->orderBy('urutan', 'ASC')
             ->findAll();
     }
@@ -42,7 +42,7 @@ class ProdukPerusahaanModel extends Model
      */
     public function replaceProducts(int $perusahaanId, array $products): void
     {
-        $this->where('perusahaan_id', $perusahaanId)->delete();
+        $this->where('kontak_email_id', $perusahaanId)->delete();
 
         $urutan = 1;
         $batch = [];
@@ -50,7 +50,7 @@ class ProdukPerusahaanModel extends Model
 
         foreach ($products as $p) {
             $batch[] = [
-                'perusahaan_id'  => $perusahaanId,
+                'kontak_email_id'  => $perusahaanId,
                 'nama_produk_id' => trim($p['id'] ?? $p['nama_produk_id'] ?? ''),
                 'nama_produk_en' => trim($p['en'] ?? $p['nama_produk_en'] ?? ''),
                 'urutan'         => $urutan++,

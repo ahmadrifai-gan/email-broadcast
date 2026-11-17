@@ -206,7 +206,7 @@ class Perusahaan extends BaseController
             $status = $comp['status_analisis'];
             $pCount = $productCountMap[(int) $comp['id']] ?? 0;
 
-            if (!in_array($status, ['sukses', 'manual_edit'], true)) {
+            if (!in_array($status, ['sukses', 'manual'], true)) {
                 if ($status === 'belum_dianalisis') {
                     $skippedBreakdown['belum_dianalisis']['count']++;
                 } elseif ($status === 'gagal') {
@@ -317,7 +317,7 @@ class Perusahaan extends BaseController
     private function processImportCompany(array $company, array $products): array
     {
         $status = $company['status_analisis'] ?? '';
-        if (!in_array($status, ['sukses', 'manual_edit'], true)) {
+        if (!in_array($status, ['sukses', 'manual'], true)) {
             $reason = ($status === 'belum_dianalisis')
                 ? 'Status analisis masih belum dianalisis'
                 : (($status === 'gagal') ? 'Status analisis gagal' : "Status analisis tidak memenuhi syarat ({$status})");

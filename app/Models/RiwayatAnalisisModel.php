@@ -13,7 +13,7 @@ class RiwayatAnalisisModel extends Model
     protected $useSoftDeletes   = false;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'perusahaan_id',
+        'kontak_email_id',
         'status',
         'sumber_digunakan',
         'hasil_mentah',
@@ -30,7 +30,7 @@ class RiwayatAnalisisModel extends Model
     public function getRecentWithPerusahaan(int $limit = 10): array
     {
         return $this->select('riwayat_analisis.*, perusahaan.nama_perusahaan, perusahaan.nomor_excel')
-            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.perusahaan_id', 'left')
+            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left')
             ->orderBy('riwayat_analisis.id', 'DESC')
             ->limit($limit)
             ->findAll();
@@ -42,14 +42,14 @@ class RiwayatAnalisisModel extends Model
     public function getFiltered(array $filter = [], int $limit = 20, int $offset = 0): array
     {
         $builder = $this->select('riwayat_analisis.*, perusahaan.nama_perusahaan, perusahaan.nomor_excel')
-            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.perusahaan_id', 'left');
+            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left');
 
         if (!empty($filter['status'])) {
             $builder->where('riwayat_analisis.status', $filter['status']);
         }
 
-        if (!empty($filter['perusahaan_id'])) {
-            $builder->where('riwayat_analisis.perusahaan_id', $filter['perusahaan_id']);
+        if (!empty($filter['kontak_email_id'])) {
+            $builder->where('riwayat_analisis.kontak_email_id', $filter['kontak_email_id']);
         }
 
         if (!empty($filter['search'])) {
@@ -72,14 +72,14 @@ class RiwayatAnalisisModel extends Model
      */
     public function countFiltered(array $filter = []): int
     {
-        $builder = $this->join('perusahaan', 'perusahaan.id = riwayat_analisis.perusahaan_id', 'left');
+        $builder = $this->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left');
 
         if (!empty($filter['status'])) {
             $builder->where('riwayat_analisis.status', $filter['status']);
         }
 
-        if (!empty($filter['perusahaan_id'])) {
-            $builder->where('riwayat_analisis.perusahaan_id', $filter['perusahaan_id']);
+        if (!empty($filter['kontak_email_id'])) {
+            $builder->where('riwayat_analisis.kontak_email_id', $filter['kontak_email_id']);
         }
 
         if (!empty($filter['search'])) {
