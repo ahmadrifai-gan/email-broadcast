@@ -42,8 +42,8 @@ $pesan = static fn(string $f) => isset($errors[$f])
     <div class="box-header with-border">
         <h3 class="box-title">Daftar Kontak</h3>
         <div class="box-tools pull-right">
-            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalKontak"
-                data-judul="Tambah Kontak" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
+            <!-- TOMBOL TAMBAH KONTAK (MEMBUKA MODAL PILIHAN) -->
+            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalPilihanTambah">
                 <i class="fa fa-plus"></i> Tambah Kontak
             </button>
         </div>
@@ -71,16 +71,6 @@ $pesan = static fn(string $f) => isset($errors[$f])
                 </div>
             </div>
         </form>
-
-        <div class="box-tools pull-right">
-            <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalImport">
-                <i class="fa fa-file-excel-o"></i> Import Excel
-            </button>
-            <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target="#modalKontak"
-                data-judul="Tambah Kontak" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
-                <i class="fa fa-plus"></i> Tambah Kontak
-            </button>
-        </div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-hover">
@@ -142,7 +132,55 @@ $pesan = static fn(string $f) => isset($errors[$f])
     </div>
 </div>
 
-<!-- Modal tambah / ubah -->
+<!-- ============================================== -->
+<!-- MODAL PILIHAN TAMBAH KONTAK (4 OPSI) -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalPilihanTambah" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-plus"></i> Pilih Metode Tambah Kontak</h4>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted" style="margin-bottom: 20px;">Silakan pilih metode yang ingin Anda gunakan untuk menambahkan kontak baru.</p>
+                <div class="row">
+                    <!-- OPSI 1: GMAPS -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalGmaps">
+                            <i class="fa fa-google" style="color: #db4437; font-size: 24px;"></i><br>Gmaps
+                        </button>
+                    </div>
+                    <!-- OPSI 2: IMPORT EXCEL -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImport">
+                            <i class="fa fa-file-excel-o" style="color: #1e7145; font-size: 24px;"></i><br>Import Excel
+                        </button>
+                    </div>
+                    <!-- OPSI 3: MANUAL -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalKontak" data-judul="Tambah Kontak Manual" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
+                            <i class="fa fa-pencil" style="color: #f39c12; font-size: 24px;"></i><br>Manual
+                        </button>
+                    </div>
+                    <!-- OPSI 4: EXCEL WEB -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImportWeb">
+                            <i class="fa fa-globe" style="color: #00c0ef; font-size: 24px;"></i><br>Excel Web
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL MANUAL (TAMBAH / UBAH) -->
+<!-- ============================================== -->
 <div class="modal fade" id="modalKontak" tabindex="-1" role="dialog" aria-labelledby="modalKontakJudul">
     <div class="modal-dialog modal-lg" role="document">
         <form id="formKontak" action="<?= $modalAksi ?? site_url('kontak/simpan') ?>" method="post"
@@ -153,7 +191,7 @@ $pesan = static fn(string $f) => isset($errors[$f])
                 <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span
                         aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="modalKontakJudul">
-                    <?= $modalAksi && str_contains($modalAksi, 'perbarui') ? 'Ubah Kontak' : 'Tambah Kontak' ?>
+                    <?= $modalAksi && str_contains($modalAksi, 'perbarui') ? 'Ubah Kontak' : 'Tambah Kontak Manual' ?>
                 </h4>
             </div>
 
@@ -262,7 +300,9 @@ $pesan = static fn(string $f) => isset($errors[$f])
     </div>
 </div>
 
-<!-- Modal import Excel -->
+<!-- ============================================== -->
+<!-- MODAL IMPORT EXCEL -->
+<!-- ============================================== -->
 <div class="modal fade" id="modalImport" tabindex="-1" role="dialog" aria-labelledby="modalImportJudul">
     <div class="modal-dialog" role="document">
         <form action="<?= site_url('kontak/import') ?>" method="post" enctype="multipart/form-data" class="modal-content">
@@ -302,6 +342,53 @@ $pesan = static fn(string $f) => isset($errors[$f])
                 <button type="submit" class="btn btn-success"><i class="fa fa-upload"></i> Import</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL GMAPS (DUMMY / PLACEHOLDER) -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalGmaps" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-google" style="color: #db4437;"></i> Tarik Data dari Gmaps</h4>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> Fitur Scrapper Gmaps sedang dalam tahap integrasi. Halaman ini akan diarahkan ke menu Scrapper Gmaps.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL EXCEL WEB (DUMMY / PLACEHOLDER) -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalImportWeb" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-globe" style="color: #00c0ef;"></i> Import Excel dari Web</h4>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>URL File Excel</label>
+                    <input type="text" class="form-control" placeholder="https://example.com/data.xlsx">
+                    <small class="text-muted">Fitur ini akan mengambil file Excel langsung dari URL web.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" disabled>Import (Segera Hadir)</button>
+            </div>
+        </div>
     </div>
 </div>
 
