@@ -187,7 +187,7 @@ $rateTx = static fn($r) => $r === null ? '-' : str_replace('.', ',', (string) $r
                         <th>Keberhasilan</th>
                         <th>Mulai Kirim</th>
                         <th>Durasi</th>
-                        <th width="60">Aksi</th>
+                        <th width="90">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -220,7 +220,8 @@ $rateTx = static fn($r) => $r === null ? '-' : str_replace('.', ',', (string) $r
                         </td>
                         <td data-order="<?= esc($k['tanggal_acuan'] ?? '') ?>"><?= $fmtTgl($k['mulai_dikirim_pada'] ?? null) ?></td>
                         <td data-order="<?= $k['durasi_detik'] ?? -1 ?>"><?= esc($k['durasi_teks']) ?></td>
-                        <td class="text-center">
+                        <td class="text-center" style="white-space:nowrap;">
+                            <a href="<?= base_url('laporan/per-kampanye?id=' . (int) $k['id']) ?>" class="btn btn-primary btn-xs" title="Laporan kampanye ini"><i class="fa fa-line-chart"></i></a>
                             <a href="<?= base_url('kirim-email/detail/' . $k['id']) ?>" class="btn btn-info btn-xs" title="Lihat detail kampanye"><i class="fa fa-eye"></i></a>
                         </td>
                     </tr>

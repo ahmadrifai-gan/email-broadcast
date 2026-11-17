@@ -82,3 +82,34 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
+
+// Laporan Per Kampanye — HARUS sebelum route lain yang mungkin konflik
+$routes->get('laporan/per-kampanye',                   'PerKampanyeController::index');
+$routes->get('laporan/per-kampanye/export/(:segment)', 'PerKampanyeController::export/$1');
+
+// --------------------------------------------------------------------
+// Extractor Routes
+// --------------------------------------------------------------------
+// Extractor Routes
+// --- ROUTE UNTUK EXTRACTOR ---
+
+// Halaman utama
+$routes->get('extractor', 'Extractor::index');
+
+// Alias dengan underscore (sesuai nama file)
+$routes->get('extractor/cari_email', 'Extractor::index');
+
+// Alias dengan dash (sesuai yang Anda ketik di browser)
+$routes->get('extractor/cari-email', 'Extractor::index');
+
+// API Endpoint
+$routes->group('extractor/api', ['namespace' => 'App\Controllers'], function ($routes) {
+    $routes->get('kontak', 'Extractor::kontak');
+    $routes->get('hasil', 'Extractor::hasil');
+    $routes->post('start', 'Extractor::start');
+    $routes->post('stop', 'Extractor::stop');
+    $routes->get('status', 'Extractor::status');
+    $routes->post('models', 'Extractor::models');
+    $routes->post('test', 'Extractor::test');
+    $routes->post('pakai', 'Extractor::pakai');
+});
