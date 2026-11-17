@@ -52,7 +52,7 @@
                 </a>
             </li>
             <li class="<?= url_is('kontak*') ? 'active' : '' ?>">
-                <a href="<?= site_url('kontak') ?>">
+                <a href="<?= site_url('perusahaan') ?>">
                     <i class="fa fa-address-book-o"></i> <span>Data Kontak</span>
                 </a>
             </li>

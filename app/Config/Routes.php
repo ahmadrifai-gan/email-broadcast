@@ -82,3 +82,13 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
+
+$routes->group('perusahaan', static function ($routes) {
+    $routes->get('/',                     'Perusahaan::index');
+    $routes->get('detail/(:num)',         'Perusahaan::detail/$1');
+    $routes->post('delete/(:num)',        'Perusahaan::delete/$1');
+    $routes->post('bulk-delete',          'Perusahaan::bulkDelete');
+    $routes->post('import-single/(:num)', 'Perusahaan::importSingle/$1');
+    $routes->get('import-preview',        'Perusahaan::importPreview');
+    $routes->post('import-all',           'Perusahaan::importAll');
+});
