@@ -12,16 +12,22 @@ $routes->group('kategori-template-email', function ($routes) {
     $routes->post('delete/(:num)', 'KategoriController::delete/$1');
 });
 
-// Kontak
+//Kontak
 $routes->group('kontak', static function ($routes) {
-    $routes->get('/', 'KontakController::index');
-    $routes->post('simpan', 'KontakController::simpan');
+    // Kontak (CRUD + import Excel)
+    $routes->get('/',                'KontakController::index');
+    $routes->post('simpan',          'KontakController::simpan');
     $routes->post('perbarui/(:num)', 'KontakController::perbarui/$1');
-    $routes->post('hapus/(:num)', 'KontakController::hapus/$1');
+    $routes->post('hapus/(:num)',    'KontakController::hapus/$1');
+    $routes->post('import',          'KontakController::import');
+    $routes->get('template',         'KontakController::template');
 
-    // Import Excel
-    $routes->get('template', 'KontakController::template');
-    $routes->post('import', 'KontakController::import');
+    // Perusahaan (detail, hapus massal, import ke supplier)
+    $routes->get('detail/(:num)',         'KontakController::detail/$1');
+    $routes->post('bulk-delete',          'KontakController::bulkDelete');
+    $routes->get('import-preview',        'KontakController::importPreview');
+    $routes->post('import-single/(:num)', 'KontakController::importSingle/$1');
+    $routes->post('import-all',           'KontakController::importAll');
 });
 
 $routes->group('template-email', ['namespace' => 'App\Controllers'], function ($routes) {
@@ -82,3 +88,13 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
+
+// $routes->group('perusahaan', static function ($routes) {
+//     $routes->get('/',                     'Perusahaan::index');
+//     $routes->get('detail/(:num)',         'Perusahaan::detail/$1');
+//     $routes->post('delete/(:num)',        'Perusahaan::delete/$1');
+//     $routes->post('bulk-delete',          'Perusahaan::bulkDelete');
+//     $routes->post('import-single/(:num)', 'Perusahaan::importSingle/$1');
+//     $routes->get('import-preview',        'Perusahaan::importPreview');
+//     $routes->post('import-all',           'Perusahaan::importAll');
+// });
