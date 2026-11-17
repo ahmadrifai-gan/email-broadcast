@@ -73,3 +73,4 @@ $routes->group('kategori', static function ($routes) {
 });
 
 $routes->get('laporan-smtp-kuota', 'LaporanSmtpController::index');
+$routes->get('laporan-template', 'LaporanTemplateController::index');

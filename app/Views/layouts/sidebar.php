@@ -47,7 +47,7 @@
             <li class="header">Kategori KONTAK</li>
             <li class="<?= url_is('kategori*') && !url_is('kategori-template-email*') ? 'active' : '' ?>">
                 <a href="<?= site_url('kategori') ?>">
-                    <i class="fa fa-address-book"></i> <span>Kategori Kontak</span>
+                    <i class="fa fa-folder-open"></i> <span>Kategori Kontak</span>
                 </a>
             </li>
             <li class="<?= url_is('kontak*') ? 'active' : '' ?>">
@@ -64,7 +64,7 @@
             </li>
 
             <li class="<?= url_is('template-email*') ? 'active' : '' ?>">
-                <a href="<?= site_url('template-email') ?>">
+                <a href="<?= site_url('template-email') ?>"> 
                     <i class="fa fa-file-text-o"></i> <span>Template Email</span>
                 </a>
             </li>
