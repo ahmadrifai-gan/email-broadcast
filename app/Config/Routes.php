@@ -82,3 +82,26 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
+
+// ==========================================
+// RUTE SCRAPPER GMAPS
+// ==========================================
+$routes->group('scrapper', function ($routes) {
+    $routes->get('/', 'Travel::index');
+    $routes->post('scrape', 'Travel::scrape');
+    $routes->get('edit-data', 'Travel::editData');
+    $routes->get('edit-data/(:segment)', 'Travel::editDataKeyword/$1');
+    $routes->get('edit/(:num)', 'Travel::edit/$1');
+    $routes->post('update/(:num)', 'Travel::update/$1');
+    $routes->get('delete/(:num)', 'Travel::delete/$1');
+    $routes->get('export-excel/(:segment)', 'Travel::exportExcel/$1');
+    
+    // Fitur cek status
+    $routes->post('check-website/(:num)', 'Travel::checkWebsite/$1');
+    $routes->post('check-website-bulk', 'Travel::checkWebsiteBulk');
+    $routes->post('check-wa/(:num)', 'Travel::checkWaNumber/$1');
+    $routes->post('check-wa-bulk', 'Travel::checkWaNumberBulk');
+    
+    // Fitur import ke kontak
+    $routes->get('import-ke-kontak', 'Travel::importKeKontak');
+});

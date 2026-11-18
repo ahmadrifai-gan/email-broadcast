@@ -146,10 +146,11 @@ $pesan = static fn(string $f) => isset($errors[$f])
                 <p class="text-muted" style="margin-bottom: 20px;">Silakan pilih metode yang ingin Anda gunakan untuk menambahkan kontak baru.</p>
                 <div class="row">
                     <!-- OPSI 1: GMAPS -->
+                    <!-- OPSI 1: GMAPS -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
-                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalGmaps">
+                        <a href="<?= site_url('scrapper') ?>" class="btn btn-default btn-block btn-lg">
                             <i class="fa fa-google" style="color: #db4437; font-size: 24px;"></i><br>Gmaps
-                        </button>
+                        </a>
                     </div>
                     <!-- OPSI 2: IMPORT EXCEL -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
@@ -396,7 +397,7 @@ $pesan = static fn(string $f) => isset($errors[$f])
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function () {
+    $(function() {
         var $modal = $('#modalKontak');
         var fields = [
             'kategori_id', 'nama', 'nama_perusahaan', 'email', 'no_hp', 'website',
@@ -405,7 +406,7 @@ $pesan = static fn(string $f) => isset($errors[$f])
         ];
 
         // Isi modal sesuai tombol yang diklik (tambah / ubah)
-        $modal.on('show.bs.modal', function (e) {
+        $modal.on('show.bs.modal', function(e) {
             var btn = e.relatedTarget;
             if (!btn) return; // dibuka otomatis setelah error validasi
 
@@ -415,7 +416,7 @@ $pesan = static fn(string $f) => isset($errors[$f])
             $('#formKontak').attr('action', $btn.data('aksi'));
             $('#modalKontakJudul').text($btn.data('judul'));
 
-            fields.forEach(function (f) {
+            fields.forEach(function(f) {
                 var nilai = data[f];
                 if (nilai === null || nilai === undefined) {
                     nilai = (f === 'jumlah_tidak_terkirim') ? 0 : '';
@@ -427,7 +428,9 @@ $pesan = static fn(string $f) => isset($errors[$f])
             $modal.find('.pesan-error').remove();
         });
 
-        $modal.on('shown.bs.modal', function () { $('#nama_perusahaan').focus(); });
+        $modal.on('shown.bs.modal', function() {
+            $('#nama_perusahaan').focus();
+        });
 
         <?php if ($modalAksi): ?>
             // Buka lagi modal jika validasi gagal
