@@ -88,13 +88,22 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
-
-// $routes->group('perusahaan', static function ($routes) {
-//     $routes->get('/',                     'Perusahaan::index');
-//     $routes->get('detail/(:num)',         'Perusahaan::detail/$1');
-//     $routes->post('delete/(:num)',        'Perusahaan::delete/$1');
-//     $routes->post('bulk-delete',          'Perusahaan::bulkDelete');
-//     $routes->post('import-single/(:num)', 'Perusahaan::importSingle/$1');
-//     $routes->get('import-preview',        'Perusahaan::importPreview');
-//     $routes->post('import-all',           'Perusahaan::importAll');
-// });
+$routes->group('scrapper', function ($routes) {
+    $routes->get('/', 'Travel::index');
+    $routes->post('scrape', 'Travel::scrape');
+    $routes->get('edit-data', 'Travel::editData');
+    $routes->get('edit-data/(:segment)', 'Travel::editDataKeyword/$1');
+    $routes->get('edit/(:num)', 'Travel::edit/$1');
+    $routes->post('update/(:num)', 'Travel::update/$1');
+    $routes->get('delete/(:num)', 'Travel::delete/$1');
+    $routes->get('export-excel/(:segment)', 'Travel::exportExcel/$1');
+    
+    // Fitur cek status
+    $routes->post('check-website/(:num)', 'Travel::checkWebsite/$1');
+    $routes->post('check-website-bulk', 'Travel::checkWebsiteBulk');
+    $routes->post('check-wa/(:num)', 'Travel::checkWaNumber/$1');
+    $routes->post('check-wa-bulk', 'Travel::checkWaNumberBulk');
+    
+    // Fitur import ke kontak
+    $routes->get('import-ke-kontak', 'Travel::importKeKontak');
+});
