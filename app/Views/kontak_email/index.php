@@ -409,8 +409,57 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     </div>
 </div>
 
-<!-- Modal tambah / ubah -->
-<div class="modal fade kp-modal" id="modalKontak" tabindex="-1" role="dialog" aria-labelledby="modalKontakJudul">
+<!-- ============================================== -->
+<!-- MODAL PILIHAN TAMBAH KONTAK (4 OPSI) -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalPilihanTambah" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-plus"></i> Pilih Metode Tambah Kontak</h4>
+            </div>
+            <div class="modal-body text-center">
+                <p class="text-muted" style="margin-bottom: 20px;">Silakan pilih metode yang ingin Anda gunakan untuk menambahkan kontak baru.</p>
+                <div class="row">
+                    <!-- OPSI 1: GMAPS -->
+                    <!-- OPSI 1: GMAPS -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <a href="<?= site_url('scrapper') ?>" class="btn btn-default btn-block btn-lg">
+                            <i class="fa fa-google" style="color: #db4437; font-size: 24px;"></i><br>Gmaps
+                        </a>
+                    </div>
+                    <!-- OPSI 2: IMPORT EXCEL -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImport">
+                            <i class="fa fa-file-excel-o" style="color: #1e7145; font-size: 24px;"></i><br>Import Excel
+                        </button>
+                    </div>
+                    <!-- OPSI 3: MANUAL -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalKontak" data-judul="Tambah Kontak Manual" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
+                            <i class="fa fa-pencil" style="color: #f39c12; font-size: 24px;"></i><br>Manual
+                        </button>
+                    </div>
+                    <!-- OPSI 4: EXCEL WEB -->
+                    <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImportWeb">
+                            <i class="fa fa-globe" style="color: #00c0ef; font-size: 24px;"></i><br>Excel Web
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================== -->
+<!-- MODAL MANUAL (TAMBAH / UBAH) -->
+<!-- ============================================== -->
+<div class="modal fade" id="modalKontak" tabindex="-1" role="dialog" aria-labelledby="modalKontakJudul">
     <div class="modal-dialog modal-lg" role="document">
         <form id="formKontak" action="<?= esc($modalAksi ?? site_url('kontak/simpan'), 'attr') ?>" method="post"
             class="modal-content">
@@ -696,7 +745,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function () {
+    $(function() {
         var $modal = $('#modalKontak');
         var fields = [
             'kategori_id', 'nama', 'nama_perusahaan', 'email', 'no_hp', 'website',
@@ -705,7 +754,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         ];
 
         // Isi modal sesuai tombol yang diklik (tambah / ubah)
-        $modal.on('show.bs.modal', function (e) {
+        $modal.on('show.bs.modal', function(e) {
             var btn = e.relatedTarget;
             if (!btn) return; // dibuka otomatis setelah error validasi
 
@@ -715,7 +764,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
             $('#formKontak').attr('action', $btn.data('aksi'));
             $('#modalKontakJudul').text($btn.data('judul'));
 
-            fields.forEach(function (f) {
+            fields.forEach(function(f) {
                 var nilai = data[f];
                 if (nilai === null || nilai === undefined) {
                     nilai = (f === 'jumlah_tidak_terkirim') ? 0 : '';
@@ -727,7 +776,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
             $modal.find('.pesan-error').remove();
         });
 
-        $modal.on('shown.bs.modal', function () { $('#nama_perusahaan').focus(); });
+        $modal.on('shown.bs.modal', function() {
+            $('#nama_perusahaan').focus();
+        });
 
         <?php if ($modalAksi): ?>
             // Buka lagi modal jika validasi gagal
