@@ -298,7 +298,7 @@ $tabAktif = $filter['tab'];
                             <th>Waktu</th>
                             <th>Kampanye</th>
                             <th>Penerima</th>
-                            <th>Kategori</th>
+                            <th>Kategori</th> 
                             <th>Status</th>
                             <th class="text-center">Percobaan</th>
                             <th>Keterangan</th>
