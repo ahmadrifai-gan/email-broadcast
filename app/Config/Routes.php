@@ -88,6 +88,7 @@ $routes->get('laporan/ringkasan-kampanye/export', 'RingkasanKampanyeController::
 // Rute untuk Laporan Penerima & Kontak
 $routes->get('laporan/penerima-kontak', 'PenerimaKontakController::penerimaKontak');
 $routes->get('laporan/penerima-kontak/export/(:segment)', 'PenerimaKontakController::exportPenerimaKontak/$1');
+
 $routes->group('scrapper', function ($routes) {
     $routes->get('/', 'Travel::index');
     $routes->post('scrape', 'Travel::scrape');
