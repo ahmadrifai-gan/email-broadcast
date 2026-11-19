@@ -2,14 +2,18 @@
 
 <?= $this->section('title') ?>Scrapper Gmaps<?= $this->endSection() ?>
 <?= $this->section('page_title') ?>Scrapper Gmaps<?= $this->endSection() ?>
-<?= $this->section('page_subtitle') ?>Tarik data dari Google Maps<?= $this->endSection() ?>
 
-<?= $this->section('styles') ?>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<?= $this->section('breadcrumb') ?>
+<li><a href="<?= site_url('/') ?>"><i class="fa fa-dashboard"></i> Home</a></li>
+<li class="active">Scrapper Gmaps</li>
+<?= $this->endSection() ?>
+
+<?= $this->section('content') ?>
+
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
-    /* SEMUA CSS DARI KODE ASLI ANDA TETAP DIPERTAHANKAN */
     :root{
         --primary:#2563eb;
         --primary-dark:#1d4ed8;
@@ -25,8 +29,95 @@
         --shadow:0 12px 40px rgba(15,23,42,.07);
     }
 
-    *{box-sizing:border-box}
+    /* ===== SCOPED UTILITIES (KHUSUS DI DALAM .scrapper-container) ===== */
+    .scrapper-container * { box-sizing: border-box; }
+    .scrapper-container a { text-decoration: none; }
 
+    .scrapper-container .d-flex { display: flex !important; }
+    .scrapper-container .flex-column { flex-direction: column !important; }
+    .scrapper-container .gap-1 { gap: 4px !important; }
+    .scrapper-container .mb-0 { margin-bottom: 0 !important; }
+    .scrapper-container .mb-3 { margin-bottom: 16px !important; }
+    .scrapper-container .mt-3 { margin-top: 16px !important; }
+    .scrapper-container .me-1 { margin-right: 4px !important; }
+    .scrapper-container .me-2 { margin-right: 8px !important; }
+    .scrapper-container .small { font-size: 12px !important; }
+    .scrapper-container .text-primary { color: var(--primary) !important; }
+    .scrapper-container .text-muted { color: var(--muted) !important; }
+
+    .scrapper-container .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.4;
+        cursor: pointer;
+        transition: .2s;
+    }
+    .scrapper-container .btn-success {
+        background: var(--success);
+        border: 1px solid var(--success);
+        color: #fff;
+    }
+    .scrapper-container .btn-success:hover {
+        background: #15803d;
+        border-color: #15803d;
+        color: #fff;
+    }
+
+    .scrapper-container .alert {
+        border: 0;
+        border-radius: 14px;
+        font-size: 12px;
+        padding: 12px 16px;
+    }
+    .scrapper-container .alert.fade.show { opacity: 1; }
+    .scrapper-container .alert-dismissible { position: relative; padding-right: 40px; }
+    .scrapper-container .alert-primary {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #dbeafe;
+    }
+    .scrapper-container .btn-close {
+        position: absolute;
+        top: 50%;
+        right: 14px;
+        transform: translateY(-50%);
+        background: transparent;
+        border: 0;
+        font-size: 18px;
+        line-height: 1;
+        color: inherit;
+        opacity: .65;
+        cursor: pointer;
+    }
+    .scrapper-container .btn-close::before { content: "\00d7"; }
+    .scrapper-container .btn-close:hover { opacity: 1; }
+
+    @keyframes scrapper-spin {
+        to { transform: rotate(360deg); }
+    }
+    .scrapper-container .spinner-border {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        vertical-align: -0.125em;
+        border: 3px solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: scrapper-spin .75s linear infinite;
+    }
+    .scrapper-container .spinner-border-sm {
+        width: 14px;
+        height: 14px;
+        border-width: 2px;
+    }
+
+    /* ===== STYLE UTAMA SCRAPPER ===== */
     .scrapper-container {
         font-family:'Inter',system-ui,sans-serif;
         color:var(--text);
@@ -38,16 +129,13 @@
         padding: 20px;
     }
 
-    a{text-decoration:none}
-
-    .page{
+    .scrapper-container .page{
         width:100%;
         max-width:1450px;
         margin:auto;
-        /* padding:24px 16px 50px; Dihapus paddingnya agar pas di dalam box */
     }
 
-    .topbar{
+    .scrapper-container .topbar{
         display:flex;
         align-items:center;
         justify-content:space-between;
@@ -55,13 +143,13 @@
         margin-bottom:18px;
     }
 
-    .brand{
+    .scrapper-container .brand{
         display:flex;
         align-items:center;
         gap:12px;
     }
 
-    .brand-icon{
+    .scrapper-container .brand-icon{
         width:44px;height:44px;
         display:grid;place-items:center;
         border-radius:14px;
@@ -70,10 +158,10 @@
         box-shadow:0 10px 24px rgba(37,99,235,.2);
     }
 
-    .brand-title{font-weight:800;font-size:15px}
-    .brand-subtitle{font-size:10px;color:#94a3b8;margin-top:2px}
+    .scrapper-container .brand-title{font-weight:800;font-size:15px}
+    .scrapper-container .brand-subtitle{font-size:10px;color:#94a3b8;margin-top:2px}
 
-    .status{
+    .scrapper-container .status{
         display:inline-flex;
         align-items:center;
         gap:7px;
@@ -86,13 +174,13 @@
         font-weight:700;
     }
 
-    .status-dot{
+    .scrapper-container .status-dot{
         width:7px;height:7px;border-radius:50%;
         background:#22c55e;
         box-shadow:0 0 0 4px rgba(34,197,94,.1);
     }
 
-    .hero{
+    .scrapper-container .hero{
         position:relative;
         overflow:hidden;
         padding:38px;
@@ -103,7 +191,8 @@
         margin-bottom:18px;
     }
 
-    .hero:before,.hero:after{
+    .scrapper-container .hero:before,
+    .scrapper-container .hero:after{
         content:"";
         position:absolute;
         border-radius:50%;
@@ -111,11 +200,11 @@
         pointer-events:none;
     }
 
-    .hero:before{width:450px;height:450px;right:-150px;top:-280px}
-    .hero:after{width:300px;height:300px;right:180px;bottom:-250px}
+    .scrapper-container .hero:before{width:450px;height:450px;right:-150px;top:-280px}
+    .scrapper-container .hero:after{width:300px;height:300px;right:180px;bottom:-250px}
 
-    .hero-content{position:relative;z-index:1}
-    .hero-icon{
+    .scrapper-container .hero-content{position:relative;z-index:1}
+    .scrapper-container .hero-icon{
         width:58px;height:58px;
         display:grid;place-items:center;
         border-radius:17px;
@@ -125,7 +214,7 @@
         margin-bottom:16px;
     }
 
-    .hero h1{
+    .scrapper-container .hero h1{
         margin:0 0 10px;
         font-size:34px;
         line-height:1.15;
@@ -133,7 +222,7 @@
         letter-spacing:-.8px;
     }
 
-    .hero p{
+    .scrapper-container .hero p{
         max-width:820px;
         margin:0;
         color:rgba(255,255,255,.84);
@@ -141,14 +230,14 @@
         line-height:1.8;
     }
 
-    .chips{
+    .scrapper-container .chips{
         display:flex;
         flex-wrap:wrap;
         gap:8px;
         margin-top:20px;
     }
 
-    .chip{
+    .scrapper-container .chip{
         display:inline-flex;
         align-items:center;
         gap:7px;
@@ -160,7 +249,7 @@
         font-weight:600;
     }
 
-    .card{
+    .scrapper-container .card{
         background:rgba(255,255,255,.97);
         border:1px solid var(--border);
         border-radius:var(--radius);
@@ -168,34 +257,34 @@
         overflow:hidden;
     }
 
-    .card + .card{margin-top:18px}
+    .scrapper-container .card + .card{margin-top:18px}
 
-    .card-head{
+    .scrapper-container .card-head{
         padding:20px 22px;
         border-bottom:1px solid var(--border);
     }
 
-    .section-title{
+    .scrapper-container .section-title{
         margin:0;
         font-size:15px;
         font-weight:800;
     }
 
-    .section-subtitle{
+    .scrapper-container .section-subtitle{
         margin:4px 0 0;
         color:var(--muted);
         font-size:10px;
     }
 
-    .search-body{padding:24px}
+    .scrapper-container .search-body{padding:24px}
 
-    .search-row{
+    .scrapper-container .search-row{
         display:flex;
         gap:10px;
     }
 
-    .input-wrap{position:relative;flex:1}
-    .input-icon{
+    .scrapper-container .input-wrap{position:relative;flex:1}
+    .scrapper-container .input-icon{
         position:absolute;
         left:16px;top:50%;
         transform:translateY(-50%);
@@ -203,7 +292,7 @@
         z-index:2;
     }
 
-    .search-input{
+    .scrapper-container .search-input{
         width:100%;
         height:54px;
         padding:0 16px 0 44px;
@@ -214,12 +303,17 @@
         transition:.2s;
     }
 
-    .search-input:focus{
+    .scrapper-container .search-input:focus{
         border-color:#60a5fa;
         box-shadow:0 0 0 4px rgba(37,99,235,.08);
     }
 
-    .search-button{
+    .scrapper-container .search-input.is-invalid{
+        border-color:var(--danger);
+        box-shadow:0 0 0 4px rgba(220,38,38,.12);
+    }
+
+    .scrapper-container .search-button{
         min-width:150px;
         height:54px;
         border:0;
@@ -229,11 +323,12 @@
         font-size:11px;
         background:linear-gradient(135deg,var(--primary),var(--secondary));
         box-shadow:0 10px 24px rgba(37,99,235,.18);
+        cursor:pointer;
     }
 
-    .search-button:disabled{opacity:.7;cursor:wait}
+    .scrapper-container .search-button:disabled{opacity:.7;cursor:wait}
 
-    .hint{
+    .scrapper-container .hint{
         margin-top:11px;
         padding:10px 12px;
         border-radius:10px;
@@ -244,14 +339,14 @@
         line-height:1.6;
     }
 
-    .history-list{
+    .scrapper-container .history-list{
         display:grid;
         grid-template-columns:repeat(3,minmax(0,1fr));
         gap:10px;
         padding:16px;
     }
 
-    .history-item{
+    .scrapper-container .history-item{
         display:flex;
         align-items:center;
         gap:11px;
@@ -263,13 +358,13 @@
         transition:.18s;
     }
 
-    .history-item:hover{
+    .scrapper-container .history-item:hover{
         transform:translateY(-2px);
         border-color:#bfdbfe;
         box-shadow:0 10px 25px rgba(15,23,42,.06);
     }
 
-    .history-icon{
+    .scrapper-container .history-icon{
         width:40px;height:40px;
         flex:0 0 40px;
         display:grid;place-items:center;
@@ -278,8 +373,8 @@
         background:#eff6ff;
     }
 
-    .history-info{min-width:0;flex:1}
-    .history-keyword{
+    .scrapper-container .history-info{min-width:0;flex:1}
+    .scrapper-container .history-keyword{
         overflow:hidden;
         text-overflow:ellipsis;
         white-space:nowrap;
@@ -287,9 +382,9 @@
         font-weight:700;
     }
 
-    .history-count{font-size:9px;color:#94a3b8;margin-top:3px}
+    .scrapper-container .history-count{font-size:9px;color:#94a3b8;margin-top:3px}
 
-    .history-link{
+    .scrapper-container .history-link{
         width:34px;height:34px;
         flex:0 0 34px;
         display:grid;place-items:center;
@@ -298,16 +393,16 @@
         color:#64748b;
     }
 
-    .history-link:hover{background:#eff6ff;color:var(--primary)}
+    .scrapper-container .history-link:hover{background:#eff6ff;color:var(--primary)}
 
-    .result-head{
+    .scrapper-container .result-head{
         display:flex;
         align-items:center;
         justify-content:space-between;
         gap:12px;
     }
 
-    .result-badge{
+    .scrapper-container .result-badge{
         padding:7px 10px;
         border-radius:999px;
         background:#eff6ff;
@@ -317,7 +412,7 @@
         font-weight:700;
     }
 
-    .toolbar{
+    .scrapper-container .toolbar{
         display:none;
         align-items:center;
         gap:10px;
@@ -325,7 +420,7 @@
         border-bottom:1px solid var(--border);
     }
 
-    .toolbar input{
+    .scrapper-container .toolbar input{
         width:100%;
         max-width:360px;
         height:38px;
@@ -336,14 +431,14 @@
         font-size:10px;
     }
 
-    .toolbar input:focus{
+    .scrapper-container .toolbar input:focus{
         border-color:#60a5fa;
         box-shadow:0 0 0 3px rgba(37,99,235,.07);
     }
 
-    .table-wrap{width:100%;overflow:auto}
-    table{width:100%;min-width:1050px;border-collapse:collapse}
-    th{
+    .scrapper-container .table-wrap{width:100%;overflow:auto}
+    .scrapper-container table{width:100%;min-width:1050px;border-collapse:collapse}
+    .scrapper-container th{
         padding:13px 14px;
         background:#f8fafc;
         color:#64748b;
@@ -353,27 +448,27 @@
         text-transform:uppercase;
         letter-spacing:.3px;
     }
-    td{
+    .scrapper-container td{
         padding:14px;
         border-bottom:1px solid #eef2f7;
         vertical-align:middle;
         font-size:10px;
     }
-    tr:hover td{background:#fbfdff}
+    .scrapper-container tr:hover td{background:#fbfdff}
 
-    .number{
+    .scrapper-container .number{
         width:55px;
         text-align:center;
         color:#94a3b8;
         font-weight:800;
     }
 
-    .place-name{font-weight:800;color:#111827}
-    .address{max-width:320px;line-height:1.55;color:#475569}
-    .phone a{color:#475569;font-weight:700}
-    .email a{font-weight:700;color:var(--primary)}
-    .website a{font-weight:700;color:var(--primary)}
-    .map-btn{
+    .scrapper-container .place-name{font-weight:800;color:#111827}
+    .scrapper-container .address{max-width:320px;line-height:1.55;color:#475569}
+    .scrapper-container .phone a{color:#475569;font-weight:700}
+    .scrapper-container .email a{font-weight:700;color:var(--primary)}
+    .scrapper-container .website a{font-weight:700;color:var(--primary)}
+    .scrapper-container .map-btn{
         display:inline-flex;
         align-items:center;
         justify-content:center;
@@ -384,7 +479,7 @@
         border:1px solid #dcfce7;
     }
 
-    .wa-badge{
+    .scrapper-container .wa-badge{
         display:inline-flex;
         align-items:center;
         gap:6px;
@@ -394,35 +489,36 @@
         font-size:9.5px;
         white-space:nowrap;
         border:1px solid transparent;
+        width:fit-content;
     }
 
-    .wa-badge i{font-size:11px}
+    .scrapper-container .wa-badge i{font-size:11px}
 
-    .wa-badge-active{
+    .scrapper-container .wa-badge-active{
         background:#f0fdf4;
         color:#15803d;
         border-color:#bbf7d0;
     }
 
-    .wa-badge-inactive{
+    .scrapper-container .wa-badge-inactive{
         background:#fffbeb;
         color:#92400e;
         border-color:#fde68a;
     }
 
-    .wa-badge-unknown{
+    .scrapper-container .wa-badge-unknown{
         background:#f1f5f9;
         color:#64748b;
         border-color:#e2e8f0;
     }
 
-    .empty{
+    .scrapper-container .empty{
         padding:55px 20px;
         text-align:center;
         color:#64748b;
     }
 
-    .empty-icon{
+    .scrapper-container .empty-icon{
         width:70px;height:70px;
         margin:0 auto 15px;
         display:grid;place-items:center;
@@ -432,39 +528,31 @@
         font-size:28px;
     }
 
-    .empty-title{font-weight:800;color:#334155;margin-bottom:6px}
-    .empty-text{font-size:10px}
-
-    .alert{
-        border:0;
-        border-radius:14px;
-        font-size:11px;
-    }
+    .scrapper-container .empty-title{font-weight:800;color:#334155;margin-bottom:6px}
+    .scrapper-container .empty-text{font-size:10px}
 
     @media(max-width:991px){
-        .history-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .scrapper-container .history-list{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
 
     @media(max-width:767px){
-        .page{padding:16px 11px 35px}
-        .topbar{align-items:flex-start}
-        .status{font-size:9px}
-        .hero{padding:25px 20px;border-radius:18px}
-        .hero h1{font-size:27px}
-        .hero p{font-size:10px}
-        .search-body{padding:18px}
-        .search-row{flex-direction:column}
-        .search-button{width:100%}
-        .history-list{grid-template-columns:1fr;padding:12px}
-        .card-head{padding:17px}
-        .result-head{align-items:flex-start;flex-direction:column}
-        .toolbar{align-items:stretch;flex-direction:column}
-        .toolbar input{max-width:none}
+        .scrapper-container .page{padding:16px 11px 35px}
+        .scrapper-container .topbar{align-items:flex-start}
+        .scrapper-container .status{font-size:9px}
+        .scrapper-container .hero{padding:25px 20px;border-radius:18px}
+        .scrapper-container .hero h1{font-size:27px}
+        .scrapper-container .hero p{font-size:10px}
+        .scrapper-container .search-body{padding:18px}
+        .scrapper-container .search-row{flex-direction:column}
+        .scrapper-container .search-button{width:100%}
+        .scrapper-container .history-list{grid-template-columns:1fr;padding:12px}
+        .scrapper-container .card-head{padding:17px}
+        .scrapper-container .result-head{align-items:flex-start;flex-direction:column}
+        .scrapper-container .toolbar{align-items:stretch;flex-direction:column}
+        .scrapper-container .toolbar input{max-width:none}
     }
 </style>
-<?= $this->endSection() ?>
 
-<?= $this->section('content') ?>
 <div class="scrapper-container">
     <div class="page">
         <div class="topbar">
@@ -480,13 +568,6 @@
                 <span class="status-dot"></span>
                 Sistem siap digunakan
             </div>
-        </div>
-
-        <!-- TOMBOL IMPORT KE KONTAK -->
-        <div class="mb-3">
-            <a href="<?= site_url('scrapper/import-ke-kontak') ?>" class="btn btn-success" onclick="return confirm('Pindahkan semua data dari Scrapper ke Kontak Email?')">
-                <i class="fa fa-download"></i> Import Semua ke Kontak
-            </a>
         </div>
 
         <section class="hero">
@@ -699,9 +780,15 @@
 <?= $this->section('scripts') ?>
 <?= csrf_field() ?>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 'use strict';
+
+document.querySelectorAll('.scrapper-container [data-bs-dismiss="alert"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const alert = btn.closest('.alert');
+        if (alert) alert.remove();
+    });
+});
 
 let scrapedData = [];
 
