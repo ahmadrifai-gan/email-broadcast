@@ -27,156 +27,813 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
 
 <style>
     /* ===== Tampilan halaman Kontak (meniru gaya halaman Perusahaan) ===== */
-    .kp-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .kp-sub { color: #6c757d; font-size: 13px; margin: 0; }
-    .kp-head-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .kp-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
 
-    .kp-btn { border-radius: 6px; font-weight: 500; padding: 7px 14px; }
-    .kp-btn-outline-success { color: #198754; background: #fff; border: 1px solid #198754; }
-    .kp-btn-outline-success:hover, .kp-btn-outline-success:focus { color: #fff; background: #198754; }
-    .kp-btn-outline-danger { color: #dc3545; background: #fff; border: 1px solid #dc3545; }
-    .kp-btn-outline-danger:hover, .kp-btn-outline-danger:focus { color: #fff; background: #dc3545; }
-    .kp-btn-primary { color: #fff; background: #0d6efd; border: 1px solid #0d6efd; }
-    .kp-btn-primary:hover, .kp-btn-primary:focus { color: #fff; background: #0b5ed7; border-color: #0a58ca; }
-    .kp-btn-secondary { color: #fff; background: #6c757d; border: 1px solid #6c757d; }
-    .kp-btn-secondary:hover, .kp-btn-secondary:focus { color: #fff; background: #5c636a; }
+    .kp-sub {
+        color: #6c757d;
+        font-size: 13px;
+        margin: 0;
+    }
 
-    .kp-alert { border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+    .kp-head-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
 
-    .kp-card { background: #fff; border: 1px solid #e7e9ed; border-radius: 10px; box-shadow: 0 1px 3px rgba(16, 24, 40, .07); margin-bottom: 20px; overflow: hidden; }
-    .kp-card-head { padding: 14px 18px; border-bottom: 1px solid #e7e9ed; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .kp-card-body { padding: 18px; }
-    .kp-card-foot { padding: 12px 18px; border-top: 1px solid #e7e9ed; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-    .kp-total { font-weight: 600; color: #212529; }
-    .kp-muted { color: #6c757d; }
+    .kp-btn {
+        border-radius: 6px;
+        font-weight: 500;
+        padding: 7px 14px;
+    }
 
-    .kp-filter .input-group-addon { background: #f8f9fa; color: #6c757d; border-radius: 6px 0 0 6px; }
-    .kp-filter .form-control { height: 38px; border-radius: 0 6px 6px 0; box-shadow: none; }
-    .kp-filter select.form-control { border-radius: 6px; }
-    .kp-filter .form-control:focus { border-color: #86b7fe; }
-    .kp-filter-row > div { margin-bottom: 8px; }
+    .kp-btn-outline-success {
+        color: #198754;
+        background: #fff;
+        border: 1px solid #198754;
+    }
 
-    .kp-table { width: 100%; margin: 0; border-collapse: collapse; }
-    .kp-table th { background: #f8f9fa; color: #495057; font-weight: 600; font-size: 13px; padding: 12px 14px; border-bottom: 1px solid #dee2e6; white-space: nowrap; }
-    .kp-table td { padding: 12px 14px; border-top: 1px solid #eef0f2; vertical-align: middle; font-size: 13.5px; color: #374151; }
-    .kp-table tbody tr:first-child td { border-top: 0; }
-    .kp-table tbody tr:hover { background: #f6f9ff; }
-    .kp-no { color: #6c757d; font-size: 12.5px; }
-    .kp-name { font-weight: 600; color: #1f2937; }
-    .kp-small { font-size: 12px; color: #6b7280; }
-    .kp-line { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kp-line .fa { width: 14px; color: #9aa1ab; margin-right: 3px; }
+    .kp-btn-outline-success:hover,
+    .kp-btn-outline-success:focus {
+        color: #fff;
+        background: #198754;
+    }
 
-    .kp-badge { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid #dee2e6; background: #f8f9fa; color: #6c757d; line-height: 1.4; }
-    .kp-badge-primary { color: #0d6efd; background: #eef4ff; border-color: #cfe0ff; }
-    .kp-badge-danger { color: #dc3545; background: #fdecee; border-color: #f6c7cc; }
-    .kp-badge-success { color: #198754; background: #e9f7ef; border-color: #bfe5cf; }
-    a.kp-badge:hover { text-decoration: none; opacity: .85; }
+    .kp-btn-outline-danger {
+        color: #dc3545;
+        background: #fff;
+        border: 1px solid #dc3545;
+    }
 
-    .kp-actions { display: inline-flex; gap: 4px; align-items: center; }
-    .kp-actions form { margin: 0; display: inline-block; }
-    .kp-icon-btn { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; }
-    .kp-icon-btn:hover { background: #f1f3f5; }
-    .kp-icon-edit { color: #0d6efd; }
-    .kp-icon-del { color: #dc3545; }
+    .kp-btn-outline-danger:hover,
+    .kp-btn-outline-danger:focus {
+        color: #fff;
+        background: #dc3545;
+    }
 
-    .kp-empty { padding: 44px 10px; text-align: center; color: #6c757d; }
-    .kp-empty .fa { display: block; font-size: 30px; margin-bottom: 8px; }
+    .kp-btn-primary {
+        color: #fff;
+        background: #0d6efd;
+        border: 1px solid #0d6efd;
+    }
 
-    .kp-card-foot .pagination { margin: 0; }
-    .kp-card-foot .pagination > li > a, .kp-card-foot .pagination > li > span { font-size: 13px; padding: 4px 10px; color: #0d6efd; }
-    .kp-card-foot .pagination > .active > a, .kp-card-foot .pagination > .active > span { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+    .kp-btn-primary:hover,
+    .kp-btn-primary:focus {
+        color: #fff;
+        background: #0b5ed7;
+        border-color: #0a58ca;
+    }
+
+    .kp-btn-secondary {
+        color: #fff;
+        background: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .kp-btn-secondary:hover,
+    .kp-btn-secondary:focus {
+        color: #fff;
+        background: #5c636a;
+    }
+
+    .kp-alert {
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+    }
+
+    .kp-card {
+        background: #fff;
+        border: 1px solid #e7e9ed;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .07);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .kp-card-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #e7e9ed;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .kp-card-body {
+        padding: 18px;
+    }
+
+    .kp-card-foot {
+        padding: 12px 18px;
+        border-top: 1px solid #e7e9ed;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .kp-total {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .kp-muted {
+        color: #6c757d;
+    }
+
+    .kp-filter .input-group-addon {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-radius: 6px 0 0 6px;
+    }
+
+    .kp-filter .form-control {
+        height: 38px;
+        border-radius: 0 6px 6px 0;
+        box-shadow: none;
+    }
+
+    .kp-filter select.form-control {
+        border-radius: 6px;
+    }
+
+    .kp-filter .form-control:focus {
+        border-color: #86b7fe;
+    }
+
+    .kp-filter-row>div {
+        margin-bottom: 8px;
+    }
+
+    .kp-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+    .kp-table th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #dee2e6;
+        white-space: nowrap;
+    }
+
+    .kp-table td {
+        padding: 12px 14px;
+        border-top: 1px solid #eef0f2;
+        vertical-align: middle;
+        font-size: 13.5px;
+        color: #374151;
+    }
+
+    .kp-table tbody tr:first-child td {
+        border-top: 0;
+    }
+
+    .kp-table tbody tr:hover {
+        background: #f6f9ff;
+    }
+
+    .kp-no {
+        color: #6c757d;
+        font-size: 12.5px;
+    }
+
+    .kp-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .kp-small {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .kp-line {
+        max-width: 220px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kp-line .fa {
+        width: 14px;
+        color: #9aa1ab;
+        margin-right: 3px;
+    }
+
+    .kp-badge {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        color: #6c757d;
+        line-height: 1.4;
+    }
+
+    .kp-badge-primary {
+        color: #0d6efd;
+        background: #eef4ff;
+        border-color: #cfe0ff;
+    }
+
+    .kp-badge-danger {
+        color: #dc3545;
+        background: #fdecee;
+        border-color: #f6c7cc;
+    }
+
+    .kp-badge-success {
+        color: #198754;
+        background: #e9f7ef;
+        border-color: #bfe5cf;
+    }
+
+    a.kp-badge:hover {
+        text-decoration: none;
+        opacity: .85;
+    }
+
+    .kp-actions {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .kp-actions form {
+        margin: 0;
+        display: inline-block;
+    }
+
+    .kp-icon-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    .kp-icon-btn:hover {
+        background: #f1f3f5;
+    }
+
+    .kp-icon-edit {
+        color: #0d6efd;
+    }
+
+    .kp-icon-del {
+        color: #dc3545;
+    }
+
+    .kp-empty {
+        padding: 44px 10px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .kp-empty .fa {
+        display: block;
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+
+    .kp-card-foot .pagination {
+        margin: 0;
+    }
+
+    .kp-card-foot .pagination>li>a,
+    .kp-card-foot .pagination>li>span {
+        font-size: 13px;
+        padding: 4px 10px;
+        color: #0d6efd;
+    }
+
+    .kp-card-foot .pagination>.active>a,
+    .kp-card-foot .pagination>.active>span {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
 
     /* Modal */
-    .kp-modal .modal-content { border: 0; border-radius: 10px; overflow: hidden; }
-    .kp-modal .modal-header { background: #f8f9fa; border-bottom: 1px solid #e7e9ed; padding: 14px 18px; }
-    .kp-modal .modal-title { font-weight: 600; }
-    .kp-modal .modal-title .fa { color: #0d6efd; margin-right: 6px; }
-    .kp-modal .modal-footer { background: #fff; border-top: 1px solid #e7e9ed; }
-    .kp-modal .form-control { border-radius: 0 6px 6px 0; box-shadow: none; }
-    .kp-modal textarea.form-control, .kp-modal select.form-control { border-radius: 6px; }
-    .kp-modal .input-group-addon { background: #f8f9fa; color: #6c757d; border-radius: 6px 0 0 6px; min-width: 40px; }
-    .kp-modal label.control-label { font-weight: 600; font-size: 13px; color: #495057; }
-    .kp-section { font-size: 13px; font-weight: 600; color: #0d6efd; border-bottom: 1px solid #e7e9ed; padding-bottom: 6px; margin: 0 0 14px; }
-    .kp-info { background: #e8f3fe; border: 1px solid #cfe2ff; color: #084298; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
-    .kp-drop { border: 2px dashed #ced4da; border-radius: 8px; background: #fafbfc; padding: 18px; text-align: center; }
-    .kp-drop .fa { font-size: 28px; color: #198754; display: block; margin-bottom: 8px; }
-    .kp-drop input[type=file] { margin: 0 auto; }
+    .kp-modal .modal-content {
+        border: 0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
 
-    .kp-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-    .kp-sub { color: #6c757d; font-size: 13px; margin: 0; }
-    .kp-btn { border-radius: 6px; font-weight: 500; padding: 7px 14px; }
-    .kp-btn-primary { color: #fff; background: #0d6efd; border: 1px solid #0d6efd; }
-    .kp-btn-primary:hover, .kp-btn-primary:focus { color: #fff; background: #0b5ed7; }
-    .kp-btn-secondary { color: #fff; background: #6c757d; border: 1px solid #6c757d; }
-    .kp-btn-secondary:hover, .kp-btn-secondary:focus { color: #fff; background: #5c636a; }
-    .kp-btn-danger { color: #fff; background: #dc3545; border: 1px solid #dc3545; }
-    .kp-btn-danger:hover, .kp-btn-danger:focus { color: #fff; background: #bb2d3b; }
-    .kp-btn-outline-primary { color: #0d6efd; background: #fff; border: 1px solid #0d6efd; }
-    .kp-btn-outline-primary:hover, .kp-btn-outline-primary:focus { color: #fff; background: #0d6efd; }
-    .kp-btn-outline-danger { color: #dc3545; background: #fff; border: 1px solid #dc3545; }
-    .kp-btn-outline-danger:hover, .kp-btn-outline-danger:focus { color: #fff; background: #dc3545; }
-    .kp-alert { border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+    .kp-modal .modal-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e7e9ed;
+        padding: 14px 18px;
+    }
 
-    .kp-card { background: #fff; border: 1px solid #e7e9ed; border-radius: 10px; box-shadow: 0 1px 3px rgba(16, 24, 40, .07); margin-bottom: 20px; overflow: hidden; }
-    .kp-card-head { padding: 14px 18px; border-bottom: 1px solid #e7e9ed; display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; }
-    .kp-card-body { padding: 18px; }
-    .kp-card-foot { padding: 12px 18px; border-top: 1px solid #e7e9ed; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
-    .kp-total { font-weight: 600; color: #212529; }
-    .kp-muted { color: #6c757d; }
+    .kp-modal .modal-title {
+        font-weight: 600;
+    }
 
-    .kp-filter .input-group-addon { background: #f8f9fa; color: #6c757d; border-radius: 6px 0 0 6px; }
-    .kp-filter .form-control { height: 38px; border-radius: 0 6px 6px 0; box-shadow: none; }
-    .kp-filter select.form-control { border-radius: 6px; }
-    .kp-filter-row > div { margin-bottom: 8px; }
+    .kp-modal .modal-title .fa {
+        color: #0d6efd;
+        margin-right: 6px;
+    }
 
-    .kp-table { width: 100%; margin: 0; border-collapse: collapse; }
-    .kp-table th { background: #f8f9fa; color: #495057; font-weight: 600; font-size: 13px; padding: 12px 14px; border-bottom: 1px solid #dee2e6; white-space: nowrap; }
-    .kp-table td { padding: 12px 14px; border-top: 1px solid #eef0f2; vertical-align: middle; font-size: 13.5px; color: #374151; }
-    .kp-table tbody tr:first-child td { border-top: 0; }
-    .kp-table tbody tr:hover { background: #f6f9ff; }
-    .kp-no { color: #6c757d; font-size: 12.5px; }
-    .kp-name { font-weight: 600; color: #1f2937; }
-    .kp-small { font-size: 12px; color: #6b7280; }
-    .kp-clip { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .kp-produk { max-height: 80px; overflow-y: auto; white-space: pre-line; font-size: 12.5px; background: #f8f9fa; border: 1px solid #e7e9ed; border-radius: 6px; padding: 8px; color: #6c757d; }
+    .kp-modal .modal-footer {
+        background: #fff;
+        border-top: 1px solid #e7e9ed;
+    }
 
-    .kp-badge { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 12px; font-weight: 500; border: 1px solid #dee2e6; background: #f8f9fa; color: #6c757d; line-height: 1.4; }
-    .kp-badge-primary { color: #0d6efd; background: #eef4ff; border-color: #cfe0ff; }
-    .kp-badge-danger { color: #dc3545; background: #fdecee; border-color: #f6c7cc; }
-    .kp-badge-success { color: #198754; background: #e9f7ef; border-color: #bfe5cf; }
-    .kp-badge-warning { color: #8a6100; background: #fff6dd; border-color: #f5e0a0; }
-    .kp-badge-info { color: #055160; background: #e0f6fb; border-color: #a8e3f0; }
-    a.kp-badge:hover { text-decoration: none; opacity: .85; }
-    .kp-links { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+    .kp-modal .form-control {
+        border-radius: 0 6px 6px 0;
+        box-shadow: none;
+    }
 
-    .kp-actions { display: inline-flex; gap: 4px; align-items: center; }
-    .kp-icon-btn { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; background: #fff; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; color: #6c757d; }
-    .kp-icon-btn:hover { background: #f1f3f5; text-decoration: none; }
-    .kp-icon-btn.is-blue { color: #0d6efd; }
-    .kp-icon-btn.is-green { color: #198754; }
-    .kp-icon-btn.is-red { color: #dc3545; }
-    .kp-icon-btn.is-off { color: #adb5bd; }
+    .kp-modal textarea.form-control,
+    .kp-modal select.form-control {
+        border-radius: 6px;
+    }
 
-    .kp-empty { padding: 44px 10px; text-align: center; color: #6c757d; }
-    .kp-empty .fa { display: block; font-size: 30px; margin-bottom: 8px; }
+    .kp-modal .input-group-addon {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-radius: 6px 0 0 6px;
+        min-width: 40px;
+    }
 
-    .kp-card-foot .pagination { margin: 0; }
-    .kp-card-foot .pagination > li > a, .kp-card-foot .pagination > li > span { font-size: 13px; padding: 4px 10px; color: #0d6efd; }
-    .kp-card-foot .pagination > .active > a { background: #0d6efd; border-color: #0d6efd; color: #fff; }
+    .kp-modal label.control-label {
+        font-weight: 600;
+        font-size: 13px;
+        color: #495057;
+    }
 
-    .kp-modal .modal-content { border: 0; border-radius: 10px; overflow: hidden; }
-    .kp-modal .modal-header { background: #f8f9fa; border-bottom: 1px solid #e7e9ed; padding: 14px 18px; }
-    .kp-modal .modal-title { font-weight: 600; }
-    .kp-modal .modal-footer { border-top: 1px solid #e7e9ed; }
-    .kp-label { display: block; font-size: 12px; color: #6c757d; margin-bottom: 2px; }
-    .kp-box { border: 1px solid #e7e9ed; border-radius: 8px; padding: 12px; text-align: center; background: #f8f9fa; margin-bottom: 10px; }
-    .kp-box .n { font-size: 22px; font-weight: 700; }
-    .kp-info { background: #e8f3fe; border: 1px solid #cfe2ff; color: #084298; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; }
-    .kp-block { border: 1px solid #e7e9ed; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-    .kp-block h5 { margin: 0 0 10px; font-weight: 600; font-size: 14px; }
-    .kp-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
-    .kp-head-actions .btn { white-space: nowrap; }
+    .kp-section {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0d6efd;
+        border-bottom: 1px solid #e7e9ed;
+        padding-bottom: 6px;
+        margin: 0 0 14px;
+    }
+
+    .kp-info {
+        background: #e8f3fe;
+        border: 1px solid #cfe2ff;
+        color: #084298;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        font-size: 13px;
+    }
+
+    .kp-drop {
+        border: 2px dashed #ced4da;
+        border-radius: 8px;
+        background: #fafbfc;
+        padding: 18px;
+        text-align: center;
+    }
+
+    .kp-drop .fa {
+        font-size: 28px;
+        color: #198754;
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .kp-drop input[type=file] {
+        margin: 0 auto;
+    }
+
+    .kp-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 18px;
+    }
+
+    .kp-sub {
+        color: #6c757d;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .kp-btn {
+        border-radius: 6px;
+        font-weight: 500;
+        padding: 7px 14px;
+    }
+
+    .kp-btn-primary {
+        color: #fff;
+        background: #0d6efd;
+        border: 1px solid #0d6efd;
+    }
+
+    .kp-btn-primary:hover,
+    .kp-btn-primary:focus {
+        color: #fff;
+        background: #0b5ed7;
+    }
+
+    .kp-btn-secondary {
+        color: #fff;
+        background: #6c757d;
+        border: 1px solid #6c757d;
+    }
+
+    .kp-btn-secondary:hover,
+    .kp-btn-secondary:focus {
+        color: #fff;
+        background: #5c636a;
+    }
+
+    .kp-btn-danger {
+        color: #fff;
+        background: #dc3545;
+        border: 1px solid #dc3545;
+    }
+
+    .kp-btn-danger:hover,
+    .kp-btn-danger:focus {
+        color: #fff;
+        background: #bb2d3b;
+    }
+
+    .kp-btn-outline-primary {
+        color: #0d6efd;
+        background: #fff;
+        border: 1px solid #0d6efd;
+    }
+
+    .kp-btn-outline-primary:hover,
+    .kp-btn-outline-primary:focus {
+        color: #fff;
+        background: #0d6efd;
+    }
+
+    .kp-btn-outline-danger {
+        color: #dc3545;
+        background: #fff;
+        border: 1px solid #dc3545;
+    }
+
+    .kp-btn-outline-danger:hover,
+    .kp-btn-outline-danger:focus {
+        color: #fff;
+        background: #dc3545;
+    }
+
+    .kp-alert {
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+    }
+
+    .kp-card {
+        background: #fff;
+        border: 1px solid #e7e9ed;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(16, 24, 40, .07);
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .kp-card-head {
+        padding: 14px 18px;
+        border-bottom: 1px solid #e7e9ed;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-height: 56px;
+    }
+
+    .kp-card-body {
+        padding: 18px;
+    }
+
+    .kp-card-foot {
+        padding: 12px 18px;
+        border-top: 1px solid #e7e9ed;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .kp-total {
+        font-weight: 600;
+        color: #212529;
+    }
+
+    .kp-muted {
+        color: #6c757d;
+    }
+
+    .kp-filter .input-group-addon {
+        background: #f8f9fa;
+        color: #6c757d;
+        border-radius: 6px 0 0 6px;
+    }
+
+    .kp-filter .form-control {
+        height: 38px;
+        border-radius: 0 6px 6px 0;
+        box-shadow: none;
+    }
+
+    .kp-filter select.form-control {
+        border-radius: 6px;
+    }
+
+    .kp-filter-row>div {
+        margin-bottom: 8px;
+    }
+
+    .kp-table {
+        width: 100%;
+        margin: 0;
+        border-collapse: collapse;
+    }
+
+    .kp-table th {
+        background: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 14px;
+        border-bottom: 1px solid #dee2e6;
+        white-space: nowrap;
+    }
+
+    .kp-table td {
+        padding: 12px 14px;
+        border-top: 1px solid #eef0f2;
+        vertical-align: middle;
+        font-size: 13.5px;
+        color: #374151;
+    }
+
+    .kp-table tbody tr:first-child td {
+        border-top: 0;
+    }
+
+    .kp-table tbody tr:hover {
+        background: #f6f9ff;
+    }
+
+    .kp-no {
+        color: #6c757d;
+        font-size: 12.5px;
+    }
+
+    .kp-name {
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .kp-small {
+        font-size: 12px;
+        color: #6b7280;
+    }
+
+    .kp-clip {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .kp-produk {
+        max-height: 80px;
+        overflow-y: auto;
+        white-space: pre-line;
+        font-size: 12.5px;
+        background: #f8f9fa;
+        border: 1px solid #e7e9ed;
+        border-radius: 6px;
+        padding: 8px;
+        color: #6c757d;
+    }
+
+    .kp-badge {
+        display: inline-block;
+        padding: 3px 9px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        border: 1px solid #dee2e6;
+        background: #f8f9fa;
+        color: #6c757d;
+        line-height: 1.4;
+    }
+
+    .kp-badge-primary {
+        color: #0d6efd;
+        background: #eef4ff;
+        border-color: #cfe0ff;
+    }
+
+    .kp-badge-danger {
+        color: #dc3545;
+        background: #fdecee;
+        border-color: #f6c7cc;
+    }
+
+    .kp-badge-success {
+        color: #198754;
+        background: #e9f7ef;
+        border-color: #bfe5cf;
+    }
+
+    .kp-badge-warning {
+        color: #8a6100;
+        background: #fff6dd;
+        border-color: #f5e0a0;
+    }
+
+    .kp-badge-info {
+        color: #055160;
+        background: #e0f6fb;
+        border-color: #a8e3f0;
+    }
+
+    a.kp-badge:hover {
+        text-decoration: none;
+        opacity: .85;
+    }
+
+    .kp-links {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        align-items: flex-start;
+    }
+
+    .kp-actions {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+    }
+
+    .kp-icon-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        cursor: pointer;
+        color: #6c757d;
+    }
+
+    .kp-icon-btn:hover {
+        background: #f1f3f5;
+        text-decoration: none;
+    }
+
+    .kp-icon-btn.is-blue {
+        color: #0d6efd;
+    }
+
+    .kp-icon-btn.is-green {
+        color: #198754;
+    }
+
+    .kp-icon-btn.is-red {
+        color: #dc3545;
+    }
+
+    .kp-icon-btn.is-off {
+        color: #adb5bd;
+    }
+
+    .kp-empty {
+        padding: 44px 10px;
+        text-align: center;
+        color: #6c757d;
+    }
+
+    .kp-empty .fa {
+        display: block;
+        font-size: 30px;
+        margin-bottom: 8px;
+    }
+
+    .kp-card-foot .pagination {
+        margin: 0;
+    }
+
+    .kp-card-foot .pagination>li>a,
+    .kp-card-foot .pagination>li>span {
+        font-size: 13px;
+        padding: 4px 10px;
+        color: #0d6efd;
+    }
+
+    .kp-card-foot .pagination>.active>a {
+        background: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+
+    .kp-modal .modal-content {
+        border: 0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .kp-modal .modal-header {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e7e9ed;
+        padding: 14px 18px;
+    }
+
+    .kp-modal .modal-title {
+        font-weight: 600;
+    }
+
+    .kp-modal .modal-footer {
+        border-top: 1px solid #e7e9ed;
+    }
+
+    .kp-label {
+        display: block;
+        font-size: 12px;
+        color: #6c757d;
+        margin-bottom: 2px;
+    }
+
+    .kp-box {
+        border: 1px solid #e7e9ed;
+        border-radius: 8px;
+        padding: 12px;
+        text-align: center;
+        background: #f8f9fa;
+        margin-bottom: 10px;
+    }
+
+    .kp-box .n {
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .kp-info {
+        background: #e8f3fe;
+        border: 1px solid #cfe2ff;
+        color: #084298;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 14px;
+        font-size: 13px;
+    }
+
+    .kp-block {
+        border: 1px solid #e7e9ed;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .kp-block h5 {
+        margin: 0 0 10px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .kp-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+        font-size: 13px;
+    }
+
+    .kp-head-actions .btn {
+        white-space: nowrap;
+    }
 </style>
 
 <!-- HEADER -->
@@ -790,7 +1447,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     var csrfTokenName = '<?= csrf_token() ?>';
     var csrfHash = '<?= csrf_hash() ?>';
 
-    function updateCsrf(d) { if (d && d.csrf_hash) csrfHash = d.csrf_hash; }
+    function updateCsrf(d) {
+        if (d && d.csrf_hash) csrfHash = d.csrf_hash;
+    }
 
     function esc(t) {
         if (t === null || t === undefined) return '';
@@ -817,30 +1476,44 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     }
 
     function executeBulkDelete() {
-        var ids = $('.row-select:checked').map(function () { return this.value; }).get();
+        var ids = $('.row-select:checked').map(function() {
+            return this.value;
+        }).get();
         if (!ids.length) return;
         if (!confirm('Hapus ' + ids.length + ' data perusahaan yang dipilih? Tindakan ini tidak dapat dibatalkan.')) return;
 
         var body = new URLSearchParams();
-        ids.forEach(function (id) { body.append('ids[]', id); });
+        ids.forEach(function(id) {
+            body.append('ids[]', id);
+        });
         body.append(csrfTokenName, csrfHash);
 
         fetch(BASE + '/bulk-delete', {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            body: body
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-            if (d.success) { location.reload(); } else { alert(d.message || 'Gagal menghapus data'); }
-        })
-        .catch(function (e) { alert('Kesalahan jaringan: ' + e.message); });
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: body
+            })
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(d) {
+                if (d.success) {
+                    location.reload();
+                } else {
+                    alert(d.message || 'Gagal menghapus data');
+                }
+            })
+            .catch(function(e) {
+                alert('Kesalahan jaringan: ' + e.message);
+            });
     }
 
     // ---------- Detail ----------
     function parseProduk(text) {
         var out = '<ol style="margin:0;padding-left:18px">';
-        text.split('\n').forEach(function (line) {
+        text.split('\n').forEach(function(line) {
             line = line.replace(/^\d+[\.\)]\s*/, '').trim();
             if (!line) return;
             var parts = line.split(/\s+[–—\-]\s+/);
@@ -859,52 +1532,59 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#modalCompanyDetail').modal('show');
 
         fetch(BASE + '/detail/' + id)
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-            if (!res.success) { $body.html('<div class="alert alert-danger">' + esc(res.error || 'Gagal memuat detail') + '</div>'); return; }
-            var c = res.company;
-            $('#modalCompanyTitle').text(c.nama_perusahaan);
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(res) {
+                if (!res.success) {
+                    $body.html('<div class="alert alert-danger">' + esc(res.error || 'Gagal memuat detail') + '</div>');
+                    return;
+                }
+                var c = res.company;
+                $('#modalCompanyTitle').text(c.nama_perusahaan);
 
-            var produk = '<span class="kp-muted"><em>Belum ada produk yang dianalisis.</em></span>';
-            if (c.produk_yang_dijual_auto && c.produk_yang_dijual_auto.trim()) {
-                produk = parseProduk(c.produk_yang_dijual_auto);
-            } else if (res.products && res.products.length) {
-                produk = '<ol style="margin:0;padding-left:18px">' + res.products.map(function (p) {
-                    return '<li style="margin-bottom:4px"><strong>' + esc(p.nama_produk_id || p.nama_produk_en) + '</strong></li>';
-                }).join('') + '</ol>';
-            }
+                var produk = '<span class="kp-muted"><em>Belum ada produk yang dianalisis.</em></span>';
+                if (c.produk_yang_dijual_auto && c.produk_yang_dijual_auto.trim()) {
+                    produk = parseProduk(c.produk_yang_dijual_auto);
+                } else if (res.products && res.products.length) {
+                    produk = '<ol style="margin:0;padding-left:18px">' + res.products.map(function(p) {
+                        return '<li style="margin-bottom:4px"><strong>' + esc(p.nama_produk_id || p.nama_produk_en) + '</strong></li>';
+                    }).join('') + '</ol>';
+                }
 
-            var sumber = '<span class="kp-muted kp-small">Belum ada riwayat pengambilan sumber.</span>';
-            if (res.sources && res.sources.length) {
-                sumber = res.sources.map(function (s) {
-                    var ok = s.status_pengambilan === 'sukses';
-                    return '<div style="padding:6px 0;border-top:1px solid #eef0f2;font-size:13px">' +
-                        '<div style="display:flex;justify-content:space-between"><strong>' + esc((s.jenis_sumber || '').toUpperCase()) + '</strong>' +
-                        '<span class="kp-badge ' + (ok ? 'kp-badge-success' : 'kp-badge-danger') + '">' + (ok ? 'Sukses' : 'Gagal') + '</span></div>' +
-                        (s.url_sumber ? '<div class="kp-muted kp-clip" style="max-width:100%">' + esc(s.url_sumber) + '</div>' : '') +
-                        (s.pesan_error ? '<div class="text-danger">' + esc(s.pesan_error) + '</div>' : '') + '</div>';
-                }).join('');
-            }
+                var sumber = '<span class="kp-muted kp-small">Belum ada riwayat pengambilan sumber.</span>';
+                if (res.sources && res.sources.length) {
+                    sumber = res.sources.map(function(s) {
+                        var ok = s.status_pengambilan === 'sukses';
+                        return '<div style="padding:6px 0;border-top:1px solid #eef0f2;font-size:13px">' +
+                            '<div style="display:flex;justify-content:space-between"><strong>' + esc((s.jenis_sumber || '').toUpperCase()) + '</strong>' +
+                            '<span class="kp-badge ' + (ok ? 'kp-badge-success' : 'kp-badge-danger') + '">' + (ok ? 'Sukses' : 'Gagal') + '</span></div>' +
+                            (s.url_sumber ? '<div class="kp-muted kp-clip" style="max-width:100%">' + esc(s.url_sumber) + '</div>' : '') +
+                            (s.pesan_error ? '<div class="text-danger">' + esc(s.pesan_error) + '</div>' : '') + '</div>';
+                    }).join('');
+                }
 
-            var web = c.website ? '<a href="' + esc(c.website.indexOf('http') === 0 ? c.website : 'https://' + c.website) + '" target="_blank" rel="noopener">' + esc(c.website) + '</a>' : '-';
-            var kat = c.link_catalog ? '<a href="' + esc(c.link_catalog) + '" target="_blank" rel="noopener">Buka katalog</a>' : '-';
+                var web = c.website ? '<a href="' + esc(c.website.indexOf('http') === 0 ? c.website : 'https://' + c.website) + '" target="_blank" rel="noopener">' + esc(c.website) + '</a>' : '-';
+                var kat = c.link_catalog ? '<a href="' + esc(c.link_catalog) + '" target="_blank" rel="noopener">Buka katalog</a>' : '-';
 
-            $body.html(
-                '<div class="row">' +
-                '<div class="col-md-6"><span class="kp-label">Nomor Excel</span><div><strong>' + esc(c.nomor_excel || '-') + '</strong></div></div>' +
-                '<div class="col-md-6"><span class="kp-label">Status Analisis</span><div><span class="kp-badge kp-badge-primary">' + esc(c.status_analisis) + '</span></div></div>' +
-                '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Kategori Utama</span><div>' + esc(c.main_categories || '-') + '</div></div>' +
-                '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Sub Kategori</span><div>' + esc(c.sub_categories || '-') + '</div></div>' +
-                '<div class="col-md-12" style="margin-top:12px"><span class="kp-label">Company Profile</span>' +
-                '<div class="kp-produk" style="max-height:120px">' + (c.company_profile ? esc(c.company_profile) : '<em>Tidak ada company profile.</em>') + '</div></div>' +
-                '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Website</span><div>' + web + '</div></div>' +
-                '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Link Catalog</span><div>' + kat + '</div></div>' +
-                '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Hasil Produk Yang Dijual (Auto)</strong><div style="margin-top:8px">' + produk + '</div></div>' +
-                '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Status Sumber Informasi</strong><div style="margin-top:8px">' + sumber + '</div></div>' +
-                '</div>'
-            );
-        })
-        .catch(function (e) { $body.html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>'); });
+                $body.html(
+                    '<div class="row">' +
+                    '<div class="col-md-6"><span class="kp-label">Nomor Excel</span><div><strong>' + esc(c.nomor_excel || '-') + '</strong></div></div>' +
+                    '<div class="col-md-6"><span class="kp-label">Status Analisis</span><div><span class="kp-badge kp-badge-primary">' + esc(c.status_analisis) + '</span></div></div>' +
+                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Kategori Utama</span><div>' + esc(c.main_categories || '-') + '</div></div>' +
+                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Sub Kategori</span><div>' + esc(c.sub_categories || '-') + '</div></div>' +
+                    '<div class="col-md-12" style="margin-top:12px"><span class="kp-label">Company Profile</span>' +
+                    '<div class="kp-produk" style="max-height:120px">' + (c.company_profile ? esc(c.company_profile) : '<em>Tidak ada company profile.</em>') + '</div></div>' +
+                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Website</span><div>' + web + '</div></div>' +
+                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Link Catalog</span><div>' + kat + '</div></div>' +
+                    '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Hasil Produk Yang Dijual (Auto)</strong><div style="margin-top:8px">' + produk + '</div></div>' +
+                    '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Status Sumber Informasi</strong><div style="margin-top:8px">' + sumber + '</div></div>' +
+                    '</div>'
+                );
+            })
+            .catch(function(e) {
+                $body.html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>');
+            });
     }
 
     // ---------- Import semua ----------
@@ -914,28 +1594,41 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#btnExecuteImportAll').prop('disabled', true);
         $('#modalImportAll').modal('show');
 
-        fetch(BASE + '/import-preview', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-            updateCsrf(res);
-            if (!res.success) { alert(res.error || 'Gagal memuat preview data import.'); $('#modalImportAll').modal('hide'); return; }
+        fetch(BASE + '/import-preview', {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(res) {
+                updateCsrf(res);
+                if (!res.success) {
+                    alert(res.error || 'Gagal memuat preview data import.');
+                    $('#modalImportAll').modal('hide');
+                    return;
+                }
 
-            $('#prevEligibleCompany').text(res.akan_diimpor.perusahaan);
-            $('#prevEligibleProduct').text(res.akan_diimpor.produk);
-            $('#prevNewSupplier').text(res.akan_diimpor.supplier_baru);
-            $('#prevExistingSupplier').text(res.akan_diimpor.supplier_sudah_ada);
-            $('#prevSkippedTotal').text(res.dilewati.total);
+                $('#prevEligibleCompany').text(res.akan_diimpor.perusahaan);
+                $('#prevEligibleProduct').text(res.akan_diimpor.produk);
+                $('#prevNewSupplier').text(res.akan_diimpor.supplier_baru);
+                $('#prevExistingSupplier').text(res.akan_diimpor.supplier_sudah_ada);
+                $('#prevSkippedTotal').text(res.dilewati.total);
 
-            var $b = $('#prevSkippedBreakdown').empty();
-            (res.dilewati.breakdown || []).forEach(function (it) {
-                $b.append('<div class="kp-row"><span>' + esc(it.label) + '</span><span class="kp-badge">' + esc(it.count) + '</span></div>');
+                var $b = $('#prevSkippedBreakdown').empty();
+                (res.dilewati.breakdown || []).forEach(function(it) {
+                    $b.append('<div class="kp-row"><span>' + esc(it.label) + '</span><span class="kp-badge">' + esc(it.count) + '</span></div>');
+                });
+
+                $('#importAllLoading').hide();
+                $('#importAllContent').show();
+                $('#btnExecuteImportAll').prop('disabled', !(res.akan_diimpor.perusahaan > 0));
+            })
+            .catch(function(e) {
+                alert('Kesalahan jaringan: ' + e.message);
+                $('#modalImportAll').modal('hide');
             });
-
-            $('#importAllLoading').hide();
-            $('#importAllContent').show();
-            $('#btnExecuteImportAll').prop('disabled', !(res.akan_diimpor.perusahaan > 0));
-        })
-        .catch(function (e) { alert('Kesalahan jaringan: ' + e.message); $('#modalImportAll').modal('hide'); });
     }
 
     function executeImportAll() {
@@ -945,23 +1638,34 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengimpor data... harap tunggu');
 
         fetch(BASE + '/import-all', {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfHash },
-            body: postData()
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-            updateCsrf(res);
-            $btn.prop('disabled', false).html(label);
-            $('#modalImportAll').modal('hide');
-            if (!res.success) { alert(res.error || 'Gagal menjalankan import semua'); return; }
-            showImportResult('Ringkasan Hasil Import Semua', res.summary, false);
-        })
-        .catch(function (e) { $btn.prop('disabled', false).html(label); alert('Kesalahan jaringan: ' + e.message); });
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfHash
+                },
+                body: postData()
+            })
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(res) {
+                updateCsrf(res);
+                $btn.prop('disabled', false).html(label);
+                $('#modalImportAll').modal('hide');
+                if (!res.success) {
+                    alert(res.error || 'Gagal menjalankan import semua');
+                    return;
+                }
+                showImportResult('Ringkasan Hasil Import Semua', res.summary, false);
+            })
+            .catch(function(e) {
+                $btn.prop('disabled', false).html(label);
+                alert('Kesalahan jaringan: ' + e.message);
+            });
     }
 
     // ---------- Import satu perusahaan ----------
-    $(document).on('click', '.btn-import-supplier', function (e) {
+    $(document).on('click', '.btn-import-supplier', function(e) {
         e.preventDefault();
         var d = this.dataset;
         var n = parseInt(d.products || '0', 10);
@@ -981,16 +1685,24 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#modalImportResult').modal('show');
 
         fetch(BASE + '/import-single/' + id, {
-            method: 'POST',
-            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': csrfHash },
-            body: postData()
-        })
-        .then(function (r) { return r.json(); })
-        .then(function (res) { updateCsrf(res); showImportResult('Hasil Import: ' + name, res, true); })
-        .catch(function (e) {
-            $('#modalImportResultBody').html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>');
-            $('#modalImportResultFooter').html('<button type="button" class="btn kp-btn kp-btn-secondary" data-dismiss="modal">Tutup</button>');
-        });
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfHash
+                },
+                body: postData()
+            })
+            .then(function(r) {
+                return r.json();
+            })
+            .then(function(res) {
+                updateCsrf(res);
+                showImportResult('Hasil Import: ' + name, res, true);
+            })
+            .catch(function(e) {
+                $('#modalImportResultBody').html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>');
+                $('#modalImportResultFooter').html('<button type="button" class="btn kp-btn kp-btn-secondary" data-dismiss="modal">Tutup</button>');
+            });
     }
 
     function box(label, val, cls) {
@@ -1002,7 +1714,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         return '<h5 class="' + cls + '" style="margin-top:14px"><strong>' + judul + ' (' + rows.length + ')</strong></h5>' +
             '<div class="table-responsive" style="max-height:180px;overflow-y:auto"><table class="table table-bordered table-condensed" style="font-size:12.5px">' +
             '<thead><tr><th>Perusahaan</th><th>' + colA + '</th></tr></thead><tbody>' +
-            rows.map(function (r) { return '<tr><td>' + esc(r.nama) + '</td><td>' + esc(r[colB]) + '</td></tr>'; }).join('') +
+            rows.map(function(r) {
+                return '<tr><td>' + esc(r.nama) + '</td><td>' + esc(r[colB]) + '</td></tr>';
+            }).join('') +
             '</tbody></table></div>';
     }
 
@@ -1015,9 +1729,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         if (single) {
             if (d.success) {
                 body = '<div class="alert alert-success kp-alert"><i class="fa fa-check-circle"></i> ' + esc(d.message) + '</div>' +
-                    '<p>' + (d.is_new_supplier
-                        ? '<span class="kp-badge kp-badge-success">Supplier baru dibuat</span>'
-                        : '<span class="kp-badge kp-badge-info">Supplier sudah terdaftar (data dipertahankan)</span>') + '</p>' +
+                    '<p>' + (d.is_new_supplier ?
+                        '<span class="kp-badge kp-badge-success">Supplier baru dibuat</span>' :
+                        '<span class="kp-badge kp-badge-info">Supplier sudah terdaftar (data dipertahankan)</span>') + '</p>' +
                     '<div class="row">' + box('Produk ditambahkan', d.products_added, 'text-success').replace('col-md-3', 'col-md-6') +
                     box('Produk dilewati (sudah ada)', d.products_skipped, 'text-muted').replace('col-md-3', 'col-md-6') + '</div>';
                 footer = doneBtn;
