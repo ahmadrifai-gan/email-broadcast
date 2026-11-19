@@ -846,10 +846,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         <button type="button" class="btn kp-btn kp-btn-outline-success" data-toggle="modal" data-target="#modalImport">
             <i class="fa fa-file-excel-o"></i> Import Excel
         </button>
-        <button type="button" class="btn kp-btn kp-btn-primary" data-toggle="modal" data-target="#modalKontak"
-            data-judul="Tambah Kontak" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
-            <i class="fa fa-plus"></i> Tambah Kontak
-        </button>
+        <button type="button" class="btn kp-btn kp-btn-primary" data-toggle="modal" data-target="#modalPilihanTambah">
+    <i class="fa fa-plus"></i> Tambah Kontak
+</button>
     </div>
 </div>
 
@@ -1088,9 +1087,9 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                     </div>
                     <!-- OPSI 2: IMPORT EXCEL -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
-                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImport">
-                            <i class="fa fa-file-excel-o" style="color: #1e7145; font-size: 24px;"></i><br>Import Excel
-                        </button>
+                       <a href="<?= site_url('import-excel') ?>" class="btn btn-default btn-block btn-lg">
+                            <i class="fa fa-file-excel-o" style="color: #db4437; font-size: 24px;"></i><br>Import Excel
+                        </a>
                     </div>
                     <!-- OPSI 3: MANUAL -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">

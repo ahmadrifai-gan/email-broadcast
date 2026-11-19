@@ -26,11 +26,12 @@ class RiwayatAnalisisModel extends Model
 
     /**
      * Mengambil riwayat terbaru beserta nama perusahaan
+     * (relasi: riwayat_analisis.kontak_email_id -> kontak_email.id)
      */
     public function getRecentWithPerusahaan(int $limit = 10): array
     {
-        return $this->select('riwayat_analisis.*, perusahaan.nama_perusahaan, perusahaan.nomor_excel')
-            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left')
+        return $this->select('riwayat_analisis.*, kontak_email.nama_perusahaan, kontak_email.nomor_excel')
+            ->join('kontak_email', 'kontak_email.id = riwayat_analisis.kontak_email_id', 'left')
             ->orderBy('riwayat_analisis.id', 'DESC')
             ->limit($limit)
             ->findAll();
@@ -41,25 +42,10 @@ class RiwayatAnalisisModel extends Model
      */
     public function getFiltered(array $filter = [], int $limit = 20, int $offset = 0): array
     {
-        $builder = $this->select('riwayat_analisis.*, perusahaan.nama_perusahaan, perusahaan.nomor_excel')
-            ->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left');
+        $builder = $this->select('riwayat_analisis.*, kontak_email.nama_perusahaan, kontak_email.nomor_excel')
+            ->join('kontak_email', 'kontak_email.id = riwayat_analisis.kontak_email_id', 'left');
 
-        if (!empty($filter['status'])) {
-            $builder->where('riwayat_analisis.status', $filter['status']);
-        }
-
-        if (!empty($filter['kontak_email_id'])) {
-            $builder->where('riwayat_analisis.kontak_email_id', $filter['kontak_email_id']);
-        }
-
-        if (!empty($filter['search'])) {
-            $search = $filter['search'];
-            $builder->groupStart()
-                ->like('perusahaan.nama_perusahaan', $search)
-                ->orLike('riwayat_analisis.pesan_error', $search)
-                ->orLike('riwayat_analisis.sumber_digunakan', $search)
-                ->groupEnd();
-        }
+        $this->applyFilter($builder, $filter);
 
         return $builder->orderBy('riwayat_analisis.id', 'DESC')
             ->limit($limit, $offset)
@@ -72,8 +58,18 @@ class RiwayatAnalisisModel extends Model
      */
     public function countFiltered(array $filter = []): int
     {
-        $builder = $this->join('perusahaan', 'perusahaan.id = riwayat_analisis.kontak_email_id', 'left');
+        $builder = $this->join('kontak_email', 'kontak_email.id = riwayat_analisis.kontak_email_id', 'left');
 
+        $this->applyFilter($builder, $filter);
+
+        return $builder->countAllResults();
+    }
+
+    /**
+     * Filter bersama untuk getFiltered() dan countFiltered()
+     */
+    private function applyFilter($builder, array $filter): void
+    {
         if (!empty($filter['status'])) {
             $builder->where('riwayat_analisis.status', $filter['status']);
         }
@@ -85,13 +81,10 @@ class RiwayatAnalisisModel extends Model
         if (!empty($filter['search'])) {
             $search = $filter['search'];
             $builder->groupStart()
-                ->like('perusahaan.nama_perusahaan', $search)
+                ->like('kontak_email.nama_perusahaan', $search)
                 ->orLike('riwayat_analisis.pesan_error', $search)
                 ->orLike('riwayat_analisis.sumber_digunakan', $search)
                 ->groupEnd();
         }
-
-        return $builder->countAllResults();
     }
 }
-
