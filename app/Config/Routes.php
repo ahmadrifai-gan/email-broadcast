@@ -107,3 +107,26 @@ $routes->group('scrapper', function ($routes) {
     // Fitur import ke kontak
     $routes->get('import-ke-kontak', 'Travel::importKeKontak');
 });
+
+$routes->group('import-excel',  function ($routes) {
+    $routes->get('/',         'ImportExcel::index');
+    $routes->post('preview',  'ImportExcel::preview');
+    $routes->post('process',  'ImportExcel::process');
+    $routes->post('from-tei', 'ImportExcel::importFromTei');
+});
+
+$routes->group('pengaturan', function($routes) {
+
+    $routes->get('/', 'PengaturanAI::index');
+
+    $routes->post('save', 'PengaturanAI::save');
+
+    $routes->post('test-connection', 'PengaturanAI::testConnection');
+
+});
+
+$routes->group('analisis-ai', function ($routes) {
+    $routes->get('/', 'AnalisisAI::index');                 // halaman utama
+    $routes->get('queue', 'AnalisisAI::getQueue');          // ambil antrean
+    $routes->post('process-one', 'AnalisisAI::processOne'); // proses 1 perusahaan
+});
