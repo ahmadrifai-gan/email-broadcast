@@ -11,6 +11,7 @@ use App\Models\ProdukPerusahaanModel;
 use App\Models\RiwayatAnalisisModel;
 use App\Models\SumberAnalisisModel;
 use CodeIgniter\HTTP\ResponseInterface;
+use CodeIgniter\API\ResponseTrait;
 
 /**
  * Controller Analisis Produk AI.
@@ -18,14 +19,21 @@ use CodeIgniter\HTTP\ResponseInterface;
  * Versi tanpa sistem login: tidak ada AdminAuthBase / checkAuth().
  * Semua endpoint bisa diakses langsung. Jika nanti ada login,
  * cukup pasang filter 'auth' pada route group (lihat Routes.php).
+ *
+ * Nilai status_analisis yang dipakai (harus ada di enum kolom database):
+ *   belum_dianalisis, sukses, gagal, manual, tanpa_produk, sumber_tidak_ada
  */
 class AnalisisAI extends BaseController
 {
+    use ResponseTrait;
     /** Mode antrean yang diizinkan */
     private const QUEUE_MODES = ['single', 'selected', 'failed', 'pending', 'all'];
 
     /** Nilai website/katalog yang dianggap kosong */
     private const EMPTY_URL_VALUES = ['', '-', 'n/a'];
+
+    /** Status yang tidak boleh ditimpa oleh analisis yang gagal */
+    private const PROTECTED_STATUSES = ['sukses', 'manual', 'tanpa_produk'];
 
     /**
      * Halaman utama analisis
@@ -33,7 +41,7 @@ class AnalisisAI extends BaseController
     public function index()
     {
         $perusahaanModel = new PerusahaanModel();
-        $aiService       = new AIService();
+        $aiService = new AIService();
 
         // Seluruh perusahaan untuk dropdown single & multi-select
         $companies = $perusahaanModel
@@ -42,17 +50,22 @@ class AnalisisAI extends BaseController
             ->findAll();
 
         $data = [
-            'title'       => 'Analisis Produk AI - AI Product Analyzer',
+            'title' => 'Analisis Produk AI - AI Product Analyzer',
             'active_menu' => 'analyzer_analisis',
-            'stats'       => $perusahaanModel->getStatistics(),
-            'aiModel'     => $aiService->getModel(),
-            'hasApiKey'   => $aiService->hasApiKey(),
-            'companies'   => $companies,
-            'selectedId'  => (int) $this->request->getGet('id') ?: '',
+            'stats' => $perusahaanModel->getStatistics(),
+            'aiModel' => $aiService->getModel(),
+            'hasApiKey' => $aiService->hasApiKey(),
+            'companies' => $companies,
+            'selectedId' => (int) $this->request->getGet('id') ?: '',
         ];
 
         // File view: app/Views/analisis/index.php
         return view('analisis/index', $data);
+    }
+
+    public function analisisKontak($id): ResponseInterface
+    {
+        return $this->processOne((int) $id);
     }
 
     /**
@@ -61,7 +74,7 @@ class AnalisisAI extends BaseController
     public function getQueue(): ResponseInterface
     {
         $mode = (string) ($this->request->getGet('mode') ?: 'pending');
-        if (! in_array($mode, self::QUEUE_MODES, true)) {
+        if (!in_array($mode, self::QUEUE_MODES, true)) {
             $mode = 'pending';
         }
 
@@ -101,8 +114,8 @@ class AnalisisAI extends BaseController
 
         return $this->json([
             'success' => true,
-            'total'   => count($queue),
-            'queue'   => $queue,
+            'total' => count($queue),
+            'queue' => $queue,
         ]);
     }
 
@@ -110,46 +123,43 @@ class AnalisisAI extends BaseController
      * Memproses analisis SATU perusahaan.
      * Dipanggil berulang via AJAX dari halaman untuk progress real-time.
      */
-    public function processOne(): ResponseInterface
+    public function processOne(?int $forcedId = null): ResponseInterface
     {
-        // Pastikan respons selalu JSON murni
         ini_set('display_errors', '0');
         error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
-
-        // Scraping + panggilan AI bisa lama
         set_time_limit(180);
 
         $id = 0;
 
         try {
-            // Mendukung form-data maupun JSON body
-            $id = (int) ($this->request->getPost('id') ?? $this->request->getJSON(true)['id'] ?? 0);
+            // [UBAH] pakai $forcedId kalau ada, kalau tidak baca dari POST/JSON seperti semula
+            $id = $forcedId ?? (int) ($this->request->getPost('id') ?? $this->request->getJSON(true)['id'] ?? 0);
             if ($id <= 0) {
                 return $this->json(['success' => false, 'error' => 'ID perusahaan tidak valid.']);
             }
 
             $perusahaanModel = new PerusahaanModel();
-            $produkModel     = new ProdukPerusahaanModel();
-            $sumberModel     = new SumberAnalisisModel();
+            $produkModel = new ProdukPerusahaanModel();
+            $sumberModel = new SumberAnalisisModel();
 
             $company = $perusahaanModel->find($id);
-            if (! $company) {
+            if (!$company) {
                 return $this->json(['success' => false, 'error' => 'Data perusahaan tidak ditemukan.']);
             }
 
             $namaPerusahaan = $company['nama_perusahaan'] ?? '-';
-            $websiteUrl     = trim($company['website'] ?? '');
-            $catalogUrl     = trim($company['link_catalog'] ?? '');
-            $profile        = trim($company['company_profile'] ?? '');
+            $websiteUrl = trim($company['website'] ?? '');
+            $catalogUrl = trim($company['link_catalog'] ?? '');
+            $profile = trim($company['company_profile'] ?? '');
 
-            $sourcesUsed     = [];
-            $webText         = '';
-            $catalogText     = '';
-            $candidatesText  = '';
-            $candidatesList  = [];
+            $sourcesUsed = [];
+            $webText = '';
+            $catalogText = '';
+            $candidatesText = '';
+            $candidatesList = [];
             $groupCategories = [];
-            $stepLogs        = [];
-            $now             = date('Y-m-d H:i:s');
+            $stepLogs = [];
+            $now = date('Y-m-d H:i:s');
 
             // 1. Company Profile (prioritas utama)
             if ($profile !== '') {
@@ -169,10 +179,10 @@ class AnalisisAI extends BaseController
                     $webRes = ['success' => false, 'error' => 'Error extractor: ' . $e->getMessage()];
                 }
 
-                if (! empty($webRes['success']) && trim($webRes['content'] ?? '') !== '') {
-                    $webText         = $webRes['content'];
-                    $candidatesText  = $webRes['candidates_text'] ?? '';
-                    $candidatesList  = $webRes['candidates'] ?? [];
+                if (!empty($webRes['success']) && trim($webRes['content'] ?? '') !== '') {
+                    $webText = $webRes['content'];
+                    $candidatesText = $webRes['candidates_text'] ?? '';
+                    $candidatesList = $webRes['candidates'] ?? [];
                     $groupCategories = $webRes['groups'] ?? [];
 
                     $sourcesUsed[] = 'website';
@@ -201,8 +211,8 @@ class AnalisisAI extends BaseController
                     $catRes = ['success' => false, 'error' => 'Error extractor: ' . $e->getMessage()];
                 }
 
-                if (! empty($catRes['success']) && trim($catRes['content'] ?? '') !== '') {
-                    $catalogText   = $catRes['content'];
+                if (!empty($catRes['success']) && trim($catRes['content'] ?? '') !== '') {
+                    $catalogText = $catRes['content'];
                     $sourcesUsed[] = 'catalog';
                     $sumberModel->logSource($id, 'catalog', $catRes['url'] ?? $catalogUrl, 'sukses', $catalogText, null);
                     $stepLogs[] = 'Katalog PDF berhasil dibaca (' . mb_strlen($catalogText) . ' karakter).';
@@ -217,10 +227,10 @@ class AnalisisAI extends BaseController
 
             // Semua sumber kosong -> jangan panggil AI (hemat kuota)
             if ($profile === '' && $webText === '' && $catalogText === '') {
-                $statusSumber = 'Sumber tidak ada';
+                $statusSumber = 'sumber_tidak_ada'; // nilai enum (sebelumnya 'Sumber tidak ada' -> tidak valid)
 
                 $perusahaanModel->update($id, [
-                    'status_analisis'     => $statusSumber,
+                    'status_analisis' => $statusSumber,
                     'terakhir_dianalisis' => $now,
                 ]);
 
@@ -231,51 +241,51 @@ class AnalisisAI extends BaseController
                 $stepLogs[] = 'Dilewati: tidak ada sumber informasi (AI tidak dipanggil untuk menghemat kuota).';
 
                 return $this->json([
-                    'success'         => true,
-                    'skipped'         => true,
-                    'company_id'      => $id,
+                    'success' => true,
+                    'skipped' => true,
+                    'company_id' => $id,
                     'nama_perusahaan' => $namaPerusahaan,
-                    'status'          => $statusSumber,
-                    'message'         => 'Dilewati: tidak ada sumber informasi',
-                    'logs'            => $stepLogs,
+                    'status' => $statusSumber,
+                    'message' => 'Dilewati: tidak ada sumber informasi',
+                    'logs' => $stepLogs,
                 ]);
             }
 
             // 4. Siapkan data untuk AI Service (Google Gemini)
             $companyPayload = [
-                'nama_perusahaan'  => $namaPerusahaan,
-                'main_categories'  => $company['main_categories'] ?? '',
-                'sub_categories'   => $company['sub_categories'] ?? '',
-                'company_profile'  => $profile,
-                'website_text'     => $webText,
-                'catalog_text'     => $catalogText,
-                'candidates_text'  => $candidatesText,
-                'candidates'       => $candidatesList,
+                'nama_perusahaan' => $namaPerusahaan,
+                'main_categories' => $company['main_categories'] ?? '',
+                'sub_categories' => $company['sub_categories'] ?? '',
+                'company_profile' => $profile,
+                'website_text' => $webText,
+                'catalog_text' => $catalogText,
+                'candidates_text' => $candidatesText,
+                'candidates' => $candidatesList,
                 'group_categories' => $groupCategories,
-                'website_failed'   => $webText === '',
-                'catalog_failed'   => $catalogText === '',
+                'website_failed' => $webText === '',
+                'catalog_failed' => $catalogText === '',
             ];
 
-            $usedStr   = implode(', ', $sourcesUsed);
+            $usedStr = implode(', ', $sourcesUsed);
             $aiService = new AIService();
 
-            if (! $aiService->hasApiKey()) {
+            if (!$aiService->hasApiKey()) {
                 $errorMsg = 'API Key Google Gemini belum diatur di file .env (gemini.apiKey).';
 
                 $this->saveHistory($id, 'gagal', $usedStr, $now, ['pesan_error' => $errorMsg]);
 
                 return $this->json([
                     'success' => false,
-                    'error'   => $errorMsg,
-                    'logs'    => array_merge($stepLogs, [$errorMsg]),
+                    'error' => $errorMsg,
+                    'logs' => array_merge($stepLogs, [$errorMsg]),
                 ]);
             }
 
             $stepLogs[] = 'Mengirim data ke Google Gemini API (' . $aiService->getModel() . ')...';
-            $aiResult   = $aiService->analyzeCompanyProducts($companyPayload);
+            $aiResult = $aiService->analyzeCompanyProducts($companyPayload);
 
             // --- Kuota AI habis (HTTP 429): status perusahaan TIDAK diubah ---
-            if (! empty($aiResult['is_quota_exceeded'])) {
+            if (!empty($aiResult['is_quota_exceeded'])) {
                 $this->saveHistory($id, 'gagal', $usedStr, $now, [
                     'pesan_error' => 'Kuota AI habis (HTTP 429)',
                 ]);
@@ -283,58 +293,59 @@ class AnalisisAI extends BaseController
                 $stepLogs[] = 'Peringatan: Kuota AI habis (HTTP 429). Antrean dihentikan.';
 
                 return $this->json([
-                    'success'         => false,
-                    'quota_exceeded'  => true,
-                    'company_id'      => $id,
+                    'success' => false,
+                    'quota_exceeded' => true,
+                    'company_id' => $id,
                     'nama_perusahaan' => $namaPerusahaan,
-                    'error'           => 'Kuota AI habis, coba lagi nanti',
-                    'logs'            => $stepLogs,
+                    'error' => 'Kuota AI habis, coba lagi nanti',
+                    'logs' => $stepLogs,
                 ]);
             }
 
             // --- AI menyimpulkan "TIDAK ADA" produk ---
-            if (! empty($aiResult['success']) && ! empty($aiResult['is_no_product'])) {
-                $statusNoProd = 'Tanpa produk';
+            if (!empty($aiResult['success']) && !empty($aiResult['is_no_product'])) {
+                $statusNoProd = 'tanpa_produk'; // nilai enum (sebelumnya 'Tanpa produk' -> tidak valid)
 
                 $perusahaanModel->update($id, [
                     'produk_yang_dijual_auto' => '',
-                    'status_analisis'         => $statusNoProd,
-                    'terakhir_dianalisis'     => $now,
+                    'status_analisis' => $statusNoProd,
+                    'terakhir_dianalisis' => $now,
                 ]);
 
                 $produkModel->replaceProducts($id, []);
 
                 $this->saveHistory($id, 'sukses', $usedStr, $now, [
                     'hasil_mentah' => $aiResult['raw'] ?? 'TIDAK ADA',
-                    'confidence'   => 'low',
+                    'confidence' => 'low',
                 ]);
 
-                $stepLogs[] = 'AI menyimpulkan: TIDAK ADA produk fisik yang dijual. Status diatur ke "' . $statusNoProd . '".';
+                $stepLogs[] = 'AI menyimpulkan: TIDAK ADA produk fisik yang dijual. Status diatur ke "Tanpa produk".';
 
                 return $this->json([
-                    'success'         => true,
-                    'no_product'      => true,
-                    'company_id'      => $id,
+                    'success' => true,
+                    'no_product' => true,
+                    'company_id' => $id,
                     'nama_perusahaan' => $namaPerusahaan,
-                    'status'          => $statusNoProd,
-                    'formatted_text'  => '',
-                    'products'        => [],
-                    'logs'            => $stepLogs,
+                    'status' => $statusNoProd,
+                    'formatted_text' => '',
+                    'products' => [],
+                    'logs' => $stepLogs,
                 ]);
             }
 
             // --- Sukses dengan daftar produk ---
-            if (! empty($aiResult['success'])) {
-                $products      = $aiResult['products'] ?? [];
+            if (!empty($aiResult['success'])) {
+                $products = $aiResult['products'] ?? [];
                 $formattedText = $aiResult['formatted_text'] ?? '';
 
-                $isPerluDiperiksa = ! empty($aiResult['is_perlu_diperiksa']);
-                $discardedCount   = (int) ($aiResult['discarded_count'] ?? 0);
+                $isPerluDiperiksa = !empty($aiResult['is_perlu_diperiksa']);
+                $discardedCount = (int) ($aiResult['discarded_count'] ?? 0);
 
+                // 'Perlu diperiksa' hanya label tampilan; di database tetap 'belum_dianalisis'
                 $statusAnalisisDb = $isPerluDiperiksa ? 'belum_dianalisis' : 'sukses';
-                $statusDisplay    = $isPerluDiperiksa ? 'Perlu diperiksa' : 'sukses';
-                $confidence       = $isPerluDiperiksa ? 'low' : 'high';
-                $pesanError       = $isPerluDiperiksa
+                $statusDisplay = $isPerluDiperiksa ? 'Perlu diperiksa' : 'sukses';
+                $confidence = $isPerluDiperiksa ? 'low' : 'high';
+                $pesanError = $isPerluDiperiksa
                     ? ($aiResult['perlu_diperiksa_reason'] ?? 'Perlu diperiksa')
                     : null;
 
@@ -345,16 +356,16 @@ class AnalisisAI extends BaseController
 
                 $perusahaanModel->update($id, [
                     'produk_yang_dijual_auto' => $formattedText,
-                    'status_analisis'         => $statusAnalisisDb,
-                    'terakhir_dianalisis'     => $now,
+                    'status_analisis' => $statusAnalisisDb,
+                    'terakhir_dianalisis' => $now,
                 ]);
 
                 $produkModel->replaceProducts($id, $products);
 
                 $this->saveHistory($id, $isPerluDiperiksa ? 'gagal' : 'sukses', $usedStr, $now, [
                     'hasil_mentah' => $aiResult['raw'] ?? '',
-                    'confidence'   => $confidence,
-                    'pesan_error'  => $pesanError,
+                    'confidence' => $confidence,
+                    'pesan_error' => $pesanError,
                 ]);
 
                 $logMsg = $isPerluDiperiksa
@@ -367,16 +378,16 @@ class AnalisisAI extends BaseController
                 $stepLogs[] = $logMsg;
 
                 return $this->json([
-                    'success'            => true,
-                    'company_id'         => $id,
-                    'nama_perusahaan'    => $namaPerusahaan,
-                    'status'             => $statusDisplay,
+                    'success' => true,
+                    'company_id' => $id,
+                    'nama_perusahaan' => $namaPerusahaan,
+                    'status' => $statusDisplay,
                     'is_perlu_diperiksa' => $isPerluDiperiksa,
-                    'discarded_count'    => $discardedCount,
-                    'products'           => $products,
-                    'formatted_text'     => $formattedText,
-                    'sources_used'       => $sourcesUsed,
-                    'logs'               => $stepLogs,
+                    'discarded_count' => $discardedCount,
+                    'products' => $products,
+                    'formatted_text' => $formattedText,
+                    'sources_used' => $sourcesUsed,
+                    'logs' => $stepLogs,
                 ]);
             }
 
@@ -384,37 +395,38 @@ class AnalisisAI extends BaseController
             $errorMsg = $aiResult['error'] ?? 'Terjadi kesalahan tidak diketahui pada AI Service.';
 
             // Jangan timpa hasil lama yang sudah sukses / manual / tanpa produk
+            // (sebelumnya 'manual_edit' & 'Tanpa produk' -> bukan nilai enum)
             $updateData = ['terakhir_dianalisis' => $now];
-            if (! in_array($company['status_analisis'], ['sukses', 'manual_edit', 'Tanpa produk'], true)) {
+            if (!in_array($company['status_analisis'], self::PROTECTED_STATUSES, true)) {
                 $updateData['status_analisis'] = 'gagal';
             }
             $perusahaanModel->update($id, $updateData);
 
             $this->saveHistory($id, 'gagal', $usedStr, $now, [
                 'hasil_mentah' => $aiResult['raw'] ?? null,
-                'pesan_error'  => $errorMsg,
+                'pesan_error' => $errorMsg,
             ]);
 
             $stepLogs[] = 'Analisis AI gagal: ' . $errorMsg;
 
             return $this->json([
-                'success'         => false,
-                'company_id'      => $id,
+                'success' => false,
+                'company_id' => $id,
                 'nama_perusahaan' => $namaPerusahaan,
-                'error'           => $errorMsg,
-                'logs'            => $stepLogs,
+                'error' => $errorMsg,
+                'logs' => $stepLogs,
             ]);
         } catch (\Throwable $e) {
             log_message('error', '[AnalisisAI::processOne] ID {id}: {msg}', [
-                'id'  => $id,
+                'id' => $id,
                 'msg' => $e->getMessage(),
             ]);
 
             return $this->json([
-                'success'    => false,
+                'success' => false,
                 'company_id' => $id ?: null,
-                'error'      => 'Kesalahan sistem: ' . $e->getMessage(),
-                'logs'       => ['Pengecualian sistem tidak terduga: ' . $e->getMessage()],
+                'error' => 'Kesalahan sistem: ' . $e->getMessage(),
+                'logs' => ['Pengecualian sistem tidak terduga: ' . $e->getMessage()],
             ]);
         }
     }
@@ -428,7 +440,7 @@ class AnalisisAI extends BaseController
      */
     private function hasValue(string $value): bool
     {
-        return ! in_array(strtolower(trim($value)), self::EMPTY_URL_VALUES, true);
+        return !in_array(strtolower(trim($value)), self::EMPTY_URL_VALUES, true);
     }
 
     /**
@@ -437,18 +449,22 @@ class AnalisisAI extends BaseController
     private function saveHistory(int $companyId, string $status, string $sources, string $time, array $extra = []): void
     {
         (new RiwayatAnalisisModel())->insert(array_merge([
-            'kontak_email_id'  => $companyId,
-            'status'           => $status,
+            'kontak_email_id' => $companyId,
+            'status' => $status,
             'sumber_digunakan' => $sources,
-            'waktu_analisis'   => $time,
+            'waktu_analisis' => $time,
         ], $extra));
     }
+
 
     /**
      * Respons JSON singkat.
      */
     private function json(array $data, int $status = 200): ResponseInterface
     {
+        $data['csrf_token'] = csrf_token();
+        $data['csrf_hash'] = csrf_hash();
+
         return $this->response->setStatusCode($status)->setJSON($data);
     }
 }
