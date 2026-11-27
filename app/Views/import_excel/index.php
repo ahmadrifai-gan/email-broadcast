@@ -86,7 +86,9 @@
                 <p>Unggah, pratinjau, lalu impor data Excel ke sistem.</p>
             </div>
         </div>
-        <div class="ix-data-count"><strong><?= number_format((int) $jumlahSekarang) ?></strong> data tersimpan</div>
+       <a href="<?= site_url('kontak') ?>" class="ix-action ix-action-outline" style="text-decoration:none">
+    <i class="fa fa-arrow-left"></i> Kembali
+</a>
     </div>
 
     <div class="ix-steps">
@@ -354,8 +356,6 @@
                 tempFile = '';
                 document.getElementById('kotakPratinjau').style.display = 'none';
                 document.getElementById('fileExcel').value = '';
-                namaFile.style.display = 'none';
-                aturLangkah(3);
             }
         }).catch(function () {
             alert('Terjadi kesalahan. Muat ulang halaman lalu coba lagi.');
@@ -369,14 +369,13 @@
         var el = document.getElementById('hasilImport');
 
         if (!res.success) {
-            el.innerHTML = '<div class="ix-result ix-result-danger"><i class="fa fa-times-circle"></i> <strong>' + esc(res.message || 'Import gagal.') + '</strong></div>';
-            aturLangkah(2);
+            el.innerHTML = '<div class="alert alert-danger"><i class="fa fa-times-circle"></i> ' + esc(res.message || 'Import gagal.') + '</div>';
             return;
         }
 
-        var html = '<div class="ix-result ix-result-success"><i class="fa fa-check-circle"></i> <strong>' + esc(res.message) + '</strong></div>';
+        var html = '<div class="alert alert-success"><i class="fa fa-check-circle"></i> ' + esc(res.message) + '</div>';
         if (res.galat && res.galat.length > 0) {
-            html += '<div class="ix-result ix-result-warning"><strong><i class="fa fa-warning"></i> Baris yang dilewati (maks. 30 ditampilkan)</strong><ul style="margin:8px 0 0 15px">'
+            html += '<div class="alert alert-warning"><strong>Baris yang dilewati (maks. 30 ditampilkan):</strong><ul style="margin:5px 0 0 15px">'
                 + res.galat.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('') + '</ul></div>';
         }
         el.innerHTML = html;

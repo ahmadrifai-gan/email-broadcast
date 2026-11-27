@@ -130,4 +130,5 @@ $routes->group('analisis-ai', function ($routes) {
     $routes->get('/', 'AnalisisAI::index');                 // halaman utama
     $routes->get('queue', 'AnalisisAI::getQueue');          // ambil antrean
     $routes->post('process-one', 'AnalisisAI::processOne'); // proses 1 perusahaan
+       $routes->post('kontak/(:num)', 'AnalisisAI::analisisKontak/$1');
 });

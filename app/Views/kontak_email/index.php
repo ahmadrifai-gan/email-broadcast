@@ -19,10 +19,10 @@ $pesan = static fn(string $f) => isset($errors[$f])
     : '';
 
 $detailImport = session()->getFlashdata('detail_import') ?? [];
-$halaman      = $pager->getCurrentPage();
-$totalData    = method_exists($pager, 'getTotal') ? $pager->getTotal() : count($kontak);
+$halaman = $pager->getCurrentPage();
+$totalData = method_exists($pager, 'getTotal') ? $pager->getTotal() : count($kontak);
 $totalHalaman = method_exists($pager, 'getPageCount') ? $pager->getPageCount() : 1;
-$adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !== '');
+$adaFilter = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !== '');
 ?>
 
 <style>
@@ -834,21 +834,100 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     .kp-head-actions .btn {
         white-space: nowrap;
     }
+
+    /* Modal analisis AI: posisi di tengah layar */
+    #modalAnalisis.in {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #modalAnalisis .modal-dialog {
+        margin: 0 auto;
+        width: 100%;
+        max-width: 480px;
+    }
+
+    .az-state {
+        text-align: center;
+        padding: 10px 6px;
+    }
+
+    .az-icon {
+        font-size: 56px;
+        line-height: 1;
+        margin-bottom: 12px;
+    }
+
+    .az-icon.is-loading {
+        color: #0d6efd;
+    }
+
+    .az-icon.is-success {
+        color: #198754;
+    }
+
+    .az-icon.is-error {
+        color: #dc3545;
+    }
+
+    .az-title {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 0 0 4px;
+    }
+
+    .az-sub {
+        color: #6c757d;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    .az-result {
+        margin-top: 14px;
+        text-align: left;
+        max-height: 220px;
+        overflow-y: auto;
+        white-space: pre-line;
+        font-size: 12.5px;
+        background: #f8f9fa;
+        border: 1px solid #e7e9ed;
+        border-radius: 6px;
+        padding: 10px;
+    }
+
+    .az-error-box {
+        margin-top: 14px;
+        text-align: left;
+        background: #fdecee;
+        border: 1px solid #f6c7cc;
+        color: #842029;
+        border-radius: 6px;
+        padding: 10px;
+        font-size: 13px;
+        word-break: break-word;
+    }
+
+    .az-logs {
+        margin-top: 10px;
+        text-align: left;
+        font-size: 12px;
+        color: #6c757d;
+        max-height: 120px;
+        overflow-y: auto;
+    }
 </style>
 
 <!-- HEADER -->
 <div class="kp-head">
     <p class="kp-sub">Daftar kontak perusahaan beserta kategori, status analisis produk AI, dan data penghubungnya.</p>
     <div class="kp-head-actions">
-        <button type="button" class="btn kp-btn kp-btn-outline-primary" onclick="openImportAllModal()">
-            <i class="fa fa-cubes"></i> Import Semua ke Supplier
-        </button>
-        <button type="button" class="btn kp-btn kp-btn-outline-success" data-toggle="modal" data-target="#modalImport">
-            <i class="fa fa-file-excel-o"></i> Import Excel
-        </button>
+        <a href="<?= site_url('analisis-ai') ?>" class="btn kp-btn kp-btn-outline-primary">
+            <i class="fa fa-cubes"></i> Analisis data
+        </a>
         <button type="button" class="btn kp-btn kp-btn-primary" data-toggle="modal" data-target="#modalPilihanTambah">
-    <i class="fa fa-plus"></i> Tambah Kontak
-</button>
+            <i class="fa fa-plus"></i> Tambah Kontak
+        </button>
     </div>
 </div>
 
@@ -902,16 +981,22 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                 <div class="col-md-3">
                     <select name="status" class="form-control" onchange="this.form.submit()">
                         <option value="">Semua status analisis (<?= $stats['total'] ?>)</option>
-                        <option value="belum_dianalisis" <?= $statusDipilih === 'belum_dianalisis' ? 'selected' : '' ?>>Belum dianalisis (<?= $stats['belum'] ?>)</option>
-                        <option value="sukses" <?= $statusDipilih === 'sukses' ? 'selected' : '' ?>>Sukses AI (<?= $stats['sukses'] ?>)</option>
-                        <option value="manual" <?= $statusDipilih === 'manual' ? 'selected' : '' ?>>Koreksi manual (<?= $stats['manual_edit'] ?>)</option>
-                        <option value="gagal" <?= $statusDipilih === 'gagal' ? 'selected' : '' ?>>Gagal dianalisis (<?= $stats['gagal'] ?>)</option>
+                        <option value="belum_dianalisis" <?= $statusDipilih === 'belum_dianalisis' ? 'selected' : '' ?>>
+                            Belum dianalisis (<?= $stats['belum'] ?>)</option>
+                        <option value="sukses" <?= $statusDipilih === 'sukses' ? 'selected' : '' ?>>Sukses AI
+                            (<?= $stats['sukses'] ?>)</option>
+                        <option value="manual" <?= $statusDipilih === 'manual' ? 'selected' : '' ?>>Koreksi manual
+                            (<?= $stats['manual_edit'] ?>)</option>
+                        <option value="gagal" <?= $statusDipilih === 'gagal' ? 'selected' : '' ?>>Gagal dianalisis
+                            (<?= $stats['gagal'] ?>)</option>
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn kp-btn kp-btn-secondary" style="width:<?= $adaFilter ? '65' : '100' ?>%">Filter</button>
+                    <button type="submit" class="btn kp-btn kp-btn-secondary"
+                        style="width:<?= $adaFilter ? '65' : '100' ?>%">Filter</button>
                     <?php if ($adaFilter): ?>
-                        <a href="<?= site_url('kontak') ?>" class="btn kp-btn kp-btn-outline-danger" title="Reset filter"><i class="fa fa-undo"></i></a>
+                        <a href="<?= site_url('kontak') ?>" class="btn kp-btn kp-btn-outline-danger" title="Reset filter"><i
+                                class="fa fa-undo"></i></a>
                     <?php endif; ?>
                 </div>
             </div>
@@ -959,21 +1044,22 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                     <?php $no = 1 + (($halaman - 1) * $pager->getPerPage()); ?>
                     <?php foreach ($kontak as $k): ?>
                         <?php
-                        $jsonRow   = $k;
+                        $jsonRow = $k;
                         unset($jsonRow['produk_list']);
-                        $lokasi    = trim(($k['kota_kabupaten'] ?? '') . ', ' . ($k['provinsi'] ?? ''), ', ');
-                        $web       = trim((string) ($k['website'] ?? ''));
-                        $adaWeb    = $web !== '' && $web !== '-';
-                        $urlWeb    = $adaWeb ? (strpos($web, 'http') === 0 ? $web : 'https://' . $web) : '';
-                        $katalog   = trim((string) ($k['link_catalog'] ?? ''));
-                        $adaKat    = $katalog !== '' && $katalog !== '-';
-                        $status    = $k['status_analisis'] ?? 'belum_dianalisis';
-                        $gagal     = (int) ($k['jumlah_tidak_terkirim'] ?? 0);
+                        $lokasi = trim(($k['kota_kabupaten'] ?? '') . ', ' . ($k['provinsi'] ?? ''), ', ');
+                        $web = trim((string) ($k['website'] ?? ''));
+                        $adaWeb = $web !== '' && $web !== '-';
+                        $urlWeb = $adaWeb ? (strpos($web, 'http') === 0 ? $web : 'https://' . $web) : '';
+                        $katalog = trim((string) ($k['link_catalog'] ?? ''));
+                        $adaKat = $katalog !== '' && $katalog !== '-';
+                        $status = $k['status_analisis'] ?? 'belum_dianalisis';
+                        $gagal = (int) ($k['jumlah_tidak_terkirim'] ?? 0);
                         $prodCount = count($k['produk_list'] ?? []);
                         $canImport = in_array($status, ['sukses', 'manual'], true) && $prodCount > 0;
                         ?>
-                        <tr>
-                            <td><input type="checkbox" class="row-select" value="<?= $k['id'] ?>" onclick="updateSelectedCount()"></td>
+                         <tr data-id="<?= $k['id'] ?>">
+                            <td><input type="checkbox" class="row-select" value="<?= $k['id'] ?>"
+                                    onclick="updateSelectedCount()"></td>
                             <td class="kp-no"><?= $no++ ?></td>
                             <td>
                                 <div class="kp-name"><?= esc($k['nama_perusahaan'] ?? '-') ?></div>
@@ -981,35 +1067,45 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                                     <div class="kp-small"><i class="fa fa-user-o"></i> <?= esc($k['nama']) ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($k['kategori_nama'])): ?>
-                                    <span class="kp-badge kp-badge-primary" style="margin-top:4px"><?= esc($k['kategori_nama']) ?></span>
+                                    <span class="kp-badge kp-badge-primary"
+                                        style="margin-top:4px"><?= esc($k['kategori_nama']) ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="kp-line" title="<?= esc($k['email'] ?? '', 'attr') ?>"><i class="fa fa-envelope-o"></i><?= esc($k['email'] ?? '-') ?></div>
+                                <div class="kp-line" title="<?= esc($k['email'] ?? '', 'attr') ?>"><i
+                                        class="fa fa-envelope-o"></i><?= esc($k['email'] ?? '-') ?></div>
                                 <div class="kp-line kp-small"><i class="fa fa-phone"></i><?= esc($k['no_hp'] ?: '-') ?></div>
                                 <div class="kp-line kp-small"><i class="fa fa-map-marker"></i><?= esc($lokasi ?: '-') ?></div>
                             </td>
                             <td>
                                 <div class="kp-links">
                                     <?php if ($adaWeb): ?>
-                                        <a href="<?= esc($urlWeb, 'attr') ?>" target="_blank" rel="noopener" class="kp-badge kp-badge-primary" title="<?= esc($web, 'attr') ?>"><i class="fa fa-globe"></i> Web</a>
+                                        <a href="<?= esc($urlWeb, 'attr') ?>" target="_blank" rel="noopener"
+                                            class="kp-badge kp-badge-primary" title="<?= esc($web, 'attr') ?>"><i
+                                                class="fa fa-globe"></i> Web</a>
                                     <?php else: ?>
                                         <span class="kp-badge"><i class="fa fa-globe"></i> -</span>
                                     <?php endif; ?>
                                     <?php if ($adaKat): ?>
-                                        <a href="<?= esc($katalog, 'attr') ?>" target="_blank" rel="noopener" class="kp-badge kp-badge-danger" title="<?= esc($katalog, 'attr') ?>"><i class="fa fa-file-pdf-o"></i> Katalog</a>
+                                        <a href="<?= esc($katalog, 'attr') ?>" target="_blank" rel="noopener"
+                                            class="kp-badge kp-badge-danger" title="<?= esc($katalog, 'attr') ?>"><i
+                                                class="fa fa-file-pdf-o"></i> Katalog</a>
                                     <?php else: ?>
                                         <span class="kp-badge"><i class="fa fa-file-pdf-o"></i> -</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
-                            <td>
+                            <td class="js-status">
                                 <?php if ($status === 'sukses'): ?>
                                     <span class="kp-badge kp-badge-success"><i class="fa fa-check"></i> Sukses</span>
                                 <?php elseif ($status === 'manual'): ?>
                                     <span class="kp-badge kp-badge-info"><i class="fa fa-pencil"></i> Koreksi</span>
                                 <?php elseif ($status === 'gagal'): ?>
                                     <span class="kp-badge kp-badge-danger"><i class="fa fa-times"></i> Gagal</span>
+                                <?php elseif ($status === 'tanpa_produk'): ?>
+                                    <span class="kp-badge"><i class="fa fa-ban"></i> Tanpa produk</span>
+                                <?php elseif ($status === 'sumber_tidak_ada'): ?>
+                                    <span class="kp-badge kp-badge-warning"><i class="fa fa-question"></i> Sumber kosong</span>
                                 <?php else: ?>
                                     <span class="kp-badge kp-badge-warning"><i class="fa fa-clock-o"></i> Belum</span>
                                 <?php endif; ?>
@@ -1017,7 +1113,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                             <td class="text-center">
                                 <span class="kp-badge <?= $gagal > 0 ? 'kp-badge-danger' : '' ?>"><?= $gagal ?></span>
                             </td>
-                            <td>
+                            <td class="js-produk">
                                 <?php if (!empty($k['produk_yang_dijual_auto'])): ?>
                                     <div class="kp-produk"><?= esc($k['produk_yang_dijual_auto']) ?></div>
                                 <?php else: ?>
@@ -1026,8 +1122,14 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                             </td>
                             <td class="text-center">
                                 <div class="kp-actions">
-                                    <button type="button" class="kp-icon-btn is-blue" onclick="showCompanyDetail(<?= $k['id'] ?>)" title="Lihat detail">
+                                    <button type="button" class="kp-icon-btn is-blue"
+                                        onclick="showCompanyDetail(<?= $k['id'] ?>)" title="Lihat detail">
                                         <i class="fa fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="kp-icon-btn is-green btn-analisis-ai" title="Analisis AI"
+                                        data-url="<?= site_url('analisis-ai/kontak/' . $k['id']) ?>"
+                                        data-nama="<?= esc($k['nama_perusahaan'] ?? '', 'attr') ?>">
+                                        <i class="fa fa-magic"></i>
                                     </button>
                                     <button type="button" class="kp-icon-btn is-blue" title="Ubah kontak" data-toggle="modal"
                                         data-target="#modalKontak" data-judul="Ubah Kontak"
@@ -1035,18 +1137,12 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                                         data-kontak="<?= esc(json_encode($jsonRow), 'attr') ?>">
                                         <i class="fa fa-pencil"></i>
                                     </button>
-                                    <button type="button" class="kp-icon-btn btn-import-supplier <?= $canImport ? 'is-green' : 'is-off' ?>"
-                                        data-id="<?= $k['id'] ?>"
-                                        data-name="<?= esc($k['nama_perusahaan'] ?? '', 'attr') ?>"
-                                        data-status="<?= esc($status, 'attr') ?>"
-                                        data-products="<?= $prodCount ?>"
-                                        title="<?= $canImport ? 'Import ke Supplier (' . $prodCount . ' produk)' : ($prodCount === 0 ? 'Belum ada produk hasil analisis' : 'Status analisis: ' . esc($status, 'attr')) ?>">
-                                        <i class="fa fa-download"></i>
-                                    </button>
+
                                     <form action="<?= site_url('kontak/hapus/' . $k['id']) ?>" method="post"
                                         onsubmit="return confirm('Hapus kontak ini?')" style="margin:0">
                                         <?= csrf_field() ?>
-                                        <button type="submit" class="kp-icon-btn is-red" title="Hapus kontak"><i class="fa fa-trash"></i></button>
+                                        <button type="submit" class="kp-icon-btn is-red" title="Hapus kontak"><i
+                                                class="fa fa-trash"></i></button>
                                     </form>
                                 </div>
                             </td>
@@ -1072,11 +1168,13 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span
+                        aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title"><i class="fa fa-plus"></i> Pilih Metode Tambah Kontak</h4>
             </div>
             <div class="modal-body text-center">
-                <p class="text-muted" style="margin-bottom: 20px;">Silakan pilih metode yang ingin Anda gunakan untuk menambahkan kontak baru.</p>
+                <p class="text-muted" style="margin-bottom: 20px;">Silakan pilih metode yang ingin Anda gunakan untuk
+                    menambahkan kontak baru.</p>
                 <div class="row">
                     <!-- OPSI 1: GMAPS -->
                     <!-- OPSI 1: GMAPS -->
@@ -1087,19 +1185,22 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                     </div>
                     <!-- OPSI 2: IMPORT EXCEL -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
-                       <a href="<?= site_url('import-excel') ?>" class="btn btn-default btn-block btn-lg">
+                        <a href="<?= site_url('import-excel') ?>" class="btn btn-default btn-block btn-lg">
                             <i class="fa fa-file-excel-o" style="color: #db4437; font-size: 24px;"></i><br>Import Excel
                         </a>
                     </div>
                     <!-- OPSI 3: MANUAL -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
-                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalKontak" data-judul="Tambah Kontak Manual" data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal"
+                            data-toggle="modal" data-target="#modalKontak" data-judul="Tambah Kontak Manual"
+                            data-aksi="<?= site_url('kontak/simpan') ?>" data-kontak="{}">
                             <i class="fa fa-pencil" style="color: #f39c12; font-size: 24px;"></i><br>Manual
                         </button>
                     </div>
                     <!-- OPSI 4: EXCEL WEB -->
                     <div class="col-xs-6 col-md-3" style="margin-bottom: 15px;">
-                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal" data-toggle="modal" data-target="#modalImportWeb">
+                        <button type="button" class="btn btn-default btn-block btn-lg" data-dismiss="modal"
+                            data-toggle="modal" data-target="#modalImportWeb">
                             <i class="fa fa-globe" style="color: #00c0ef; font-size: 24px;"></i><br>Excel Web
                         </button>
                     </div>
@@ -1126,7 +1227,8 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                         aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title">
                     <i class="fa fa-address-book-o"></i>
-                    <span id="modalKontakJudul"><?= $modalAksi && str_contains($modalAksi, 'perbarui') ? 'Ubah Kontak' : 'Tambah Kontak' ?></span>
+                    <span
+                        id="modalKontakJudul"><?= $modalAksi && str_contains($modalAksi, 'perbarui') ? 'Ubah Kontak' : 'Tambah Kontak' ?></span>
                 </h4>
             </div>
 
@@ -1173,8 +1275,8 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                             <label class="control-label" for="email">Email <span class="text-red">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-addon"><i class="fa fa-envelope-o"></i></span>
-                                <input type="email" name="email" id="email" maxlength="254" required class="form-control"
-                                    value="<?= esc(old('email', ''), 'attr') ?>">
+                                <input type="email" name="email" id="email" maxlength="254" required
+                                    class="form-control" value="<?= esc(old('email', ''), 'attr') ?>">
                             </div>
                             <?= $pesan('email') ?>
                         </div>
@@ -1233,8 +1335,8 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                             <label class="control-label" for="sumber_data">Sumber data</label>
                             <div class="input-group">
                                 <span class="input-group-addon"><i class="fa fa-database"></i></span>
-                                <input type="text" name="sumber_data" id="sumber_data" maxlength="150" class="form-control"
-                                    value="<?= esc(old('sumber_data', ''), 'attr') ?>">
+                                <input type="text" name="sumber_data" id="sumber_data" maxlength="150"
+                                    class="form-control" value="<?= esc(old('sumber_data', ''), 'attr') ?>">
                             </div>
                             <?= $pesan('sumber_data') ?>
                         </div>
@@ -1269,12 +1371,15 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
 <!-- Modal import Excel -->
 <div class="modal fade kp-modal" id="modalImport" tabindex="-1" role="dialog" aria-labelledby="modalImportJudul">
     <div class="modal-dialog" role="document">
-        <form action="<?= site_url('kontak/import') ?>" method="post" enctype="multipart/form-data" class="modal-content">
+        <form action="<?= site_url('kontak/import') ?>" method="post" enctype="multipart/form-data"
+            class="modal-content">
             <?= csrf_field() ?>
 
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="modalImportJudul"><i class="fa fa-file-excel-o" style="color:#198754"></i> Import Kontak dari Excel</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span
+                        aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modalImportJudul"><i class="fa fa-file-excel-o" style="color:#198754"></i>
+                    Import Kontak dari Excel</h4>
             </div>
 
             <div class="modal-body">
@@ -1320,7 +1425,8 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span
+                        aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="modalCompanyTitle">Detail Perusahaan</h4>
             </div>
             <div class="modal-body" id="modalCompanyBody"></div>
@@ -1336,7 +1442,8 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span
+                        aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title"><i class="fa fa-cubes text-primary"></i> Import Semua ke Supplier</h4>
             </div>
             <div class="modal-body">
@@ -1347,38 +1454,66 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                 <div id="importAllContent" style="display:none">
                     <div class="kp-info">
                         <i class="fa fa-info-circle"></i>
-                        Mengimpor seluruh perusahaan berstatus <strong>Sukses</strong> atau <strong>Koreksi Manual</strong> yang memiliki daftar produk ke Portal Supplier.
+                        Mengimpor seluruh perusahaan berstatus <strong>Sukses</strong> atau <strong>Koreksi
+                            Manual</strong> yang memiliki daftar produk ke Portal Supplier.
                     </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="kp-block">
                                 <h5 class="text-success"><i class="fa fa-check-circle"></i> Siap diimpor</h5>
-                                <div class="kp-row"><span class="kp-muted">Perusahaan memenuhi syarat</span><strong id="prevEligibleCompany">0</strong></div>
-                                <div class="kp-row"><span class="kp-muted">Total baris produk</span><strong id="prevEligibleProduct">0</strong></div>
-                                <div class="kp-row"><span class="kp-muted">Supplier baru</span><strong id="prevNewSupplier">0</strong></div>
-                                <div class="kp-row"><span class="kp-muted">Supplier sudah ada</span><strong id="prevExistingSupplier">0</strong></div>
-                                <div class="kp-small" style="margin-top:6px"><em>Supplier yang sudah ada tidak ditimpa, hanya produk baru yang ditambahkan.</em></div>
+                                <div class="kp-row"><span class="kp-muted">Perusahaan memenuhi syarat</span><strong
+                                        id="prevEligibleCompany">0</strong></div>
+                                <div class="kp-row"><span class="kp-muted">Total baris produk</span><strong
+                                        id="prevEligibleProduct">0</strong></div>
+                                <div class="kp-row"><span class="kp-muted">Supplier baru</span><strong
+                                        id="prevNewSupplier">0</strong></div>
+                                <div class="kp-row"><span class="kp-muted">Supplier sudah ada</span><strong
+                                        id="prevExistingSupplier">0</strong></div>
+                                <div class="kp-small" style="margin-top:6px"><em>Supplier yang sudah ada tidak ditimpa,
+                                        hanya produk baru yang ditambahkan.</em></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="kp-block">
                                 <h5 class="text-muted"><i class="fa fa-times-circle"></i> Akan dilewati</h5>
-                                <div class="kp-row"><span class="kp-muted">Total dilewati</span><strong class="text-danger" id="prevSkippedTotal">0</strong></div>
+                                <div class="kp-row"><span class="kp-muted">Total dilewati</span><strong
+                                        class="text-danger" id="prevSkippedTotal">0</strong></div>
                                 <div class="kp-small" style="margin:6px 0 2px">Rincian alasan:</div>
                                 <div id="prevSkippedBreakdown"></div>
                             </div>
                         </div>
                     </div>
                     <div class="alert alert-warning kp-alert" style="margin-bottom:0;font-size:13px">
-                        <i class="fa fa-warning"></i> Setiap perusahaan diproses dalam satu transaksi. Jika gagal, hanya data itu yang dibatalkan dan proses lanjut ke perusahaan berikutnya.
+                        <i class="fa fa-warning"></i> Setiap perusahaan diproses dalam satu transaksi. Jika gagal, hanya
+                        data itu yang dibatalkan dan proses lanjut ke perusahaan berikutnya.
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn kp-btn kp-btn-secondary" data-dismiss="modal">Batal</button>
-                <button type="button" class="btn kp-btn kp-btn-primary" id="btnExecuteImportAll" onclick="executeImportAll()" disabled>
+                <button type="button" class="btn kp-btn kp-btn-primary" id="btnExecuteImportAll"
+                    onclick="executeImportAll()" disabled>
                     <i class="fa fa-upload"></i> Konfirmasi &amp; Mulai Import Semua
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade kp-modal" id="modalAnalisis" tabindex="-1" role="dialog" data-backdrop="static"
+    data-keyboard="false">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="az-state">
+                    <div class="az-icon is-loading" id="azIcon"><i class="fa fa-spinner fa-spin"></i></div>
+                    <h4 class="az-title" id="azTitle">Menganalisis...</h4>
+                    <p class="az-sub" id="azSub">Mohon tunggu.</p>
+                    <div id="azDetail"></div>
+                </div>
+            </div>
+            <div class="modal-footer" id="azFooter" style="display:none">
+                <button type="button" class="btn kp-btn kp-btn-secondary" data-dismiss="modal">Tutup</button>
             </div>
         </div>
     </div>
@@ -1401,7 +1536,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
 
 <?= $this->section('scripts') ?>
 <script>
-    $(function() {
+    $(function () {
         var $modal = $('#modalKontak');
         var fields = [
             'kategori_id', 'nama', 'nama_perusahaan', 'email', 'no_hp', 'website',
@@ -1410,7 +1545,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         ];
 
         // Isi modal sesuai tombol yang diklik (tambah / ubah)
-        $modal.on('show.bs.modal', function(e) {
+        $modal.on('show.bs.modal', function (e) {
             var btn = e.relatedTarget;
             if (!btn) return; // dibuka otomatis setelah error validasi
 
@@ -1420,7 +1555,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
             $('#formKontak').attr('action', $btn.data('aksi'));
             $('#modalKontakJudul').text($btn.data('judul'));
 
-            fields.forEach(function(f) {
+            fields.forEach(function (f) {
                 var nilai = data[f];
                 if (nilai === null || nilai === undefined) {
                     nilai = (f === 'jumlah_tidak_terkirim') ? 0 : '';
@@ -1432,7 +1567,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
             $modal.find('.pesan-error').remove();
         });
 
-        $modal.on('shown.bs.modal', function() {
+        $modal.on('shown.bs.modal', function () {
             $('#nama_perusahaan').focus();
         });
 
@@ -1475,36 +1610,36 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     }
 
     function executeBulkDelete() {
-        var ids = $('.row-select:checked').map(function() {
+        var ids = $('.row-select:checked').map(function () {
             return this.value;
         }).get();
         if (!ids.length) return;
         if (!confirm('Hapus ' + ids.length + ' data perusahaan yang dipilih? Tindakan ini tidak dapat dibatalkan.')) return;
 
         var body = new URLSearchParams();
-        ids.forEach(function(id) {
+        ids.forEach(function (id) {
             body.append('ids[]', id);
         });
         body.append(csrfTokenName, csrfHash);
 
         fetch(BASE + '/bulk-delete', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: body
-            })
-            .then(function(r) {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body
+        })
+            .then(function (r) {
                 return r.json();
             })
-            .then(function(d) {
+            .then(function (d) {
                 if (d.success) {
                     location.reload();
                 } else {
                     alert(d.message || 'Gagal menghapus data');
                 }
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 alert('Kesalahan jaringan: ' + e.message);
             });
     }
@@ -1512,7 +1647,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
     // ---------- Detail ----------
     function parseProduk(text) {
         var out = '<ol style="margin:0;padding-left:18px">';
-        text.split('\n').forEach(function(line) {
+        text.split('\n').forEach(function (line) {
             line = line.replace(/^\d+[\.\)]\s*/, '').trim();
             if (!line) return;
             var parts = line.split(/\s+[–—\-]\s+/);
@@ -1525,63 +1660,186 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         return out + '</ol>';
     }
 
+
     function showCompanyDetail(id) {
         var $body = $('#modalCompanyBody');
+
+        // ---------- Pembantu ----------
+        function kosong(v) {
+            return v === null || v === undefined || String(v).trim() === '';
+        }
+
+        function nilai(v) {
+            return kosong(v) ? '-' : esc(v);
+        }
+
+        // Hanya http/https yang dijadikan link (mencegah link berbahaya dari data impor)
+        function linkAman(u) {
+            u = String(u || '').trim();
+            if (!u || u === '-') { return ''; }
+            if (!/^https?:\/\//i.test(u)) { u = 'https://' + u; }
+            return /^https?:\/\/[^\s]+$/i.test(u) ? u : '';
+        }
+
+        function tautan(u, teks) {
+            if (kosong(u)) { return '-'; }
+            var h = linkAman(u);
+            return h ? '<a href="' + esc(h) + '" target="_blank" rel="noopener">' + esc(teks || u) + '</a>' : esc(u);
+        }
+
+        function kolom(label, isiHtml, penuh) {
+            return '<div class="' + (penuh ? 'col-md-12' : 'col-md-6') + '" style="margin-top:12px">'
+                + '<span class="kp-label">' + esc(label) + '</span><div style="word-break:break-word">' + isiHtml + '</div></div>';
+        }
+
+        // Blok teks panjang: tampil penuh, tidak dipotong
+        function blokTeks(v, kosongTeks) {
+            if (kosong(v)) { return '<em class="kp-muted">' + esc(kosongTeks) + '</em>'; }
+            return '<div class="kp-produk" style="max-height:none;overflow:visible;white-space:pre-wrap;word-break:break-word">' + esc(v) + '</div>';
+        }
+
+        function bagian(judul, isiHtml) {
+            return '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px">'
+                + '<strong>' + judul + '</strong><div style="margin-top:8px">' + isiHtml + '</div></div>';
+        }
+
+        // ---------- Keadaan awal ----------
         $body.html('<div class="text-center kp-muted" style="padding:24px"><i class="fa fa-spinner fa-spin fa-2x"></i><div style="margin-top:8px">Memuat data...</div></div>');
+        $('#modalCompanyTitle').text('Detail Perusahaan');
         $('#modalCompanyDetail').modal('show');
 
         fetch(BASE + '/detail/' + id)
-            .then(function(r) {
-                return r.json();
-            })
-            .then(function(res) {
-                if (!res.success) {
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (!res.success || !res.company) {
                     $body.html('<div class="alert alert-danger">' + esc(res.error || 'Gagal memuat detail') + '</div>');
                     return;
                 }
-                var c = res.company;
-                $('#modalCompanyTitle').text(c.nama_perusahaan);
 
-                var produk = '<span class="kp-muted"><em>Belum ada produk yang dianalisis.</em></span>';
-                if (c.produk_yang_dijual_auto && c.produk_yang_dijual_auto.trim()) {
-                    produk = parseProduk(c.produk_yang_dijual_auto);
-                } else if (res.products && res.products.length) {
-                    produk = '<ol style="margin:0;padding-left:18px">' + res.products.map(function(p) {
-                        return '<li style="margin-bottom:4px"><strong>' + esc(p.nama_produk_id || p.nama_produk_en) + '</strong></li>';
-                    }).join('') + '</ol>';
+                var c = res.company;
+                $('#modalCompanyTitle').text(c.nama_perusahaan || 'Detail Perusahaan');
+
+                // Kolom yang ditampilkan berurutan: [kunci, label, penuh]
+                var DAFTAR = [
+                    ['nomor_excel', 'Nomor Excel'],
+                    ['nama_perusahaan', 'Nama Perusahaan'],
+                    ['nama', 'Nama Kontak'],
+                    ['email', 'Email'],
+                    ['no_hp', 'No. HP'],
+                    ['nomor', 'Nomor'],
+                    ['kota_kabupaten', 'Kota / Kabupaten'],
+                    ['provinsi', 'Provinsi'],
+                    ['main_categories', 'Kategori Utama'],
+                    ['sub_categories', 'Sub Kategori'],
+                    ['sumber_data', 'Sumber Data'],
+                    ['status_analisis', 'Status Analisis'],
+                    ['terakhir_dianalisis', 'Terakhir Dianalisis'],
+                    ['wa_status', 'Status WhatsApp'],
+                    ['wa_checked_at', 'WhatsApp Dicek Pada'],
+                    ['website_status', 'Status Website'],
+                    ['website_checked_at', 'Website Dicek Pada'],
+                    ['jumlah_tidak_terkirim', 'Jumlah Tidak Terkirim'],
+                    ['created_at', 'Dibuat Pada'],
+                    ['updated_at', 'Diperbarui Pada'],
+                    ['dibuat_pada', 'Dibuat Pada'],
+                    ['diperbarui_pada', 'Diperbarui Pada']
+                ];
+                var PENUH = [
+                    ['alamat', 'Alamat'],
+                    ['keyword', 'Keyword'],
+                    ['catatan', 'Catatan']
+                ];
+                // Dirender khusus di bawah / tidak ditampilkan
+                var KHUSUS = ['website', 'maps_url', 'link_catalog', 'company_profile', 'produk_yang_dijual_auto'];
+                var SEMBUNYI = ['id', 'unique_hash', 'password', 'api_key'];
+
+                var dipakai = {};
+                var html = '<div class="row">';
+
+                DAFTAR.forEach(function (d) {
+                    if (!(d[0] in c)) { return; }
+                    dipakai[d[0]] = true;
+                    var v = d[0] === 'status_analisis'
+                        ? '<span class="kp-badge kp-badge-primary">' + nilai(c[d[0]]) + '</span>'
+                        : nilai(c[d[0]]);
+                    html += kolom(d[1], v, false);
+                });
+
+                html += kolom('Website', tautan(c.website), false);
+                html += kolom('Link Google Maps', tautan(c.maps_url, 'Buka peta'), false);
+                html += kolom('Link Catalog', tautan(c.link_catalog, 'Buka katalog'), false);
+                KHUSUS.forEach(function (k) { dipakai[k] = true; });
+
+                PENUH.forEach(function (d) {
+                    if (!(d[0] in c)) { return; }
+                    dipakai[d[0]] = true;
+                    html += kolom(d[1], kosong(c[d[0]]) ? '-' : '<div style="white-space:pre-wrap">' + esc(c[d[0]]) + '</div>', true);
+                });
+
+                // Profil lengkap
+                html += bagian('Company Profile', blokTeks(c.company_profile, 'Tidak ada company profile.'));
+
+                // Produk hasil AI (teks)
+                var produk = '<em class="kp-muted">Belum ada produk yang dianalisis.</em>';
+                if (!kosong(c.produk_yang_dijual_auto)) {
+                    produk = (typeof parseProduk === 'function')
+                        ? parseProduk(c.produk_yang_dijual_auto)
+                        : blokTeks(c.produk_yang_dijual_auto, '');
+                }
+                html += bagian('Hasil Produk Yang Dijual (Auto)', produk);
+
+                // Daftar produk tersimpan (tabel)
+                if (res.products && res.products.length) {
+                    var tabel = '<div class="table-responsive"><table class="table table-bordered table-condensed" style="margin-bottom:0">'
+                        + '<thead><tr><th style="width:40px">#</th><th>Nama (Indonesia)</th><th>Nama (English)</th><th>Merek</th></tr></thead><tbody>';
+                    res.products.forEach(function (p, i) {
+                        tabel += '<tr><td>' + (i + 1) + '</td><td>' + nilai(p.nama_produk_id) + '</td><td>' + nilai(p.nama_produk_en) + '</td><td>' + nilai(p.brand) + '</td></tr>';
+                    });
+                    tabel += '</tbody></table></div>';
+                    html += bagian('Daftar Produk Tersimpan (' + res.products.length + ')', tabel);
                 }
 
+                // Data lain pada baris perusahaan yang belum tampil di atas (kolom baru otomatis ikut)
+                var lain = '';
+                Object.keys(c).forEach(function (k) {
+                    if (dipakai[k] || SEMBUNYI.indexOf(k) !== -1 || kosong(c[k])) { return; }
+                    lain += '<tr><td style="width:35%"><span class="kp-label">' + esc(k) + '</span></td><td style="word-break:break-word">' + esc(c[k]) + '</td></tr>';
+                });
+                if (lain) {
+                    html += bagian('Data Lainnya', '<div class="table-responsive"><table class="table table-bordered table-condensed" style="margin-bottom:0"><tbody>' + lain + '</tbody></table></div>');
+                }
+
+                // Riwayat analisis
+                if (res.history && res.history.length) {
+                    var riwayat = res.history.map(function (h) {
+                        var baris = Object.keys(h).filter(function (k) {
+                            return SEMBUNYI.indexOf(k) === -1 && !kosong(h[k]);
+                        }).map(function (k) {
+                            return '<div><span class="kp-label">' + esc(k) + '</span>: ' + esc(h[k]) + '</div>';
+                        }).join('');
+                        return '<div style="padding:6px 0;border-top:1px solid #eef0f2;font-size:13px;word-break:break-word">' + baris + '</div>';
+                    }).join('');
+                    html += bagian('Riwayat Analisis (' + res.history.length + ')', riwayat);
+                }
+
+                // Sumber informasi
                 var sumber = '<span class="kp-muted kp-small">Belum ada riwayat pengambilan sumber.</span>';
                 if (res.sources && res.sources.length) {
-                    sumber = res.sources.map(function(s) {
+                    sumber = res.sources.map(function (s) {
                         var ok = s.status_pengambilan === 'sukses';
-                        return '<div style="padding:6px 0;border-top:1px solid #eef0f2;font-size:13px">' +
-                            '<div style="display:flex;justify-content:space-between"><strong>' + esc((s.jenis_sumber || '').toUpperCase()) + '</strong>' +
-                            '<span class="kp-badge ' + (ok ? 'kp-badge-success' : 'kp-badge-danger') + '">' + (ok ? 'Sukses' : 'Gagal') + '</span></div>' +
-                            (s.url_sumber ? '<div class="kp-muted kp-clip" style="max-width:100%">' + esc(s.url_sumber) + '</div>' : '') +
-                            (s.pesan_error ? '<div class="text-danger">' + esc(s.pesan_error) + '</div>' : '') + '</div>';
+                        return '<div style="padding:6px 0;border-top:1px solid #eef0f2;font-size:13px">'
+                            + '<div style="display:flex;justify-content:space-between"><strong>' + esc((s.jenis_sumber || '').toUpperCase()) + '</strong>'
+                            + '<span class="kp-badge ' + (ok ? 'kp-badge-success' : 'kp-badge-danger') + '">' + (ok ? 'Sukses' : 'Gagal') + '</span></div>'
+                            + (s.url_sumber ? '<div class="kp-muted" style="word-break:break-all">' + tautan(s.url_sumber) + '</div>' : '')
+                            + (s.pesan_error ? '<div class="text-danger">' + esc(s.pesan_error) + '</div>' : '') + '</div>';
                     }).join('');
                 }
+                html += bagian('Status Sumber Informasi', sumber);
 
-                var web = c.website ? '<a href="' + esc(c.website.indexOf('http') === 0 ? c.website : 'https://' + c.website) + '" target="_blank" rel="noopener">' + esc(c.website) + '</a>' : '-';
-                var kat = c.link_catalog ? '<a href="' + esc(c.link_catalog) + '" target="_blank" rel="noopener">Buka katalog</a>' : '-';
-
-                $body.html(
-                    '<div class="row">' +
-                    '<div class="col-md-6"><span class="kp-label">Nomor Excel</span><div><strong>' + esc(c.nomor_excel || '-') + '</strong></div></div>' +
-                    '<div class="col-md-6"><span class="kp-label">Status Analisis</span><div><span class="kp-badge kp-badge-primary">' + esc(c.status_analisis) + '</span></div></div>' +
-                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Kategori Utama</span><div>' + esc(c.main_categories || '-') + '</div></div>' +
-                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Sub Kategori</span><div>' + esc(c.sub_categories || '-') + '</div></div>' +
-                    '<div class="col-md-12" style="margin-top:12px"><span class="kp-label">Company Profile</span>' +
-                    '<div class="kp-produk" style="max-height:120px">' + (c.company_profile ? esc(c.company_profile) : '<em>Tidak ada company profile.</em>') + '</div></div>' +
-                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Website</span><div>' + web + '</div></div>' +
-                    '<div class="col-md-6" style="margin-top:12px"><span class="kp-label">Link Catalog</span><div>' + kat + '</div></div>' +
-                    '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Hasil Produk Yang Dijual (Auto)</strong><div style="margin-top:8px">' + produk + '</div></div>' +
-                    '<div class="col-md-12" style="margin-top:16px;border-top:1px solid #e7e9ed;padding-top:12px"><strong>Status Sumber Informasi</strong><div style="margin-top:8px">' + sumber + '</div></div>' +
-                    '</div>'
-                );
+                html += '</div>';
+                $body.html(html);
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 $body.html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>');
             });
     }
@@ -1594,14 +1852,14 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#modalImportAll').modal('show');
 
         fetch(BASE + '/import-preview', {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(function(r) {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+            .then(function (r) {
                 return r.json();
             })
-            .then(function(res) {
+            .then(function (res) {
                 updateCsrf(res);
                 if (!res.success) {
                     alert(res.error || 'Gagal memuat preview data import.');
@@ -1616,7 +1874,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                 $('#prevSkippedTotal').text(res.dilewati.total);
 
                 var $b = $('#prevSkippedBreakdown').empty();
-                (res.dilewati.breakdown || []).forEach(function(it) {
+                (res.dilewati.breakdown || []).forEach(function (it) {
                     $b.append('<div class="kp-row"><span>' + esc(it.label) + '</span><span class="kp-badge">' + esc(it.count) + '</span></div>');
                 });
 
@@ -1624,7 +1882,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                 $('#importAllContent').show();
                 $('#btnExecuteImportAll').prop('disabled', !(res.akan_diimpor.perusahaan > 0));
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 alert('Kesalahan jaringan: ' + e.message);
                 $('#modalImportAll').modal('hide');
             });
@@ -1637,17 +1895,17 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Mengimpor data... harap tunggu');
 
         fetch(BASE + '/import-all', {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfHash
-                },
-                body: postData()
-            })
-            .then(function(r) {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfHash
+            },
+            body: postData()
+        })
+            .then(function (r) {
                 return r.json();
             })
-            .then(function(res) {
+            .then(function (res) {
                 updateCsrf(res);
                 $btn.prop('disabled', false).html(label);
                 $('#modalImportAll').modal('hide');
@@ -1657,14 +1915,14 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
                 }
                 showImportResult('Ringkasan Hasil Import Semua', res.summary, false);
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 $btn.prop('disabled', false).html(label);
                 alert('Kesalahan jaringan: ' + e.message);
             });
     }
 
     // ---------- Import satu perusahaan ----------
-    $(document).on('click', '.btn-import-supplier', function(e) {
+    $(document).on('click', '.btn-import-supplier', function (e) {
         e.preventDefault();
         var d = this.dataset;
         var n = parseInt(d.products || '0', 10);
@@ -1684,21 +1942,21 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#modalImportResult').modal('show');
 
         fetch(BASE + '/import-single/' + id, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfHash
-                },
-                body: postData()
-            })
-            .then(function(r) {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfHash
+            },
+            body: postData()
+        })
+            .then(function (r) {
                 return r.json();
             })
-            .then(function(res) {
+            .then(function (res) {
                 updateCsrf(res);
                 showImportResult('Hasil Import: ' + name, res, true);
             })
-            .catch(function(e) {
+            .catch(function (e) {
                 $('#modalImportResultBody').html('<div class="alert alert-danger">Kesalahan jaringan: ' + esc(e.message) + '</div>');
                 $('#modalImportResultFooter').html('<button type="button" class="btn kp-btn kp-btn-secondary" data-dismiss="modal">Tutup</button>');
             });
@@ -1713,7 +1971,7 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         return '<h5 class="' + cls + '" style="margin-top:14px"><strong>' + judul + ' (' + rows.length + ')</strong></h5>' +
             '<div class="table-responsive" style="max-height:180px;overflow-y:auto"><table class="table table-bordered table-condensed" style="font-size:12.5px">' +
             '<thead><tr><th>Perusahaan</th><th>' + colA + '</th></tr></thead><tbody>' +
-            rows.map(function(r) {
+            rows.map(function (r) {
                 return '<tr><td>' + esc(r.nama) + '</td><td>' + esc(r[colB]) + '</td></tr>';
             }).join('') +
             '</tbody></table></div>';
@@ -1756,5 +2014,111 @@ $adaFilter    = ($cari !== '') || ($kategoriDipilih !== '') || ($statusDipilih !
         $('#modalImportResultFooter').html(footer);
         $('#modalImportResult').modal('show');
     }
+
+
+
+   // ---------- Analisis AI per kontak ----------
+function azSet(state, title, sub, detailHtml) {
+    var icons = {
+        loading: '<i class="fa fa-spinner fa-spin"></i>',
+        success: '<i class="fa fa-check-circle"></i>',
+        error:   '<i class="fa fa-times-circle"></i>'
+    };
+    $('#azIcon').attr('class', 'az-icon is-' + state).html(icons[state]);
+    $('#azTitle').text(title);
+    $('#azSub').text(sub || '');
+    $('#azDetail').html(detailHtml || '');
+    $('#azFooter').toggle(state !== 'loading');
+}
+
+function azBadge(status, perluDiperiksa) {
+    if (perluDiperiksa) return '<span class="kp-badge kp-badge-warning"><i class="fa fa-clock-o"></i> Perlu diperiksa</span>';
+    switch (status) {
+        case 'sukses':           return '<span class="kp-badge kp-badge-success"><i class="fa fa-check"></i> Sukses</span>';
+        case 'gagal':            return '<span class="kp-badge kp-badge-danger"><i class="fa fa-times"></i> Gagal</span>';
+        case 'tanpa_produk':     return '<span class="kp-badge"><i class="fa fa-ban"></i> Tanpa produk</span>';
+        case 'sumber_tidak_ada': return '<span class="kp-badge kp-badge-warning"><i class="fa fa-question"></i> Sumber kosong</span>';
+        default:                 return '<span class="kp-badge kp-badge-warning"><i class="fa fa-clock-o"></i> Belum</span>';
+    }
+}
+
+function azLogs(logs) {
+    if (!logs || !logs.length) return '';
+    return '<div class="az-logs">' + logs.map(function (l) {
+        return '<div>&rsaquo; ' + esc(l) + '</div>';
+    }).join('') + '</div>';
+}
+
+$(document).on('click', '.btn-analisis-ai', function () {
+    var $btn = $(this);
+    if ($btn.prop('disabled')) return;
+
+    var $tr  = $btn.closest('tr');
+    var nama = $btn.data('nama') || '';
+
+    $btn.prop('disabled', true);
+    azSet('loading', 'Menganalisis...', nama ? 'Perusahaan: ' + nama : 'Mohon tunggu, proses bisa memakan waktu.');
+    $('#modalAnalisis').modal('show');
+
+    var body = new URLSearchParams();
+    body.append(csrfTokenName, csrfHash);
+
+    fetch($btn.data('url'), {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrfHash,
+            'Accept': 'application/json'
+        },
+        body: body
+    })
+        .then(function (r) {
+            return r.json().catch(function () {
+                throw new Error('Server mengembalikan status ' + r.status + ' (bukan JSON).');
+            });
+        })
+        .then(function (json) {
+            updateCsrf(json);
+
+            // ----- GAGAL -----
+            if (!json.success) {
+                var alasan = json.error || 'Analisis gagal.';
+                var detail = '<div class="az-error-box"><strong>Penyebab:</strong><br>' + esc(alasan) + '</div>' + azLogs(json.logs);
+                azSet('error', 'Analisis Gagal', nama, detail);
+                return;
+            }
+
+            // ----- SUKSES -----
+            var isi, judul = 'Analisis Berhasil', sub = nama;
+            if (json.skipped) {
+                judul = 'Dilewati';
+                isi = '<div class="az-result">' + esc(json.message) + '</div>';
+            } else if (json.no_product) {
+                isi = '<div class="az-result">AI menyimpulkan: tidak ada produk fisik yang dijual.</div>';
+            } else {
+                isi = '<div class="az-result">' + esc(json.formatted_text || 'Tidak ada hasil.') + '</div>';
+            }
+            if (json.is_perlu_diperiksa) {
+                judul = 'Selesai, Perlu Diperiksa';
+            }
+            azSet('success', judul, sub, isi + azLogs(json.logs));
+
+            // ----- Perbarui baris tabel langsung -----
+            $tr.find('.js-status').html(azBadge(json.status, json.is_perlu_diperiksa));
+
+            var teks = json.formatted_text || '';
+            $tr.find('.js-produk').html(
+                teks ? '<div class="kp-produk">' + esc(teks) + '</div>'
+                     : '<span class="kp-muted"><em>Belum ada hasil analisis.</em></span>'
+            );
+        })
+        .catch(function (err) {
+            azSet('error', 'Analisis Gagal', nama,
+                '<div class="az-error-box"><strong>Penyebab:</strong><br>' + esc(err.message || 'Kesalahan jaringan.') + '</div>');
+        })
+        .finally(function () {
+            $btn.prop('disabled', false);
+        });
+});
 </script>
 <?= $this->endSection() ?>

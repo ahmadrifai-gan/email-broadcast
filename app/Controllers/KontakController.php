@@ -357,30 +357,47 @@ class KontakController extends BaseController
     /**
      * Dapatkan detail perusahaan dalam bentuk JSON untuk Modal
      */
-    public function detail($id)
-    {
-        $perusahaanModel = new PerusahaanModel();
-        $produkModel     = new ProdukPerusahaanModel();
-        $riwayatModel    = new RiwayatAnalisisModel();
-        $sumberModel     = new SumberAnalisisModel();
-
-        $company = $perusahaanModel->find($id);
-        if (!$company) {
-            return $this->response->setStatusCode(404)->setJSON(['error' => 'Perusahaan tidak ditemukan']);
-        }
-
-        $products = $produkModel->getByPerusahaan($id);
-        $history  = $riwayatModel->where('perusahaan_id', $id)->orderBy('id', 'DESC')->findAll(5);
-        $sources  = $sumberModel->getByPerusahaan($id);
-
-        return $this->response->setJSON([
-            'success'  => true,
-            'company'  => $company,
-            'products' => $products,
-            'history'  => $history,
-            'sources'  => $sources,
+   public function detail($id)
+{
+    $company = (new PerusahaanModel())->find($id);
+    if (! $company) {
+        return $this->response->setStatusCode(404)->setJSON([
+            'success' => false,
+            'error'   => 'Perusahaan tidak ditemukan.',
         ]);
     }
+
+    $products = [];
+    $history  = [];
+    $sources  = [];
+
+    // Data pendukung opsional: kegagalannya tidak boleh menggagalkan seluruh detail
+    try {
+        $products = (new ProdukPerusahaanModel())->getByPerusahaan($id);
+    } catch (\Throwable $e) {
+        log_message('warning', '[detail] Produk tidak dapat dimuat: ' . $e->getMessage());
+    }
+
+    try {
+        $history = (new RiwayatAnalisisModel())->where('perusahaan_id', $id)->orderBy('id', 'DESC')->findAll(5);
+    } catch (\Throwable $e) {
+        log_message('warning', '[detail] Riwayat tidak dapat dimuat: ' . $e->getMessage());
+    }
+
+    try {
+        $sources = (new SumberAnalisisModel())->getByPerusahaan($id);
+    } catch (\Throwable $e) {
+        log_message('warning', '[detail] Sumber tidak dapat dimuat: ' . $e->getMessage());
+    }
+
+    return $this->response->setJSON([
+        'success'  => true,
+        'company'  => $company,
+        'products' => $products,
+        'history'  => $history,
+        'sources'  => $sources,
+    ]);
+}
 
     /**
      * Hapus perusahaan

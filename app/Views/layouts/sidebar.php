@@ -45,7 +45,7 @@
                 </a>
             </li>
 
-            <li class="header">KATEGORI KONTAK</li>
+            <li class="header">DATA PERUSAHAAN</li>
             <li class="<?= url_is('kategori') || url_is('kategori/*') ? 'active' : '' ?>">
                 <a href="<?= site_url('kategori') ?>">
                     <i class="fa fa-folder-open"></i> <span>Kategori Kontak</span>
@@ -53,7 +53,7 @@
             </li>
             <li class="<?= url_is('kontak*') ? 'active' : '' ?>">
                 <a href="<?= site_url('kontak') ?>">
-                    <i class="fa fa-address-book-o"></i> <span>Data Kontak</span>
+                    <i class="fa fa-address-book-o"></i> <span>Data Perusahaan</span>
                 </a>
             </li>
 
@@ -121,6 +121,11 @@
             <li class="<?= url_is('smtp*') && !url_is('laporan-smtp-kuota*') ? 'active' : '' ?>">
                 <a href="<?= site_url('smtp') ?>">
                     <i class="fa fa-server"></i> <span>Konfigurasi SMTP</span>
+                </a>
+            </li>
+            <li class="<?= url_is('pengaturan*') && !url_is('pengaturan/ai*') ? 'active' : '' ?>">
+                <a href="<?= site_url('pengaturan') ?>">
+                    <i class="fa fa-cog"></i> <span>Pengaturan AI</span>
                 </a>
             </li>
         </ul>

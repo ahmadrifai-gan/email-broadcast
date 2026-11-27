@@ -6,13 +6,13 @@ use CodeIgniter\Model;
 
 class PerusahaanModel extends Model
 {
-    protected $table            = 'kontak_email';
-    protected $primaryKey       = 'id';
+    protected $table = 'kontak_email';
+    protected $primaryKey = 'id';
     protected $useAutoIncrement = true;
-    protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
-    protected $protectFields    = true;
-    protected $allowedFields    = [
+    protected $returnType = 'array';
+    protected $useSoftDeletes = false;
+    protected $protectFields = true;
+    protected $allowedFields = [
         'nomor_excel',
         'kategori_id',
         'nama',
@@ -47,9 +47,9 @@ class PerusahaanModel extends Model
     // Kolom dibuat_pada & diperbarui_pada di tabel adalah kolom lama,
     // timestamp otomatis memakai created_at & updated_at.
     protected $useTimestamps = true;
-    protected $dateFormat    = 'datetime';
-    protected $createdField  = 'created_at';
-    protected $updatedField  = 'updated_at';
+    protected $dateFormat = 'datetime';
+    protected $createdField = 'created_at';
+    protected $updatedField = 'updated_at';
 
     /**
      * Hitung statistik untuk Dashboard
@@ -65,13 +65,15 @@ class PerusahaanModel extends Model
             ->findAll();
 
         $stats = [
-            'total'            => $totalPerusahaan,
-            'belum'            => 0,
-            'sukses'           => 0,
-            'gagal'            => 0,
-            'manual_edit'      => 0,
+            'total' => $totalPerusahaan,
+            'belum' => 0,
+            'sukses' => 0,
+            'gagal' => 0,
+            'manual_edit' => 0,
+            'tanpa_produk' => 0,        // BARU
+            'sumber_tidak_ada' => 0,
             'total_dianalisis' => 0,
-            'total_produk'     => 0,
+            'total_produk' => 0,
         ];
 
         foreach ($counts as $row) {
