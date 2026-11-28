@@ -3,32 +3,41 @@
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
-// Panggil semua model yang dibutuhkan
 use App\Models\KontakModel;
 use App\Models\TemplateEmailModel;
 use App\Models\KategoriTemplateEmailModel;
-use App\Models\KampanyeEmailModel; // Sesuaikan dengan nama model kampanye Anda
+use App\Models\KampanyeEmailModel;
 
 class DashboardController extends BaseController
 {
     public function index()
     {
-        // Inisialisasi Model
-        $kontakModel   = new KontakModel();
-        $templateModel = new TemplateEmailModel();
-        $kategoriModel = new KategoriTemplateEmailModel();
-        $kampanyeModel = new KampanyeEmailModel();
+        try {
+            // Inisialisasi Model
+            $kontakModel   = new KontakModel();
+            $templateModel = new TemplateEmailModel();
+            $kategoriModel = new KategoriTemplateEmailModel();
+            $kampanyeModel = new KampanyeEmailModel();
 
-        // Hitung total data dari masing-masing tabel
-        $data = [
-            'title'         => 'Dashboard',
-            'totalKontak'   => $kontakModel->countAllResults(),
-            'totalTemplate' => $templateModel->countAllResults(),
-            'totalKategori' => $kategoriModel->countAllResults(),
-            'totalKampanye' => $kampanyeModel->countAllResults(),
-        ];
+            // Hitung total data
+            $data = [
+                'title'         => 'Dashboard',
+                'totalKontak'   => $kontakModel->countAllResults(),
+                'totalTemplate' => $templateModel->countAllResults(),
+                'totalKategori' => $kategoriModel->countAllResults(),
+                'totalKampanye' => $kampanyeModel->countAllResults(),
+            ];
+        } catch (\Throwable $e) {
+            // Fallback jika model belum siap/error
+            $data = [
+                'title'         => 'Dashboard',
+                'totalKontak'   => 0,
+                'totalTemplate' => 0,
+                'totalKategori' => 0,
+                'totalKampanye' => 0,
+            ];
+        }
 
-        // Kirim data ke view
         return view('dashboard/index', $data);
     }
 }
