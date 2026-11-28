@@ -1,8 +1,8 @@
 <header class="main-header">
     <!-- Logo -->
     <a href="<?= site_url('dashboard') ?>" class="logo">
-        <span class="logo-mini"><b>E</b>B</span>
-        <span class="logo-lg"><b>Email</b> Blast</span>
+        <span class="logo-mini"><b>S</b>M</span>
+        <span class="logo-lg"><b>Sis</b>Market</span>
     </a>
 
     <nav class="navbar navbar-static-top">

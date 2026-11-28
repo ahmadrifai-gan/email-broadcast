@@ -3,496 +3,876 @@
 namespace App\Controllers;
 
 use App\Models\KategoriKontakModel;
-use App\Models\KontakModel;
+use App\Models\PerusahaanModel;
+use App\Models\ProdukPerusahaanModel;
+use App\Models\RiwayatAnalisisModel;
+use App\Models\SumberAnalisisModel;
+use App\Models\SupplierModel;
+use App\Models\SupplierProductModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+
 class KontakController extends BaseController
 {
-    protected KontakModel $model;
-    protected KategoriKontakModel $kategoriModel;
+    private const PER_HALAMAN    = 15;
+    private const TABEL_KATEGORI = 'kategori'; // sama dengan $table di KategoriKontakModel
 
-        /** Pemetaan nama header (sudah dinormalisasi) ke nama kolom database. */
-    private const PETA_HEADER = [
-        'kategori'            => 'kategori',
-        'nama'                => 'nama',
-        'namakontak'          => 'nama',
-        'namaperusahaan'      => 'nama_perusahaan',
-        'perusahaan'          => 'nama_perusahaan',
-        'nohp'                => 'no_hp',
-        'nohandphone'         => 'no_hp',
-        'telepon'             => 'no_hp',
-        'telp'                => 'no_hp',
-        'alamatemail'         => 'email',
-        'email'               => 'email',
-        'website'             => 'website',
-        'kotakabupaten'       => 'kota_kabupaten',
-        'kota'                => 'kota_kabupaten', 
-        'kabupaten'           => 'kota_kabupaten',
-        'domisili'            => 'kota_kabupaten',
-        'provinsi'            => 'provinsi',
-        'produkperusahaan'    => 'produk_perusahaan',
-        'produk'              => 'produk_perusahaan',
-        'sumberdata'          => 'sumber_data',
-        'catatan'             => 'catatan',
-        'jumlahtidakterkirim' => 'jumlah_tidak_terkirim',
-    ];
-
-    /** Ubah nilai sel menjadi string rapi (angka besar tidak jadi notasi ilmiah). */
-    private function teks($nilai): ?string
-    {
-        if ($nilai === null) {
-            return null;
-        }
-
-        if (is_int($nilai) || is_float($nilai)) {
-            $nilai = ((float) $nilai === floor((float) $nilai))
-                ? number_format((float) $nilai, 0, '', '')
-                : (string) $nilai;
-        }
-
-        $nilai = trim((string) $nilai);
-
-        return $nilai === '' ? null : $nilai;
-    }
-
-    /** Bersihkan nomor HP; tambahkan 0 di depan jika Excel membuangnya. */
-    private function rapikanHp(?string $hp): ?string
-    {
-        if ($hp === null) {
-            return null;
-        }
-
-        $hp = preg_replace('/[^0-9+]/', '', $hp);
-        if ($hp === '' || $hp === null) {
-            return null;
-        }
-
-        if ($hp[0] === '8') {
-            $hp = '0' . $hp;
-        }
-
-        return mb_substr($hp, 0, 20);
-    }
-
-    public function __construct()
-    {
-        $this->model         = new KontakModel();
-        $this->kategoriModel = new KategoriKontakModel();
-    }
-
-    private function aturan(?int $id = null): array
-    {
-        $unikEmail = $id
-            ? "is_unique[kontak_email.email,id,{$id}]"
-            : 'is_unique[kontak_email.email]';
-
-        return [
-            'kategori_id' => [
-                'label'  => 'Kategori',
-                'rules'  => 'permit_empty|is_natural_no_zero|is_not_unique[kategori.id]',
-                'errors' => ['is_not_unique' => 'Kategori tidak valid.'],
-            ],
-            'nama' => [
-                'label' => 'Nama',
-                'rules' => 'permit_empty|max_length[150]',
-            ],
-            'nama_perusahaan' => [
-                'label'  => 'Nama perusahaan',
-                'rules'  => 'required|max_length[150]',
-                'errors' => ['required' => 'Nama perusahaan wajib diisi.'],
-            ],
-            'no_hp' => [
-                'label' => 'No HP',
-                'rules' => 'permit_empty|max_length[20]',
-            ],
-            'email' => [
-                'label'  => 'Email',
-                'rules'  => "required|valid_email|max_length[254]|{$unikEmail}",
-                'errors' => [
-                    'required'    => 'Email wajib diisi.',
-                    'valid_email' => 'Format email tidak valid.',
-                    'is_unique'   => 'Email sudah terdaftar.',
-                ],
-            ],
-            'website'        => ['label' => 'Website', 'rules' => 'permit_empty|max_length[255]'],
-            'kota_kabupaten' => ['label' => 'Kota/Kabupaten', 'rules' => 'permit_empty|max_length[100]'],
-            'provinsi'       => ['label' => 'Provinsi', 'rules' => 'permit_empty|max_length[100]'],
-            'sumber_data'    => ['label' => 'Sumber data', 'rules' => 'permit_empty|max_length[150]'],
-            'jumlah_tidak_terkirim' => [
-                'label' => 'Jumlah tidak terkirim',
-                'rules' => 'permit_empty|is_natural',
-            ],
-        ];
-    }
-
-    /** Ambil data dari form; string kosong diubah menjadi NULL. */
-    private function dataForm(): array
-    {
-        $kosongJadiNull = static function ($nilai) {
-            $nilai = trim((string) $nilai);
-            return $nilai === '' ? null : $nilai;
-        };
-
-        $post = $this->request->getPost();
-
-        return [
-            'kategori_id'           => $kosongJadiNull($post['kategori_id'] ?? null),
-            'nama'                  => $kosongJadiNull($post['nama'] ?? null),
-            'nama_perusahaan'       => trim((string) ($post['nama_perusahaan'] ?? '')),
-            'no_hp'                 => $kosongJadiNull($post['no_hp'] ?? null),
-            'email'                 => strtolower(trim((string) ($post['email'] ?? ''))),
-            'website'               => $kosongJadiNull($post['website'] ?? null),
-            'kota_kabupaten'        => $kosongJadiNull($post['kota_kabupaten'] ?? null),
-            'provinsi'              => $kosongJadiNull($post['provinsi'] ?? null),
-            'produk_perusahaan'     => $kosongJadiNull($post['produk_perusahaan'] ?? null),
-            'sumber_data'           => $kosongJadiNull($post['sumber_data'] ?? null),
-            'catatan'               => $kosongJadiNull($post['catatan'] ?? null),
-            'jumlah_tidak_terkirim' => (int) ($post['jumlah_tidak_terkirim'] ?? 0),
-        ];
-    }
-
-    // READ: daftar + pencarian + filter kategori + pagination
+    /**
+     * Satu halaman: daftar kontak + kategori + status analisis + produk.
+     * Filter: cari, kategori, status.
+     */
     public function index()
     {
-        $cari     = trim((string) $this->request->getGet('cari'));
-        $kategori = trim((string) $this->request->getGet('kategori'));
+        $kontakModel   = new PerusahaanModel();
+        $kategoriModel = new KategoriKontakModel();
+        $tabelKategori = self::TABEL_KATEGORI;
 
-        $this->model
-            ->select('kontak_email.*, kategori.nama AS kategori_nama')
-            ->join('kategori', 'kategori.id = kontak_email.kategori_id', 'left')
-            ->orderBy('kontak_email.id', 'DESC');
+        $cari          = trim((string) $this->request->getGet('cari'));
+        $statusDipilih = trim((string) $this->request->getGet('status'));
+        $kategori      = $this->request->getGet('kategori');
+        $kategori      = ($kategori !== null && $kategori !== '') ? (int) $kategori : '';
+
+        $kontakModel
+            ->select("kontak_email.*, {$tabelKategori}.nama AS kategori_nama, kontak_email.produk_yang_dijual_auto AS produk_perusahaan")
+            ->join($tabelKategori, "{$tabelKategori}.id = kontak_email.kategori_id", 'left');
 
         if ($cari !== '') {
-            $this->model->groupStart()
+            $kontakModel->groupStart()
                 ->like('kontak_email.nama', $cari)
                 ->orLike('kontak_email.nama_perusahaan', $cari)
                 ->orLike('kontak_email.email', $cari)
                 ->orLike('kontak_email.no_hp', $cari)
                 ->orLike('kontak_email.kota_kabupaten', $cari)
                 ->orLike('kontak_email.provinsi', $cari)
+                ->orLike('kontak_email.main_categories', $cari)
+                ->orLike('kontak_email.sub_categories', $cari)
+                ->orLike('kontak_email.website', $cari)
                 ->groupEnd();
         }
 
         if ($kategori !== '') {
-            $this->model->where('kontak_email.kategori_id', (int) $kategori);
+            $kontakModel->where('kontak_email.kategori_id', $kategori);
         }
 
+        if ($statusDipilih !== '') {
+            $kontakModel->where('kontak_email.status_analisis', $statusDipilih);
+        }
+
+        $kontak = $kontakModel->orderBy('kontak_email.id', 'DESC')->paginate(self::PER_HALAMAN);
+        $pager  = $kontakModel->pager;
+
+        // Produk terhubung untuk tiap baris (dipakai tombol import ke supplier)
+        $produkModel = new ProdukPerusahaanModel();
+        foreach ($kontak as &$k) {
+            try {
+                $k['produk_list'] = $produkModel->getByPerusahaan((int) $k['id']);
+            } catch (\Throwable $e) {
+                log_message('error', 'Gagal memuat produk perusahaan: ' . $e->getMessage());
+                $k['produk_list'] = [];
+            }
+        }
+        unset($k);
+
         return view('kontak_email/index', [
-            'judul'           => 'Kontak',
-            'kontak'          => $this->model->paginate(10),
-            'pager'           => $this->model->pager,
+            'title'           => 'Data Kontak',
+            'kontak'          => $kontak,
+            'pager'           => $pager,
+            'daftarKategori'  => $kategoriModel->orderBy('nama', 'ASC')->findAll(),
             'cari'            => $cari,
             'kategoriDipilih' => $kategori,
-            'daftarKategori'  => $this->kategoriModel->orderBy('nama', 'ASC')->findAll(),
+            'statusDipilih'   => $statusDipilih,
+            'stats'           => (new PerusahaanModel())->getStatistics(),
         ]);
     }
 
-    // CREATE
-   public function simpan()
-{
-    helper('validasi_email');
-
-    if (! $this->validate($this->aturan())) {
-        return redirect()->back()->withInput()
-            ->with('errors', $this->validator->getErrors())
-            ->with('modal_aksi', site_url('kontak/simpan'));
-    }
-
-    // Cek format + domain email (hanya jika diisi)
-    $email = trim((string) $this->request->getPost('email'));
-    if ($email !== '' && ($alasan = cek_email($email)) !== null) {
-        return redirect()->back()->withInput()
-            ->with('errors', ['email' => ucfirst($alasan) . '.'])
-            ->with('modal_aksi', site_url('kontak/simpan'));
-    }
-
-    $this->model->insert($this->dataForm());
-
-    return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil ditambahkan.');
-}
-
-    // UPDATE
-    public function perbarui(int $id)
+    /**
+     * Simpan kontak baru
+     */
+    public function simpan()
     {
-        if (! $this->model->find($id)) {
-            return redirect()->to('/kontak')->with('gagal', 'Kontak tidak ditemukan.');
+        if (! $this->validate($this->aturan(), $this->pesan())) {
+            return redirect()->back()->withInput()
+                ->with('errors', $this->validator->getErrors())
+                ->with('modal_aksi', site_url('kontak/simpan'));
         }
 
-        if (! $this->validate($this->aturan($id))) {
+        (new PerusahaanModel())->insert($this->ambilData());
+
+        return redirect()->to(site_url('kontak'))->with('sukses', 'Kontak berhasil ditambahkan.');
+    }
+
+    /**
+     * Perbarui kontak
+     */
+    public function perbarui(int $id)
+    {
+        $model = new PerusahaanModel();
+
+        if (! $model->find($id)) {
+            return redirect()->to(site_url('kontak'))->with('gagal', 'Kontak tidak ditemukan.');
+        }
+
+        if (! $this->validate($this->aturan($id), $this->pesan())) {
             return redirect()->back()->withInput()
                 ->with('errors', $this->validator->getErrors())
                 ->with('modal_aksi', site_url('kontak/perbarui/' . $id));
         }
 
-        $this->model->update($id, $this->dataForm());
+        $model->update($id, $this->ambilData());
 
-        return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil diperbarui.');
+        return redirect()->to(site_url('kontak'))->with('sukses', 'Kontak berhasil diperbarui.');
     }
 
-    // DELETE
+    /**
+     * Hapus kontak
+     */
     public function hapus(int $id)
     {
-        if (! $this->model->find($id)) {
-            return redirect()->to('/kontak')->with('gagal', 'Kontak tidak ditemukan.');
+        $model = new PerusahaanModel();
+
+        if (! $model->find($id)) {
+            return redirect()->to(site_url('kontak'))->with('gagal', 'Kontak tidak ditemukan.');
         }
 
-        $this->model->delete($id);
+        $model->delete($id);
 
-        return redirect()->to('/kontak')->with('sukses', 'Kontak berhasil dihapus.');
+        return redirect()->to(site_url('kontak'))->with('sukses', 'Kontak berhasil dihapus.');
     }
-      public function import()
+
+    /**
+     * Import kontak dari Excel / CSV
+     */
+    public function import()
     {
-        helper('validasi_email');
+        if (! class_exists(IOFactory::class)) {
+            return redirect()->to(site_url('kontak'))->with(
+                'gagal',
+                'Library PhpSpreadsheet belum terpasang. Jalankan: composer require phpoffice/phpspreadsheet'
+            );
+        }
 
         $file = $this->request->getFile('file_excel');
-
-        if (! $file || ! $file->isValid() || $file->hasMoved()) {
-            return redirect()->to('/kontak')->with('gagal', 'File gagal diunggah. Cek ukuran file dan coba lagi.');
+        if (! $file || ! $file->isValid()) {
+            return redirect()->to(site_url('kontak'))->with('gagal', 'File belum dipilih atau gagal diunggah.');
         }
 
         if (! in_array(strtolower($file->getClientExtension()), ['xlsx', 'xls', 'csv'], true)) {
-            return redirect()->to('/kontak')->with('gagal', 'Format file harus .xlsx, .xls, atau .csv.');
+            return redirect()->to(site_url('kontak'))->with('gagal', 'Format file harus .xlsx, .xls, atau .csv.');
         }
 
-        $perbarui = (bool) $this->request->getPost('perbarui');
+        @set_time_limit(300);
 
-        set_time_limit(300);
-        ini_set('memory_limit', '512M');
-
-        // 1. Baca file
         try {
-            $baris = IOFactory::load($file->getTempName())
-                ->getActiveSheet()
-                ->toArray(null, true, false, false);
+            $spreadsheet = IOFactory::load($file->getTempName());
+            $rows        = $spreadsheet->getActiveSheet()->toArray(null, true, true, false);
         } catch (\Throwable $e) {
-            log_message('error', 'Import gagal membaca file: ' . $e->getMessage());
-
-            return redirect()->to('/kontak')->with('gagal', 'File tidak bisa dibaca. Pastikan formatnya benar.');
+            return redirect()->to(site_url('kontak'))->with('gagal', 'File tidak dapat dibaca: ' . $e->getMessage());
         }
 
-        if (count($baris) < 2) {
-            return redirect()->to('/kontak')->with('gagal', 'File kosong atau hanya berisi header.');
+        if (count($rows) < 2) {
+            return redirect()->to(site_url('kontak'))->with('gagal', 'File kosong atau hanya berisi header.');
         }
 
-        // 2. Petakan header -> indeks kolom
-        $header = array_shift($baris);
-        $indeks = [];
-        foreach ($header as $i => $judul) {
-            $kunci = preg_replace('/[^a-z0-9]/', '', strtolower(trim((string) $judul)));
-            if (isset(self::PETA_HEADER[$kunci])) {
-                $indeks[self::PETA_HEADER[$kunci]] = $i;
+        // Peta header -> nama field
+        $peta = [
+            'KATEGORI'          => 'kategori',
+            'NAMA'              => 'nama',
+            'NAMA PERUSAHAAN'   => 'nama_perusahaan',
+            'PERUSAHAAN'        => 'nama_perusahaan',
+            'ALAMAT EMAIL'      => 'email',
+            'EMAIL'             => 'email',
+            'NO HP'             => 'no_hp',
+            'NO. HP'            => 'no_hp',
+            'NOMOR HP'          => 'no_hp',
+            'KOTA/KABUPATEN'    => 'kota_kabupaten',
+            'KOTA / KABUPATEN'  => 'kota_kabupaten',
+            'KOTA KABUPATEN'    => 'kota_kabupaten',
+            'KOTA'              => 'kota_kabupaten',
+            'PROVINSI'          => 'provinsi',
+            'WEBSITE'           => 'website',
+            'SUMBER DATA'       => 'sumber_data',
+            'CATATAN'           => 'catatan',
+        ];
+
+        $kolom = [];
+        foreach ($rows[0] as $idx => $judul) {
+            $kunci = strtoupper(trim(preg_replace('/\s+/', ' ', (string) $judul)));
+            if (isset($peta[$kunci])) {
+                $kolom[$idx] = $peta[$kunci];
             }
         }
 
-        if (! isset($indeks['nama_perusahaan']) && ! isset($indeks['nama'])) {
-            return redirect()->to('/kontak')
-                ->with('gagal', 'Kolom "NAMA PERUSAHAAN" atau "NAMA" tidak ditemukan di baris pertama file.');
+        $adaEmail      = in_array('email', $kolom, true);
+        $adaPerusahaan = in_array('nama_perusahaan', $kolom, true) || in_array('nama', $kolom, true);
+        if (! $adaEmail || ! $adaPerusahaan) {
+            return redirect()->to(site_url('kontak'))->with(
+                'gagal',
+                'Header tidak sesuai. Kolom wajib: ALAMAT EMAIL dan NAMA PERUSAHAAN (atau NAMA). Unduh template untuk contoh.'
+            );
         }
 
-        // 3. Data pembanding (email, no_hp, dan kombinasi perusahaan + nama)
-        $emailAda = [];
-        $hpAda    = [];
-        $usahaAda = [];
+        $perbarui      = (bool) $this->request->getPost('perbarui');
+        $kontakModel   = new PerusahaanModel();
+        $kategoriModel = new KategoriKontakModel();
 
-        $kunciUsaha = static fn (?string $usaha, ?string $nama) =>
-            mb_strtolower(trim((string) $usaha) . '|' . trim((string) $nama));
+        $petaKategori = [];
+        foreach ($kategoriModel->findAll() as $kat) {
+            $petaKategori[mb_strtolower(trim((string) $kat['nama']))] = (int) $kat['id'];
+        }
 
-        // Normalisasi no HP: 0812-3456 / +62 812 3456 / 62812 3456 -> 628123456
-        $kunciHp = static function (?string $hp): ?string {
-            $digit = preg_replace('/\D+/', '', (string) $hp);
-            if ($digit === '') {
-                return null;
+        $tambah = $ubah = $lewati = 0;
+        $detail = [];
+        $catat  = static function (string $pesan) use (&$detail) {
+            if (count($detail) < 30) {
+                $detail[] = $pesan;
             }
-            if (str_starts_with($digit, '0')) {
-                $digit = '62' . substr($digit, 1);
-            }
-
-            return $digit;
         };
 
-        foreach ($this->model->select('id, email, no_hp, nama, nama_perusahaan')->findAll() as $r) {
-            if (! empty($r['email'])) {
-                $emailAda[strtolower((string) $r['email'])] = (int) $r['id'];
+        foreach ($rows as $i => $row) {
+            if ($i === 0) {
+                continue;
             }
-            if (($k = $kunciHp($r['no_hp'])) !== null) {
-                $hpAda[$k] = (int) $r['id'];
+            $baris = $i + 1;
+
+            $d = [];
+            foreach ($kolom as $idx => $field) {
+                $d[$field] = trim((string) ($row[$idx] ?? ''));
             }
-            $usahaAda[$kunciUsaha($r['nama_perusahaan'], $r['nama'])] = (int) $r['id'];
-        }
+            if (implode('', $d) === '') {
+                continue; // baris kosong
+            }
 
-        $kategoriAda = [];
-        foreach ($this->kategoriModel->findAll() as $r) {
-            $kategoriAda[mb_strtolower($r['nama'])] = (int) $r['id'];
-        }
+            $email      = strtolower($d['email'] ?? '');
+            $perusahaan = $d['nama_perusahaan'] ?? '';
+            if ($perusahaan === '') {
+                $perusahaan = $d['nama'] ?? '';
+            }
 
-        $ambil = static function (array $row, array $indeks, string $kolom) {
-            return isset($indeks[$kolom]) ? ($row[$indeks[$kolom]] ?? null) : null;
-        };
-
-        $db        = db_connect();
-        $antrean   = [];
-        $jmlTambah = 0;
-        $jmlUbah   = 0;
-        $jmlLewati = 0;
-        $galat     = [];
-
-        $db->transStart();
-
-        foreach ($baris as $n => $row) {
-            $noBaris = $n + 2;
-
-            // Lewati baris kosong
-            if (! array_filter($row, static fn ($v) => $v !== null && trim((string) $v) !== '')) {
+            if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $lewati++;
+                $catat("Baris {$baris}: email kosong atau tidak valid.");
+                continue;
+            }
+            if ($perusahaan === '') {
+                $lewati++;
+                $catat("Baris {$baris}: nama perusahaan kosong.");
                 continue;
             }
 
-            $nama  = $this->teks($ambil($row, $indeks, 'nama'));
-            $usaha = $this->teks($ambil($row, $indeks, 'nama_perusahaan')) ?? $nama;
-            $email = strtolower((string) $this->teks($ambil($row, $indeks, 'email')));
-
-            if ($usaha === null) {
-                $jmlLewati++;
-                $galat[] = "Baris {$noBaris}: nama perusahaan dan nama kosong.";
-                continue;
-            }
-
-            // Email opsional, tapi kalau diisi harus valid
-            // Email opsional, tapi kalau diisi harus valid dan domainnya ada
-if ($email !== '' && ($alasan = cek_email($email)) !== null) {
-    $jmlLewati++;
-    $galat[] = "Baris {$noBaris}: {$alasan} ({$email}).";
-    continue;
-}
-            $email = $email === '' ? null : mb_substr($email, 0, 254);
-
-            // Kategori: cari berdasarkan nama, buat jika belum ada
-            $kategoriId   = null;
-            $namaKategori = $this->teks($ambil($row, $indeks, 'kategori'));
-            if ($namaKategori !== null) {
-                $namaKategori = mb_substr($namaKategori, 0, 100);
-                $kunciKat     = mb_strtolower($namaKategori);
-
-                if (! isset($kategoriAda[$kunciKat])) {
-                    $this->kategoriModel->insert(['nama' => $namaKategori]);
-                    $kategoriAda[$kunciKat] = (int) $this->kategoriModel->getInsertID();
+            try {
+                $idKategori = null;
+                $namaKat    = $d['kategori'] ?? '';
+                if ($namaKat !== '') {
+                    $kunciKat = mb_strtolower($namaKat);
+                    if (! isset($petaKategori[$kunciKat])) {
+                        $petaKategori[$kunciKat] = (int) $kategoriModel->insert(['nama' => $namaKat], true);
+                    }
+                    $idKategori = $petaKategori[$kunciKat];
                 }
-                $kategoriId = $kategoriAda[$kunciKat];
+
+                $data = [
+                    'kategori_id'     => $idKategori,
+                    'nama'            => $d['nama'] ?? '',
+                    'nama_perusahaan' => $perusahaan,
+                    'email'           => $email,
+                    'no_hp'           => $d['no_hp'] ?? '',
+                    'kota_kabupaten'  => $d['kota_kabupaten'] ?? '',
+                    'provinsi'        => $d['provinsi'] ?? '',
+                    'website'         => $d['website'] ?? '',
+                    'sumber_data'     => $d['sumber_data'] ?? '',
+                    'catatan'         => $d['catatan'] ?? '',
+                    'unique_hash'     => hash('sha256', $email),
+                ];
+
+                $ada = $kontakModel->select('id')->where('email', $email)->first();
+
+                if ($ada) {
+                    if ($perbarui) {
+                        $isi = array_filter($data, static fn($v) => $v !== '' && $v !== null);
+                        $kontakModel->update($ada['id'], $isi);
+                        $ubah++;
+                    } else {
+                        $lewati++;
+                        $catat("Baris {$baris}: email {$email} sudah terdaftar (dilewati).");
+                    }
+                    continue;
+                }
+
+                $data['jumlah_tidak_terkirim'] = 0;
+                $kontakModel->insert($data);
+                $tambah++;
+            } catch (\Throwable $e) {
+                $lewati++;
+                $catat("Baris {$baris}: gagal disimpan ({$e->getMessage()}).");
+            }
+        }
+
+        return redirect()->to(site_url('kontak'))
+            ->with('sukses', "Import selesai: {$tambah} ditambahkan, {$ubah} diperbarui, {$lewati} dilewati.")
+            ->with('detail_import', $detail);
+    }
+
+    /**
+     * Unduh template Excel untuk import
+     */
+    public function template()
+    {
+        if (! class_exists(Spreadsheet::class)) {
+            return redirect()->to(site_url('kontak'))->with(
+                'gagal',
+                'Library PhpSpreadsheet belum terpasang. Jalankan: composer require phpoffice/phpspreadsheet'
+            );
+        }
+
+        $sheet = new Spreadsheet();
+        $ws    = $sheet->getActiveSheet();
+        $ws->setTitle('Kontak');
+
+        $ws->fromArray([
+            ['KATEGORI', 'NAMA', 'NAMA PERUSAHAAN', 'ALAMAT EMAIL', 'NO HP', 'KOTA/KABUPATEN', 'PROVINSI', 'WEBSITE', 'SUMBER DATA', 'CATATAN'],
+            ['Makanan', 'Budi', 'PT Contoh Sejahtera', 'budi@contoh.co.id', '081234567890', 'Malang', 'Jawa Timur', 'contoh.co.id', 'Pameran 2026', ''],
+        ], null, 'A1');
+
+        foreach (range('A', 'J') as $col) {
+            $ws->getColumnDimension($col)->setAutoSize(true);
+        }
+        $ws->getStyle('A1:J1')->getFont()->setBold(true);
+
+        ob_start();
+        (new Xlsx($sheet))->save('php://output');
+        $isi = ob_get_clean();
+
+        return $this->response
+            ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            ->setHeader('Content-Disposition', 'attachment; filename="template_kontak.xlsx"')
+            ->setBody($isi);
+    }
+
+    // ==================================================================
+    // FITUR PERUSAHAAN (detail, hapus massal, import ke supplier)
+    // Route: kontak/detail, kontak/bulk-delete, kontak/import-*
+    // ==================================================================
+
+    /**
+     * Dapatkan detail perusahaan dalam bentuk JSON untuk Modal
+     */
+    public function detail($id)
+    {
+        $perusahaanModel = new PerusahaanModel();
+        $produkModel     = new ProdukPerusahaanModel();
+        $riwayatModel    = new RiwayatAnalisisModel();
+        $sumberModel     = new SumberAnalisisModel();
+
+        $company = $perusahaanModel->find($id);
+        if (!$company) {
+            return $this->response->setStatusCode(404)->setJSON(['error' => 'Perusahaan tidak ditemukan']);
+        }
+
+        $products = $produkModel->getByPerusahaan($id);
+        $history  = $riwayatModel->where('perusahaan_id', $id)->orderBy('id', 'DESC')->findAll(5);
+        $sources  = $sumberModel->getByPerusahaan($id);
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'company'  => $company,
+            'products' => $products,
+            'history'  => $history,
+            'sources'  => $sources,
+        ]);
+    }
+
+    /**
+     * Hapus perusahaan
+     */
+    public function delete($id)
+    {
+        $perusahaanModel = new PerusahaanModel();
+        $perusahaanModel->delete($id);
+
+        return redirect()->to(site_url('kontak'))
+            ->with('sukses', 'Data perusahaan berhasil dihapus.');
+    }
+
+    /**
+     * Bulk delete
+     */
+    public function bulkDelete()
+    {
+        $ids = $this->request->getPost('ids');
+        if (!is_array($ids) || empty($ids)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Tidak ada data yang dipilih']);
+        }
+
+        $perusahaanModel = new PerusahaanModel();
+        $perusahaanModel->whereIn('id', $ids)->delete();
+
+        return $this->response->setJSON(['success' => true, 'message' => count($ids) . ' perusahaan berhasil dihapus.']);
+    }
+
+    /**
+     * Import satu data perusahaan ke tb_supplier dan tb_produk_supplier
+     */
+    public function importSingle($id)
+    {
+        $perusahaanModel = new PerusahaanModel();
+        $produkModel     = new ProdukPerusahaanModel();
+
+        $company = $perusahaanModel->find($id);
+        if (!$company) {
+            return $this->response->setStatusCode(404)->setJSON([
+                'success'    => false,
+                'error'      => 'Data perusahaan tidak ditemukan',
+                'csrf_token' => csrf_token(),
+                'csrf_hash'  => csrf_hash(),
+            ]);
+        }
+
+        $products = $produkModel->getByPerusahaan((int) $id);
+        $result   = $this->processImportCompany($company, $products);
+
+        $response = [
+            'success'          => $result['success'],
+            'company_name'     => $company['nama_perusahaan'],
+            'is_new_supplier'  => $result['is_new_supplier'],
+            'supplier_id'      => $result['supplier_id'],
+            'products_added'   => $result['products_added'],
+            'products_skipped' => $result['products_skipped'],
+            'is_skipped'       => $result['is_skipped'],
+            'reason'           => $result['reason'],
+            'error'            => $result['error'],
+            'csrf_token'       => csrf_token(),
+            'csrf_hash'        => csrf_hash(),
+        ];
+
+        if ($result['success']) {
+            if ($result['is_new_supplier']) {
+                $response['message'] = "Berhasil membuat supplier baru '{$company['nama_perusahaan']}' dan menambahkan {$result['products_added']} produk.";
+            } else {
+                $response['message'] = "Supplier '{$company['nama_perusahaan']}' sudah terdaftar (data lama tidak ditimpa). Berhasil menambahkan {$result['products_added']} produk baru ({$result['products_skipped']} produk sudah ada sebelumnya).";
+            }
+        } else {
+            $response['message'] = $result['reason'] ?? $result['error'] ?? 'Gagal mengimpor perusahaan ke supplier.';
+        }
+
+        return $this->response->setJSON($response);
+    }
+
+    /**
+     * Preview ringkasan import keseluruhan untuk modal konfirmasi
+     */
+    public function importPreview()
+    {
+        $perusahaanModel = new PerusahaanModel();
+        $supplierModel   = new SupplierModel();
+
+        $companies = $perusahaanModel->select('id, nama_perusahaan, status_analisis')->findAll();
+        $totalPerusahaan = count($companies);
+
+        // Ambil pemetaan jumlah produk per perusahaan
+        $db = \Config\Database::connect();
+        $productCounts = $db->table('produk_perusahaan')
+            ->select('perusahaan_id, COUNT(*) as cnt')
+            ->groupBy('perusahaan_id')
+            ->get()
+            ->getResultArray();
+
+        $productCountMap = [];
+        foreach ($productCounts as $pc) {
+            $productCountMap[(int) $pc['perusahaan_id']] = (int) $pc['cnt'];
+        }
+
+        // Ambil semua nama_kunci yang sudah ada di tb_supplier
+        $existingKeys = $supplierModel->select('nama_kunci')->findAll();
+        $existingKeyMap = [];
+        foreach ($existingKeys as $ek) {
+            if (!empty($ek['nama_kunci'])) {
+                $existingKeyMap[$ek['nama_kunci']] = true;
+            }
+        }
+
+        $eligibleCount     = 0;
+        $eligibleProducts  = 0;
+        $newSuppliers      = 0;
+        $existingSuppliers = 0;
+
+        $skippedBreakdown = [
+            'belum_dianalisis' => ['label' => 'Belum Dianalisis', 'count' => 0],
+            'gagal'            => ['label' => 'Status Analisis Gagal', 'count' => 0],
+            'tanpa_produk'     => ['label' => 'Tanpa Produk Terdeteksi', 'count' => 0],
+            'lainnya'          => ['label' => 'Status Lainnya', 'count' => 0],
+        ];
+
+        foreach ($companies as $comp) {
+            $status = $comp['status_analisis'];
+            $pCount = $productCountMap[(int) $comp['id']] ?? 0;
+
+            if (!in_array($status, ['sukses', 'manual'], true)) {
+                if ($status === 'belum_dianalisis') {
+                    $skippedBreakdown['belum_dianalisis']['count']++;
+                } elseif ($status === 'gagal') {
+                    $skippedBreakdown['gagal']['count']++;
+                } else {
+                    $skippedBreakdown['lainnya']['count']++;
+                }
+                continue;
             }
 
-            $data = [
-                'kategori_id'           => $kategoriId,
-                'nama'                  => $nama !== null ? mb_substr($nama, 0, 150) : null,
-                'nama_perusahaan'       => mb_substr($usaha, 0, 150),
-                'no_hp'                 => $this->rapikanHp($this->teks($ambil($row, $indeks, 'no_hp'))),
-                'email'                 => $email,
-                'website'               => mb_substr((string) $this->teks($ambil($row, $indeks, 'website')), 0, 255) ?: null,
-                'kota_kabupaten'        => mb_substr((string) $this->teks($ambil($row, $indeks, 'kota_kabupaten')), 0, 100) ?: null,
-                'provinsi'              => mb_substr((string) $this->teks($ambil($row, $indeks, 'provinsi')), 0, 100) ?: null,
-                'produk_perusahaan'     => $this->teks($ambil($row, $indeks, 'produk_perusahaan')),
-                'sumber_data'           => mb_substr((string) $this->teks($ambil($row, $indeks, 'sumber_data')), 0, 150) ?: null,
-                'catatan'               => $this->teks($ambil($row, $indeks, 'catatan')),
-                'jumlah_tidak_terkirim' => max(0, (int) $this->teks($ambil($row, $indeks, 'jumlah_tidak_terkirim'))),
+            if ($pCount === 0) {
+                $skippedBreakdown['tanpa_produk']['count']++;
+                continue;
+            }
+
+            $eligibleCount++;
+            $eligibleProducts += $pCount;
+
+            $key = SupplierModel::makeKey($comp['nama_perusahaan']);
+            if (isset($existingKeyMap[$key])) {
+                $existingSuppliers++;
+            } else {
+                $newSuppliers++;
+            }
+        }
+
+        return $this->response->setJSON([
+            'success'          => true,
+            'total_perusahaan' => $totalPerusahaan,
+            'akan_diimpor'     => [
+                'perusahaan'         => $eligibleCount,
+                'produk'             => $eligibleProducts,
+                'supplier_baru'      => $newSuppliers,
+                'supplier_sudah_ada' => $existingSuppliers,
+            ],
+            'dilewati'         => [
+                'total'     => $totalPerusahaan - $eligibleCount,
+                'breakdown' => array_values($skippedBreakdown),
+            ],
+            'csrf_token'       => csrf_token(),
+            'csrf_hash'        => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Import seluruh perusahaan yang memenuhi syarat ke tb_supplier & tb_produk_supplier
+     */
+    public function importAll()
+    {
+        set_time_limit(300);
+
+        $perusahaanModel = new PerusahaanModel();
+        $produkModel     = new ProdukPerusahaanModel();
+
+        $companies = $perusahaanModel->findAll();
+
+        $summary = [
+            'total_diproses'     => count($companies),
+            'supplier_baru'      => 0,
+            'supplier_sudah_ada' => 0,
+            'produk_ditambahkan' => 0,
+            'produk_dilewati'    => 0,
+            'dilewati'           => [],
+            'gagal'              => [],
+        ];
+
+        foreach ($companies as $comp) {
+            $products = $produkModel->getByPerusahaan((int) $comp['id']);
+            $res = $this->processImportCompany($comp, $products);
+
+            if ($res['success']) {
+                if ($res['is_new_supplier']) {
+                    $summary['supplier_baru']++;
+                } else {
+                    $summary['supplier_sudah_ada']++;
+                }
+                $summary['produk_ditambahkan'] += $res['products_added'];
+                $summary['produk_dilewati']    += $res['products_skipped'];
+            } elseif (!empty($res['is_skipped'])) {
+                $summary['dilewati'][] = [
+                    'nama'   => $comp['nama_perusahaan'],
+                    'alasan' => $res['reason'],
+                ];
+            } else {
+                $summary['gagal'][] = [
+                    'nama'   => $comp['nama_perusahaan'],
+                    'pesan'  => $res['error'] ?? $res['reason'] ?? 'Kesalahan tidak diketahui',
+                ];
+            }
+        }
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'summary'    => $summary,
+            'csrf_token' => csrf_token(),
+            'csrf_hash'  => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Memproses import satu record perusahaan ke tb_supplier & tb_produk_supplier
+     * Menggunakan transaksi terisolasi per perusahaan.
+     *
+     * @param array $company
+     * @param array $products
+     * @return array
+     */
+    private function processImportCompany(array $company, array $products): array
+    {
+        $status = $company['status_analisis'] ?? '';
+        if (!in_array($status, ['sukses', 'manual'], true)) {
+            $reason = ($status === 'belum_dianalisis')
+                ? 'Status analisis masih belum dianalisis'
+                : (($status === 'gagal') ? 'Status analisis gagal' : "Status analisis tidak memenuhi syarat ({$status})");
+
+            return [
+                'success'          => false,
+                'is_skipped'       => true,
+                'reason'           => $reason,
+                'is_new_supplier'  => false,
+                'supplier_id'      => null,
+                'products_added'   => 0,
+                'products_skipped' => 0,
+                'error'            => null,
+            ];
+        }
+
+        if (empty($products)) {
+            return [
+                'success'          => false,
+                'is_skipped'       => true,
+                'reason'           => 'Tidak memiliki daftar produk terdeteksi',
+                'is_new_supplier'  => false,
+                'supplier_id'      => null,
+                'products_added'   => 0,
+                'products_skipped' => 0,
+                'error'            => null,
+            ];
+        }
+
+        $namaPerusahaan = trim($company['nama_perusahaan'] ?? '');
+        if ($namaPerusahaan === '') {
+            return [
+                'success'          => false,
+                'is_skipped'       => true,
+                'reason'           => 'Nama perusahaan kosong',
+                'is_new_supplier'  => false,
+                'supplier_id'      => null,
+                'products_added'   => 0,
+                'products_skipped' => 0,
+                'error'            => null,
+            ];
+        }
+
+        $namaKunci = SupplierModel::makeKey($namaPerusahaan);
+        if (empty($namaKunci)) {
+            $namaKunci = 'supplier' . $company['id'];
+        }
+
+        $db = \Config\Database::connect();
+        $supplierModel        = new SupplierModel();
+        $supplierProductModel = new SupplierProductModel();
+
+        $db->transBegin();
+
+        try {
+            // Cocokkan nama_kunci atau lowercase clean name
+            $existingSupplier = $supplierModel->where('nama_kunci', $namaKunci)->first();
+            if (!$existingSupplier) {
+                $cleanName = trim(preg_replace('/\s+/', ' ', $namaPerusahaan));
+                $existingSupplier = $supplierModel->where('LOWER(TRIM(nama_perusahaan))', mb_strtolower($cleanName, 'UTF-8'))->first();
+            }
+
+            $isNewSupplier = false;
+            $idSupplier    = null;
+
+            if ($existingSupplier) {
+                $idSupplier    = (int) $existingSupplier['id_supplier'];
+                $isNewSupplier = false;
+                // Jangan timpa data supplier yang sudah ada
+            } else {
+                $kategori = [];
+                if (!empty($company['main_categories']) && $company['main_categories'] !== '-') {
+                    $kategori[] = trim($company['main_categories']);
+                }
+                if (!empty($company['sub_categories']) && $company['sub_categories'] !== '-') {
+                    $kategori[] = trim($company['sub_categories']);
+                }
+                $kategoriEkspor = !empty($kategori) ? implode(' - ', $kategori) : null;
+
+                $website          = (!empty($company['website']) && $company['website'] !== '-') ? trim($company['website']) : null;
+                $rawDipasarkan    = (!empty($company['produk_yang_dijual_auto']) && $company['produk_yang_dijual_auto'] !== '-') ? trim($company['produk_yang_dijual_auto']) : null;
+                $produkDipasarkan = null;
+                if (!empty($rawDipasarkan)) {
+                    $aiSvc = new \App\Libraries\AIService();
+                    $parsed = $aiSvc->parseProductLines($rawDipasarkan);
+                    $produkDipasarkan = !empty($parsed) ? $aiSvc->formatToBilingualText($parsed) : $rawDipasarkan;
+                }
+                $keunggulan       = (!empty($company['company_profile']) && $company['company_profile'] !== '-') ? trim($company['company_profile']) : null;
+
+                $supplierData = [
+                    'nama_perusahaan'   => $namaPerusahaan,
+                    'nama_kunci'        => $namaKunci,
+                    'website'           => $website,
+                    'produk_dipasarkan' => $produkDipasarkan,
+                    'kategori_ekspor'   => $kategoriEkspor,
+                    'keunggulan_produk' => $keunggulan,
+                    'sumber_tahun'      => date('Y'),
+                    'created_at'        => date('Y-m-d H:i:s'),
+                    'updated_at'        => date('Y-m-d H:i:s'),
+                ];
+
+                $supplierModel->insert($supplierData);
+                $idSupplier    = (int) $supplierModel->getInsertID();
+                $isNewSupplier = true;
+            }
+
+            // Ambil produk supplier yang sudah ada untuk id_supplier ini
+            $existingProds = $supplierProductModel->where('id_supplier', $idSupplier)->findAll();
+            $existingKeys  = [];
+            foreach ($existingProds as $ep) {
+                if (!empty($ep['nama_produk'])) {
+                    $existingKeys[] = mb_strtolower(trim($ep['nama_produk']), 'UTF-8');
+                }
+            }
+
+            $productsAdded     = 0;
+            $productsSkipped   = 0;
+            $seenKeysThisBatch = [];
+
+            foreach ($products as $p) {
+                // Utamakan nama produk Bahasa Indonesia
+                $namaProdukTarget = !empty($p['nama_produk_id']) ? trim($p['nama_produk_id']) : trim($p['nama_produk_en'] ?? '');
+                // Jika nama_produk_id berupa kalimat deskripsi panjang (data lama), gunakan nama_produk_en
+                if (\App\Libraries\AIService::isDescription($namaProdukTarget) && !empty($p['nama_produk_en']) && !\App\Libraries\AIService::isDescription($p['nama_produk_en'])) {
+                    $namaProdukTarget = trim($p['nama_produk_en']);
+                }
+
+                if ($namaProdukTarget === '') {
+                    $productsSkipped++;
+                    continue;
+                }
+
+                $normKey = mb_strtolower($namaProdukTarget, 'UTF-8');
+                if (in_array($normKey, $existingKeys, true) || in_array($normKey, $seenKeysThisBatch, true)) {
+                    // Jangan buat duplikat jika produk sudah ada
+                    $productsSkipped++;
+                    continue;
+                }
+
+                $seenKeysThisBatch[] = $normKey;
+
+                // Jangan pernah memasukkan kalimat deskripsi ke spesifikasi
+                $brand = !empty($p['brand']) && \App\Libraries\AIService::isValidBrand($p['brand']) ? trim($p['brand']) : null;
+                $spesifikasi = $brand ? 'Merk: ' . $brand : null;
+
+                $supplierProductModel->insert([
+                    'id_supplier' => $idSupplier,
+                    'nama_produk' => $namaProdukTarget,
+                    'spesifikasi' => $spesifikasi,
+                    'views'       => 0,
+                    'created_at'  => date('Y-m-d H:i:s'),
+                    'updated_at'  => date('Y-m-d H:i:s'),
+                ]);
+                $productsAdded++;
+            }
+
+            if ($db->transStatus() === false) {
+                $db->transRollback();
+                return [
+                    'success'          => false,
+                    'is_skipped'       => false,
+                    'reason'           => 'Transaksi database gagal',
+                    'is_new_supplier'  => false,
+                    'supplier_id'      => null,
+                    'products_added'   => 0,
+                    'products_skipped' => 0,
+                    'error'            => 'Database transaction status false',
+                ];
+            }
+
+            $db->transCommit();
+
+            return [
+                'success'          => true,
+                'is_skipped'       => false,
+                'reason'           => null,
+                'is_new_supplier'  => $isNewSupplier,
+                'supplier_id'      => $idSupplier,
+                'products_added'   => $productsAdded,
+                'products_skipped' => $productsSkipped,
+                'error'            => null,
             ];
 
-            // Cari data yang sudah ada:
-            // 1) lewat email, 2) lewat no HP, 3) lewat perusahaan + nama (hanya jika email & HP kosong)
-            $hpKunci = $kunciHp($data['no_hp']);
-            $kunci   = $kunciUsaha($data['nama_perusahaan'], $data['nama']);
-
-            $idAda = null;
-            if ($email !== null) {
-                $idAda = $emailAda[$email] ?? null;
-            }
-            if ($idAda === null && $hpKunci !== null) {
-                $idAda = $hpAda[$hpKunci] ?? null;
-            }
-            if ($idAda === null && $email === null && $hpKunci === null) {
-                $idAda = $usahaAda[$kunci] ?? null;
-            }
-
-            if ($idAda !== null) {
-                if ($perbarui && $idAda > 0) {
-                    // Jangan menimpa data lama dengan kosong
-                    if ($email === null) {
-                        unset($data['email']);
-                    }
-                    if ($data['no_hp'] === null) {
-                        unset($data['no_hp']);
-                    }
-                    $this->model->update($idAda, $data);
-                    $jmlUbah++;
-                } else {
-                    $jmlLewati++;
-                    $galat[] = "Baris {$noBaris}: data sudah ada (" . ($email ?? $data['no_hp'] ?? $data['nama_perusahaan']) . ').';
-                }
-                continue;
-            }
-
-            // Tandai sudah dipakai di file ini (0 = belum punya ID, tidak bisa diperbarui)
-            if ($email !== null) {
-                $emailAda[$email] = 0;
-            }
-            if ($hpKunci !== null) {
-                $hpAda[$hpKunci] = 0;
-            }
-            $usahaAda[$kunci] = 0;
-
-            $antrean[] = $data;
-            $jmlTambah++;
-
-            if (count($antrean) >= 200) {
-                $this->model->insertBatch($antrean);
-                $antrean = [];
-            }
+        } catch (\Throwable $e) {
+            $db->transRollback();
+            return [
+                'success'          => false,
+                'is_skipped'       => false,
+                'reason'           => 'Terjadi error: ' . $e->getMessage(),
+                'is_new_supplier'  => false,
+                'supplier_id'      => null,
+                'products_added'   => 0,
+                'products_skipped' => 0,
+                'error'            => $e->getMessage(),
+            ];
         }
-
-        if ($antrean !== []) {
-            $this->model->insertBatch($antrean);
-        }
-
-        $db->transComplete();
-
-        if (! $db->transStatus()) {
-            return redirect()->to('/kontak')
-                ->with('gagal', 'Import dibatalkan karena terjadi kesalahan database. Tidak ada data yang tersimpan.');
-        }
-
-        return redirect()->to('/kontak')
-            ->with('sukses', "Import selesai: {$jmlTambah} ditambahkan, {$jmlUbah} diperbarui, {$jmlLewati} dilewati.")
-            ->with('detail_import', array_slice($galat, 0, 30));
-    }
-    public function template()
-{
-    $spreadsheet = new Spreadsheet();
-    $sheet       = $spreadsheet->getActiveSheet();
-    $sheet->setTitle('Kontak');
-
-    $header = [
-        'NAMA', 'NAMA PERUSAHAAN', 'KATEGORI', 'KOTA KABUPATEN', 'PROVINSI',
-        'PRODUK PERUSAHAAN', 'SUMBER DATA', 'EMAIL', 'NO_HP',
-    ];
-    $sheet->fromArray($header, null, 'A1');
-
-    // Kolom NO_HP berformat teks supaya angka 0 di depan tidak hilang
-    $sheet->getStyle('I:I')->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
-
-    $sheet->fromArray([
-        'Budi Santoso', 'PT Contoh Makmur', 'Distributor', 'Bandung', 'Jawa Barat',
-        'Alat tulis kantor', 'Google Maps', 'budi@contohmakmur.co.id', '081234567890',
-    ], null, 'A2');
-
-    $sheet->getStyle('A1:I1')->getFont()->setBold(true);
-    foreach (range('A', 'I') as $kol) {
-        $sheet->getColumnDimension($kol)->setAutoSize(true);
     }
 
-    ob_start();
-    (new Xlsx($spreadsheet))->save('php://output');
-    $isi = ob_get_clean();
+    // ------------------------------------------------------------------
 
-    return $this->response->download('template-import-kontak.xlsx', $isi);
-}
-}
+    private function aturan(?int $id = null): array
+    {
+        $emailUnik = $id !== null
+            ? "is_unique[kontak_email.email,id,{$id}]"
+            : 'is_unique[kontak_email.email]';
+        $tabelKategori = self::TABEL_KATEGORI;
 
+        return [
+            'kategori_id'           => "permit_empty|is_natural_no_zero|is_not_unique[{$tabelKategori}.id]",
+            'nama'                  => 'permit_empty|max_length[150]',
+            'nama_perusahaan'       => 'required|max_length[150]',
+            'email'                 => "required|valid_email|max_length[254]|{$emailUnik}",
+            'no_hp'                 => 'permit_empty|max_length[20]',
+            'website'               => 'permit_empty|max_length[255]',
+            'kota_kabupaten'        => 'permit_empty|max_length[100]',
+            'provinsi'              => 'permit_empty|max_length[100]',
+            'sumber_data'           => 'permit_empty|max_length[150]',
+            'jumlah_tidak_terkirim' => 'permit_empty|is_natural',
+        ];
+    }
+
+    private function pesan(): array
+    {
+        return [
+            'nama_perusahaan' => ['required' => 'Nama perusahaan wajib diisi.'],
+            'email'           => [
+                'required'    => 'Email wajib diisi.',
+                'valid_email' => 'Format email tidak valid.',
+                'is_unique'   => 'Email ini sudah terdaftar.',
+            ],
+            'kategori_id'     => ['is_not_unique' => 'Kategori yang dipilih tidak ditemukan.'],
+        ];
+    }
+
+    private function ambilData(): array
+    {
+        $teks     = fn(string $k): string => trim((string) $this->request->getPost($k));
+        $kategori = $teks('kategori_id');
+        $email    = strtolower($teks('email'));
+
+        return [
+            'kategori_id'             => $kategori !== '' ? (int) $kategori : null,
+            'nama'                    => $teks('nama'),
+            'nama_perusahaan'         => $teks('nama_perusahaan'),
+            'email'                   => $email,
+            'no_hp'                   => $teks('no_hp'),
+            'website'                 => $teks('website'),
+            'kota_kabupaten'          => $teks('kota_kabupaten'),
+            'provinsi'                => $teks('provinsi'),
+            'sumber_data'             => $teks('sumber_data'),
+            'catatan'                 => $teks('catatan'),
+            'jumlah_tidak_terkirim'   => (int) $teks('jumlah_tidak_terkirim'),
+            'produk_yang_dijual_auto' => $teks('produk_perusahaan'),
+            'unique_hash'             => hash('sha256', $email),
+        ];
+    }
+}

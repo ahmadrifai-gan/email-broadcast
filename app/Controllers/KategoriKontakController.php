@@ -89,7 +89,7 @@ class KategoriKontakController extends BaseController
 
         // Opsional: tolak jika kategori masih dipakai kontak.
         // Hapus blok ini jika ingin kontaknya otomatis menjadi tanpa kategori (ON DELETE SET NULL).
-        $dipakai = db_connect()->table('kontak_email')->where('kategori_id', $id)->countAllResults();
+        $dipakai = db_connect()->table('tb_perusahaan')->where('kategori_id', $id)->countAllResults();
         if ($dipakai > 0) {
             return redirect()->to('/kategori')
                 ->with('gagal', "Kategori tidak bisa dihapus karena masih dipakai oleh {$dipakai} kontak.");

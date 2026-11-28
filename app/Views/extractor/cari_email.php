@@ -1,299 +1,224 @@
 <?= $this->extend('layouts/main') ?>
 
 <?= $this->section('title') ?>Cari Email<?= $this->endSection() ?>
-<?= $this->section('page_title') ?>Pencarian Email Kontak<?= $this->endSection() ?>
-<?= $this->section('page_subtitle') ?>Lengkapi data email kontak secara otomatis dari website perusahaan<?= $this->endSection() ?>
+<?= $this->section('page_title') ?>Cari Email Kontak<?= $this->endSection() ?>
+<?= $this->section('page_subtitle') ?>Hubungkan AI, pilih kontak, atur pengambilan data, lalu jalankan<?= $this->endSection() ?>
 
 <?= $this->section('breadcrumb') ?>
 <li><a href="<?= base_url() ?>"><i class="fa fa-dashboard"></i> Home</a></li>
+<li><a href="<?= base_url('extractor') ?>">Data Email</a></li>
 <li class="active">Cari Email</li>
 <?= $this->endSection() ?>
 
 <?= $this->section('styles') ?>
-<!-- DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap.min.css">
-<!-- SweetAlert2 -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 <style>
-    /* ========== KARTU RINGKASAN (Sama seperti Laporan) ========== */
-    .km-cards {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
-        margin-bottom: 15px;
-    }
-    @media (max-width: 1199px) { .km-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    @media (max-width: 479px) { .km-cards { grid-template-columns: 1fr; } }
-
-    .km-card {
-        display: flex; align-items: center; background: #fff;
-        border-radius: 8px; border: 1px solid #e9ecef;
-        box-shadow: 0 1px 3px rgba(0,0,0,.06); padding: 12px 14px;
-        min-height: 84px; overflow: hidden; transition: all .2s ease;
-    }
-    .km-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
-    .km-card-icon {
-        flex-shrink: 0; width: 46px; height: 46px; border-radius: 10px;
-        display: flex; align-items: center; justify-content: center;
-        color: #fff; font-size: 20px; margin-right: 12px;
-    }
-    .km-card-body { min-width: 0; flex: 1; overflow: hidden; }
-    .km-card-label {
-        font-size: 11px; text-transform: uppercase; letter-spacing: .4px;
-        color: #6c757d; font-weight: 600; white-space: nowrap;
-        overflow: hidden; text-overflow: ellipsis; display: block; margin-bottom: 2px;
-    }
-    .km-card-value { font-size: 22px; font-weight: 700; color: #212529; line-height: 1.2; }
-    .km-card-sub { font-size: 11px; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-    
-    .km-card.aqua   .km-card-icon { background: linear-gradient(135deg,#00c0ef,#4dd0e1); }
-    .km-card.blue   .km-card-icon { background: linear-gradient(135deg,#3c8dbc,#5fa8dc); }
-    .km-card.green  .km-card-icon { background: linear-gradient(135deg,#00a65a,#4caf50); }
-    .km-card.red    .km-card-icon { background: linear-gradient(135deg,#dd4b39,#e57373); }
-
-    /* ========== STYLING LAINNYA ========== */
-    .url-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
-    .note-cell { max-width: 300px; font-size: 12px; line-height: 1.3; color: #555; }
-    #tblKontak td, #tblHasil td { vertical-align: middle !important; }
-    
-    .stat-label { font-size: 11px; color: #777; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-    .stat-value { font-size: 22px; font-weight: 700; color: #333; margin-bottom: 2px; }
-    
-    .progress-bar-striped { background-image: linear-gradient(45deg,rgba(255,255,255,.15) 25%,transparent 25%,transparent 50%,rgba(255,255,255,.15) 50%,rgba(255,255,255,.15) 75%,transparent 75%,transparent); background-size: 40px 40px; }
-    .active-progress { animation: progress-bar-stripes 2s linear infinite; }
-    
-    .box-header.with-border { border-bottom: 1px solid #f4f4f4; }
-    .box-title { font-weight: 600; font-size: 15px; }
+    .box.locked { opacity:.55; pointer-events:none; }
+    .url-cell { max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle; }
+    .note-cell { max-width:340px; }
+    .tbl td { vertical-align:middle !important; }
+    .spec-label { display:block; margin-bottom:5px; }
+    .spec-label .mode-toggle { margin-top:-2px; }
+    .input-group .form-control.text-center { min-width:60px; }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
 
-<!-- Row 1: KARTU RINGKASAN (Custom Grid) -->
-<div class="km-cards">
-    <div class="km-card aqua">
-        <div class="km-card-icon"><i class="fa fa-user-times"></i></div>
-        <div class="km-card-body">
-            <span class="km-card-label">Kontak Tanpa Email</span>
-            <div class="km-card-value" id="stTotal">0</div>
-            <div class="km-card-sub">Total data</div>
-        </div>
-    </div>
-    <div class="km-card blue">
-        <div class="km-card-icon"><i class="fa fa-globe"></i></div>
-        <div class="km-card-body">
-            <span class="km-card-label">Website Valid</span>
-            <div class="km-card-value" id="stWeb">0</div>
-            <div class="km-card-sub">Siap diproses</div>
-        </div>
-    </div>
-    <div class="km-card green">
-        <div class="km-card-icon"><i class="fa fa-envelope-open-o"></i></div>
-        <div class="km-card-body">
-            <span class="km-card-label">Email Ditemukan</span>
-            <div class="km-card-value" id="stFound">0</div>
-            <div class="km-card-sub">Berhasil diekstrak</div>
-        </div>
-    </div>
-    <div class="km-card red">
-        <div class="km-card-icon"><i class="fa fa-exclamation-triangle"></i></div>
-        <div class="km-card-body">
-            <span class="km-card-label">Gagal / Kosong</span>
-            <div class="km-card-value" id="stFail">0</div>
-            <div class="km-card-sub">Perlu dicek ulang</div>
-        </div>
-    </div>
+<p>
+    <a href="<?= base_url('extractor') ?>" class="btn btn-default btn-sm"><i class="fa fa-arrow-left"></i> Kembali ke Data Email</a>
+    <a href="#" id="lnkLast" class="btn btn-default btn-sm" style="display:none;"><i class="fa fa-list-alt"></i> Detail proses terakhir</a>
+</p>
+
+<div class="callout callout-info" id="activeJob" style="display:none;">
+    <h4><i class="fa fa-spinner fa-spin"></i> Ada proses pencarian yang sedang berjalan</h4>
+    <p id="activeMsg">-</p>
+    <p><a href="#" id="lnkActive" class="btn btn-primary btn-sm"><i class="fa fa-external-link"></i> Buka Halaman Detail</a></p>
 </div>
 
-<!-- Row 2: Pengaturan & Status -->
 <div class="row">
-    <!-- Panel Pengaturan -->
-    <div class="col-md-5">
-        <div class="box box-warning">
+    <!-- ===== 1. Koneksi AI ===== -->
+    <div class="col-md-6">
+        <div class="box box-primary" id="cardApi">
             <div class="box-header with-border">
-                <h3 class="box-title"><i class="fa fa-sliders text-yellow"></i> Pengaturan Proses</h3>
-                <div class="box-tools pull-right">
-                    <span class="text-muted" style="font-size:12px;"><i class="fa fa-check text-success"></i> Tersimpan otomatis</span>
-                </div>
+                <h3 class="box-title"><i class="fa fa-plug"></i> 1. Koneksi AI</h3>
+                <div class="box-tools pull-right"><span class="label label-warning" id="apiBadge">Belum terhubung</span></div>
             </div>
             <div class="box-body">
                 <div class="form-group">
-                    <label for="key">Gemini API Key</label>
+                    <label>Gemini API Key</label>
                     <div class="input-group">
                         <input id="key" type="password" class="form-control" placeholder="AIza... (kosong = pakai .env)" autocomplete="off">
-                        <span class="input-group-btn">
-                            <button class="btn btn-default" type="button" id="btnEye" title="Tampilkan / sembunyikan"><i class="fa fa-eye"></i></button>
-                        </span>
+                        <span class="input-group-btn"><button class="btn btn-default" type="button" id="btnEye"><i class="fa fa-eye"></i></button></span>
                     </div>
-                    <span class="help-block" style="font-size:12px;">Dapatkan API Key di <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>.</span>
                 </div>
-
                 <div class="form-group">
-                    <label for="model">Model Gemini</label>
-                    <input id="model" class="form-control" list="modelList" autocomplete="off">
+                    <label>Model Gemini</label>
+                    <input id="model" list="modelList" class="form-control" autocomplete="off" placeholder="Pilih model...">
                     <datalist id="modelList">
                         <option value="gemini-3.5-flash-lite">
                         <option value="gemini-3.8-flash">
                         <option value="gemini-3.1-flash-lite">
                     </datalist>
-                    <div style="margin-top: 8px;">
-                        <button class="btn btn-sm btn-default text-blue" type="button" id="btnModels"><i class="fa fa-refresh"></i> Muat Model</button>
-                        <button class="btn btn-sm btn-default text-green" type="button" id="btnTest"><i class="fa fa-plug"></i> Uji Koneksi</button>
-                    </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-sm-6">
-                        <div class="form-group">
-                            <label for="rate">Kontak / menit</label>
-                            <input id="rate" type="number" step="0.1" min="0.05" class="form-control">
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="form-group">
-                            <label for="hours">Durasi (jam)</label>
-                            <input id="hours" type="number" step="0.5" min="0.01" max="24" class="form-control">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- TOKEN READ-ONLY -->
-                <div class="form-group">
-                    <label for="token_sisa">Sisa Kuota Token (Read-Only)</label>
-                    <div class="input-group">
-                        <span class="input-group-addon"><i class="fa fa-key"></i></span>
-                        <input id="token_sisa" type="text" class="form-control" value="0" readonly style="background-color:#f9f9f9; font-weight:bold; color:#d9534f;">
-                        <span class="input-group-addon">Token</span>
-                    </div>
-                    <span class="help-block" style="font-size:12px;">Batas maksimal 1.000.000 token per proses.</span>
-                </div>
-
-                <div class="checkbox" style="margin-top:0; margin-bottom:15px;">
-                    <label>
-                        <input type="checkbox" id="auto_fill"> <b>Isi email otomatis</b>
-                    </label>
-                    <p class="help-block" style="font-size:12px; margin-bottom:0;">Email terbaik (domain sama) disimpan ke kontak. Jika dimatikan, hasil hanya masuk tab <b>Hasil Email</b>.</p>
-                </div>
-
-                <div class="callout callout-info" style="margin-bottom: 0; padding: 10px;">
-                    <p style="font-size: 12px; margin:0;">Satu kontak = satu permintaan AI. Proses berhenti otomatis bila kuota, durasi, atau batas token habis.</p>
+                <button class="btn btn-default" type="button" id="btnModels"><i class="fa fa-refresh"></i> Muat Model</button>
+                <button class="btn btn-primary pull-right" type="button" id="btnTest"><i class="fa fa-plug"></i> Hubungkan &amp; Lanjut</button>
+                <div class="callout callout-warning" id="apiHint" style="margin:15px 0 0;">
+                    <p>Isi API key lalu klik <b>Hubungkan &amp; Lanjut</b> untuk membuka langkah berikutnya.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Panel Status -->
-    <div class="col-md-7">
-        <div class="box box-primary">
+    <!-- ===== 2. Pilih Kontak ===== -->
+    <div class="col-md-6">
+        <div class="box box-info locked" id="cardPick">
             <div class="box-header with-border">
-                <h3 class="box-title"><i class="fa fa-tasks text-blue"></i> Status Proses</h3>
-                <div class="box-tools pull-right">
-                    <span id="stBadge" class="label label-default" style="font-size:12px; padding: 5px 10px;">Siap</span>
-                </div>
+                <h3 class="box-title"><i class="fa fa-users"></i> 2. Pilih Kontak</h3>
+                <div class="box-tools pull-right"><span class="label label-default" id="pickBadge">Terkunci</span></div>
             </div>
             <div class="box-body">
-                <p class="font-weight-bold" id="stMsg" style="margin-bottom:15px; font-size:14px; color:#333;">Memuat status...</p>
-                
-                <div class="progress" style="height:20px; margin-bottom:5px; border-radius:4px;">
-                    <div id="stBar" class="progress-bar progress-bar-primary progress-bar-striped active-progress" role="progressbar" style="width:0%; border-radius:4px;"></div>
+                <div class="callout callout-info" style="margin-top:0;">
+                    <p>Klik tombol di bawah. Akan muncul jendela berisi <b>hanya kontak yang belum punya email</b>. Centang kontak yang ingin dicarikan emailnya.</p>
                 </div>
-                <div class="clearfix" style="font-size:12px; color:#777; margin-bottom:25px;">
-                    <span class="pull-left" id="stPct">0 dari 0 kontak</span>
-                    <span class="pull-right" id="stDeadline"></span>
-                </div>
-
-                <div class="row text-center" style="margin-bottom:20px;">
-                    <div class="col-xs-4" style="border-right:1px solid #f4f4f4;">
-                        <div class="stat-value" id="stProc">0</div>
-                        <div class="stat-label">Diproses</div>
-                    </div>
-                    <div class="col-xs-4" style="border-right:1px solid #f4f4f4;">
-                        <div class="stat-value text-green" id="stNew">0</div>
-                        <div class="stat-label">Email Baru</div>
-                    </div>
-                    <div class="col-xs-4">
-                        <div class="stat-value text-aqua" id="stTok">0</div>
-                        <div class="stat-label">Token Terpakai</div>
-                    </div>
-                </div>
-                
-                <div class="progress progress-xs" style="margin-bottom:5px; border-radius:2px;">
-                    <div id="stTokBar" class="progress-bar progress-bar-aqua" style="width:0%; border-radius:2px;"></div>
-                </div>
-                <div class="text-muted text-truncate" style="font-size:12px;" id="stCurrent"></div>
-
-                <div id="workerWarn" class="alert alert-warning" style="margin-top:25px; margin-bottom:0; display:none; border-radius:4px;">
-                    <h4 style="margin-top:0;"><i class="icon fa fa-warning"></i> Worker Belum Aktif!</h4>
-                    <p style="margin:0; font-size:13px;">Buka terminal/CMD di folder proyek, lalu jalankan perintah: <br><code>php spark emails:work</code></p>
-                </div>
-            </div>
-            <div class="box-footer">
-                <button id="btnStart" class="btn btn-success"><i class="fa fa-play"></i> Mulai Proses <span class="badge bg-light text-dark ml-1" id="selCount">0</span></button>
-                <button id="btnStop" class="btn btn-danger" disabled><i class="fa fa-stop"></i> Hentikan</button>
-                <span class="text-muted" style="font-size:12px; margin-left:10px;">Centang kontak di tab bawah, lalu klik Mulai.</span>
+                <table class="table table-condensed">
+                    <tr><td>Kontak tanpa email</td><td class="text-right"><b id="pickAvail">0</b></td></tr>
+                    <tr><td>Punya website</td><td class="text-right"><b id="pickWeb">0</b></td></tr>
+                    <tr><td>Dipilih</td><td class="text-right"><b class="text-green" id="pickSel">0</b></td></tr>
+                </table>
+                <button class="btn btn-info btn-block" type="button" id="btnPick"><i class="fa fa-list-ul"></i> Pilih Data Kontak</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Row 3: Tabel Data -->
-<div class="nav-tabs-custom">
-    <ul class="nav nav-tabs">
-        <li class="active">
-            <a href="#paneKontak" data-toggle="tab" style="font-weight:bold;"><i class="fa fa-user-times text-teal"></i> Kontak Tanpa Email <span class="badge bg-teal" id="cntKontak">0</span></a>
-        </li>
-        <li>
-            <a href="#paneHasil" data-toggle="tab" style="font-weight:bold;"><i class="fa fa-envelope-open-o text-green"></i> Hasil Email <span class="badge bg-green" id="cntHasil">0</span></a>
-        </li>
-        <li class="pull-right" style="padding: 8px 10px;">
-            <a class="btn btn-sm btn-default" href="<?= base_url('extractor/export/csv') ?>"><i class="fa fa-file-text-o text-green"></i> CSV</a>
-            <a class="btn btn-sm btn-default" href="<?= base_url('extractor/export/xlsx') ?>"><i class="fa fa-file-excel-o text-green"></i> Excel</a>
-        </li>
-    </ul>
-    
-    <div class="tab-content">
-        <!-- Tab Kontak Tanpa Email -->
-        <div class="tab-pane active" id="paneKontak">
-            <div class="box-tools clearfix" style="margin-bottom:15px;">
-                <div class="btn-group">
-                    <button class="btn btn-default btn-sm" data-sel="all"><i class="fa fa-check-square-o"></i> Pilih Semua Berwebsite</button>
-                    <button class="btn btn-default btn-sm" data-sel="pending"><i class="fa fa-clock-o"></i> Belum Diproses</button>
-                    <button class="btn btn-default btn-sm" data-sel="retry"><i class="fa fa-refresh"></i> Gagal / Kosong</button>
-                    <button class="btn btn-default btn-sm" data-sel="none"><i class="fa fa-square-o"></i> Kosongkan</button>
+<!-- ===== 3. Pengaturan ===== -->
+<div class="box box-success locked" id="cardSet">
+    <div class="box-header with-border">
+        <h3 class="box-title"><i class="fa fa-sliders"></i> 3. Pengaturan Pengambilan Data</h3>
+        <div class="box-tools pull-right"><span class="label label-default" id="setBadge">Terkunci</span></div>
+    </div>
+    <div class="box-body">
+        <div class="row">
+            <div class="col-md-8">
+                <p class="text-muted">Setiap pengaturan bisa <b>Tetap</b> (satu nilai) atau <b>Acak</b> (nilai dipilih acak di antara batas bawah dan atas).</p>
+                <div class="row" id="specs"></div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Batas token</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control text-center" id="token_limit" min="1000" step="1000">
+                                <span class="input-group-addon">token</span>
+                            </div>
+                            <div style="margin-top:8px;">
+                                <label class="radio-inline"><input type="radio" name="token_mode" value="total"> Akumulatif (tidak reset)</label><br>
+                                <label class="radio-inline"><input type="radio" name="token_mode" value="per_batch"> Reset tiap batch</label>
+                            </div>
+                            <p class="help-block" id="tokenModeHelp"></p>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="form-group">
+                            <label>Batas token harian (semua proses)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control text-center" id="daily_limit" min="0" step="1000">
+                                <span class="input-group-addon">token/hari</span>
+                            </div>
+                            <p class="help-block">
+                                Terpakai hari ini: <b id="dailyUsed">0</b> &middot; sisa: <b id="dailySisa">-</b>.
+                                Reset otomatis pukul 00.00. Bila tercapai, proses <b>menunggu sampai besok</b> lalu lanjut sendiri. Isi <b>0</b> = tanpa batas harian.
+                            </p>
+                        </div>
+                        <div class="checkbox">
+                            <label><input type="checkbox" id="auto_fill"> Isi email otomatis ke data kontak</label>
+                        </div>
+                    </div>
                 </div>
-                <span class="text-muted pull-right" style="font-size:12px; margin-top:8px;">Hanya kontak dengan website valid yang bisa dipilih.</span>
             </div>
-            <div class="table-responsive">
-                <table id="tblKontak" class="table table-bordered table-striped table-hover" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th width="30" class="text-center"><input type="checkbox" id="chkAll"></th>
-                            <th>Kontak / Perusahaan</th>
-                            <th>Website</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Hasil</th>
-                            <th>Catatan</th>
-                        </tr>
-                    </thead>
-                </table>
+            <div class="col-md-4">
+                <div class="box box-solid" style="border:1px solid #d2d6de;">
+                    <div class="box-header with-border"><h3 class="box-title">Perkiraan</h3></div>
+                    <div class="box-body no-padding">
+                        <table class="table table-condensed">
+                            <tr><td>Akan diproses</td><td class="text-right"><b id="estN">0</b></td></tr>
+                            <tr><td>Jumlah batch</td><td class="text-right"><b id="estBatch">0</b></td></tr>
+                            <tr><td>Perkiraan durasi</td><td class="text-right"><b id="estDur">-</b></td></tr>
+                            <tr><td>Muat dalam batas durasi</td><td class="text-right"><b id="estCap">-</b></td></tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="callout callout-info" id="estNote"><p>Proses berjalan terus sampai semua kontak selesai, token habis, kuota Gemini habis, atau batas durasi tercapai.</p></div>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Tab Hasil Email -->
-        <div class="tab-pane" id="paneHasil">
-            <div class="table-responsive">
-                <table id="tblHasil" class="table table-bordered table-striped table-hover" style="width:100%">
-                    <thead>
-                        <tr>
-                            <th>Email</th>
-                            <th>Keterangan</th>
-                            <th>Kontak</th>
-                            <th>Website</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center" width="80">Aksi</th>
-                        </tr>
-                    </thead>
-                </table>
+<!-- ===== Tombol aksi ===== -->
+<div class="box box-default locked" id="actionBar">
+    <div class="box-body">
+        <button id="btnStart" class="btn btn-success"><i class="fa fa-play"></i> Mulai Proses <span class="badge bg-green" id="selCount">0</span></button>
+        <button id="btnStop" class="btn btn-danger" disabled><i class="fa fa-stop"></i> Hentikan</button>
+        <span class="pull-right">
+            <span id="workerWarn" style="display:none;margin-right:10px;" class="text-orange"><i class="fa fa-warning"></i> Worker belum aktif — jalankan <code>php spark emails:work</code></span>
+            <span id="stBadge" class="label label-default" style="font-size:13px;">Siap</span>
+        </span>
+    </div>
+</div>
+
+<!-- ===== Antrean / log ===== -->
+<div class="box box-default">
+    <div class="box-header with-border">
+        <h3 class="box-title" id="queueTitle">Kontak Terpilih (pratinjau antrean)</h3>
+        <div class="box-tools pull-right"><span class="text-muted" style="font-size:12px;">Setelah dimulai, progres &amp; hasil tampil di halaman Detail</span></div>
+    </div>
+    <div class="box-body">
+        <p id="batchSummary" class="text-muted"></p>
+        <div class="table-responsive">
+            <table id="tblQueue" class="table table-bordered table-striped table-hover tbl" style="width:100%">
+                <thead><tr><th width="40" class="text-center">No</th><th>Kontak / Perusahaan</th><th>Website</th><th class="text-center" width="100">Batch</th><th class="text-center" width="90">Status</th><th>Catatan</th></tr></thead>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== Modal pilih kontak ===== -->
+<div class="modal fade" id="modalKontak" tabindex="-1" role="dialog" data-backdrop="static">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span>&times;</span></button>
+                <h4 class="modal-title"><i class="fa fa-envelope-o"></i> Pilih Kontak Tanpa Email</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    <span class="label label-info">Tanpa email: <span id="mAvail">0</span></span>
+                    <span class="label label-primary">Punya website: <span id="mWeb">0</span></span>
+                    <span class="label label-success">Dipilih: <span id="mSel">0</span></span>
+                </p>
+                <p>
+                    <button type="button" class="btn btn-default btn-sm" id="mSelAll"><i class="fa fa-check-square-o"></i> Pilih semua (berwebsite)</button>
+                    <button type="button" class="btn btn-default btn-sm" id="mSelNone"><i class="fa fa-square-o"></i> Kosongkan</button>
+                    <span class="text-muted" style="margin-left:8px;">Kontak tanpa website valid tidak bisa dipilih.</span>
+                    <select id="fCheck" class="form-control input-sm" style="display:inline-block;width:auto;margin-left:8px;">
+                        <option value="all">Semua kontak</option>
+                        <option value="fresh">Dicek &lt; 30 hari lalu</option>
+                        <option value="stale">Belum dicek / &gt; 30 hari</option>
+                    </select>
+                </p>
+                <div class="table-responsive">
+                    <table id="tblPick" class="table table-bordered table-striped table-hover tbl" style="width:100%">
+                        <thead><tr>
+                            <th width="30" class="text-center"><input type="checkbox" id="chkAll" title="Pilih semua hasil pencarian"></th>
+                            <th>Kontak / Perusahaan</th><th>Website</th><th class="text-center" width="130">Terakhir dicek</th><th class="text-center" width="90">Status</th>
+                        </tr></thead>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" id="btnPickOk"><i class="fa fa-check"></i> Pakai <span id="mSel2">0</span> Kontak</button>
             </div>
         </div>
     </div>
@@ -307,334 +232,462 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    const API_BASE = '<?= base_url('extractor/api') ?>';
-    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const num = (n) => Number(n || 0).toLocaleString('id-ID');
-    
-    const Toast = Swal.mixin({
-        toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-        timerProgressBar: true
-    });
+/* ==================================================================
+   KONFIG & STATE
+   ================================================================== */
+const API_BASE = '<?= base_url('extractor/api') ?>';
+const DETAIL_BASE = '<?= base_url('extractor/detail') ?>';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = (n) => Number(n || 0).toLocaleString('id-ID');
+const Toast = Swal.mixin({ toast:true, position:'top-end', showConfirmButton:false, timer:3000, timerProgressBar:true });
+const EST_SEC_PER_CONTACT = 12;   // perkiraan lama proses 1 kontak (unduh website + AI)
 
-    const XT = {
-        async api(path, body) {
-            const isPost = body !== undefined;
-            const res = await fetch(API_BASE + path, {
-                method: isPost ? 'POST' : 'GET',
-                headers: isPost ? { 'Content-Type': 'application/json' } : {},
-                body: isPost ? JSON.stringify(body) : undefined
-            });
+const STATE = {
+    apiValidated: false,
+    kontak: [], checked: new Set(), draft: new Set(),
+    batchOf: new Map(), taken: 0, totalBatches: 0,
+    lastJobId: 0
+};
 
-            if (!res.ok) {
-                let errorMsg = 'HTTP ' + res.status;
-                try {
-                    const data = await res.json();
-                    errorMsg = data.error || errorMsg;
-                } catch (e) {
-                    const text = await res.text();
-                    errorMsg += ': ' + text.substring(0, 200);
-                }
-                throw new Error(errorMsg);
-            }
-            return res.json();
-        },
-        async run(fn) {
-            try { return await fn(); }
-            catch (e) { 
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Terjadi Kesalahan',
-                    html: `<div style="text-align:left; font-size:14px; word-wrap:break-word;">${esc(e.message)}</div>`
-                }); 
-            }
-        },
-        setWorker(ok) {
-            $('#workerWarn').toggle(!ok);
+const XT = {
+    async api(path, body) {
+        const isPost = body !== undefined;
+        const res = await fetch(API_BASE + path, {
+            method: isPost ? 'POST' : 'GET',
+            headers: isPost ? { 'Content-Type':'application/json', 'X-Requested-With':'XMLHttpRequest' } : { 'X-Requested-With':'XMLHttpRequest' },
+            body: isPost ? JSON.stringify(body) : undefined
+        });
+        if (!res.ok) {
+            let m = 'HTTP ' + res.status;
+            try { const d = await res.json(); m = d.error || m; }
+            catch { const t = await res.text(); m += ': ' + t.substring(0, 200); }
+            throw new Error(m);
         }
-    };
-
-    // Default Model & Config
-    const DEF = { key: '', model: 'gemini-3.5-flash-lite', rate: '5', hours: '24', auto_fill: '1' };
-    const FIELDS = Object.keys(DEF);
-
-    function store(k, v) {
-        try {
-            if (v === undefined) return localStorage.getItem('ext_' + k);
-            localStorage.setItem('ext_' + k, v);
-        } catch (e) { return null; }
+        return res.json();
+    },
+    async run(fn) {
+        try { return await fn(); }
+        catch (e) { Swal.close(); Swal.fire({ icon:'error', title:'Kesalahan', html:`<div style="text-align:left;">${esc(e.message)}</div>` }); }
     }
-    function cfg() {
-        const o = {};
-        FIELDS.forEach(k => {
-            if (k === 'auto_fill') o[k] = $('#auto_fill').is(':checked') ? '1' : '0';
-            else o[k] = ($('#' + k).val() || '').trim();
-        });
-        return o;
+};
+
+/* ==================================================================
+   PENGATURAN: semuanya punya mode TETAP / ACAK
+   ================================================================== */
+const SPECS = [
+    { id:'hours',    label:'Batas durasi proses',            unit:'jam',        min:0.1,  step:0.5, def:{ val:24, min:12, max:24 }, hint:'Mode acak: durasi dipilih sekali saat proses dimulai.' },
+    { id:'total',    label:'Total pengambilan maksimal',     unit:'kontak',     min:1,    step:1,   def:{ val:100, min:50, max:100 }, hint:'Mode acak: jumlah dipilih sekali saat proses dimulai.' },
+    { id:'batch',    label:'Kontak per batch',               unit:'kontak',     min:1,    step:1,   def:{ val:10, min:5, max:15 }, hint:'Mode acak: tiap batch ukurannya berbeda.' },
+    { id:'perhour',  label:'Maks. pengambilan per jam',      unit:'kontak/jam', min:0,    step:1,   def:{ val:0, min:20, max:40 }, hint:'Isi 0 (mode tetap) = tanpa batas. Mode acak: batas dipilih ulang tiap jam.' },
+    { id:'delay',    label:'Jeda antar kontak (dalam batch)',unit:'detik',      min:2,    step:1,   def:{ val:5, min:3, max:10 }, hint:'Mode acak: jeda dipilih acak sebelum tiap kontak.' },
+    { id:'interval', label:'Jeda antar batch',               unit:'menit',      min:0.05, step:0.1, def:{ val:5, min:2, max:8 }, hint:'Mode acak: jeda dipilih acak setiap akhir batch.' }
+];
+const SPEC_MODE = {};
+const PFX = 'ext4_';
+
+function store(k, v) {
+    try {
+        if (v === undefined) return localStorage.getItem(PFX + k);
+        localStorage.setItem(PFX + k, v);
+    } catch { return null; }
+}
+
+function renderSpecs() {
+    $('#specs').html(SPECS.map(sp => `
+        <div class="col-sm-6">
+          <div class="form-group">
+            <label class="spec-label">${esc(sp.label)}
+              <span class="btn-group btn-group-xs pull-right mode-toggle" data-spec="${sp.id}">
+                <button type="button" class="btn btn-default" data-m="tetap">Tetap</button>
+                <button type="button" class="btn btn-default" data-m="acak">Acak</button>
+              </span>
+            </label>
+            <div class="input-group" id="${sp.id}_tetap">
+              <input type="number" class="form-control text-center" id="${sp.id}_val" min="${sp.min}" step="${sp.step}">
+              <span class="input-group-addon">${esc(sp.unit)}</span>
+            </div>
+            <div class="input-group" id="${sp.id}_acak" style="display:none;">
+              <input type="number" class="form-control text-center" id="${sp.id}_min" min="${sp.min}" step="${sp.step}" title="Batas bawah">
+              <span class="input-group-addon">s/d</span>
+              <input type="number" class="form-control text-center" id="${sp.id}_max" min="${sp.min}" step="${sp.step}" title="Batas atas">
+              <span class="input-group-addon">${esc(sp.unit)}</span>
+            </div>
+            <p class="help-block">${esc(sp.hint)}</p>
+          </div>
+        </div>`).join(''));
+
+    SPECS.forEach(sp => {
+        ['val', 'min', 'max'].forEach(f => $('#' + sp.id + '_' + f).val(store(sp.id + '_' + f) ?? sp.def[f]));
+        applyMode(sp.id, store(sp.id + '_mode') === 'acak' ? 'acak' : 'tetap', false);
+    });
+}
+function applyMode(id, mode, save = true) {
+    SPEC_MODE[id] = mode;
+    $(`.mode-toggle[data-spec="${id}"] button`).each(function () {
+        const on = this.dataset.m === mode;
+        $(this).toggleClass('btn-primary active', on).toggleClass('btn-default', !on);
+    });
+    $('#' + id + '_tetap').toggle(mode === 'tetap');
+    $('#' + id + '_acak').toggle(mode === 'acak');
+    if (save) { store(id + '_mode', mode); settingsChanged(); }
+}
+function getSpec(sp) {
+    const f = (k) => { const v = parseFloat($('#' + sp.id + '_' + k).val()); return Number.isFinite(v) ? Math.max(sp.min, v) : sp.def[k]; };
+    let val = f('val'), min = f('min'), max = f('max');
+    if (min > max) [min, max] = [max, min];
+    return { mode: SPEC_MODE[sp.id] || 'tetap', val, min, max };
+}
+const specOf = (id) => getSpec(SPECS.find(s => s.id === id));
+const avg = (s) => s.mode === 'acak' ? (s.min + s.max) / 2 : s.val;
+const perHourAvg = (s) => (s.mode === 'acak' ? s.max <= 0 : s.val <= 0) ? 0 : avg(s);
+const allSpecs = () => Object.fromEntries(SPECS.map(sp => [sp.id, getSpec(sp)]));
+
+renderSpecs();
+$('#specs').on('click', '.mode-toggle button', function () { applyMode($(this).closest('.mode-toggle').data('spec'), this.dataset.m); });
+$('#specs').on('input change', 'input', function () { store(this.id, this.value); settingsChanged(); });
+
+// field lain
+['key', 'model', 'token_limit', 'daily_limit'].forEach(k => {
+    const def = { key:'', model:'gemini-3.5-flash-lite', token_limit:'1000000', daily_limit:'1000000' }[k];
+    $('#' + k).val(store(k) ?? def).on('input change', function () { store(k, this.value); });
+});
+const TOKEN_HELP = {
+    total: 'Satu batas untuk SELURUH proses. Sisa token terus berkurang dari batch ke batch, proses berhenti saat habis.',
+    per_batch: 'Setiap batch mulai lagi dengan jatah token penuh (reset). Jika jatah batch habis, sisa kontak batch itu dilewati.'
+};
+function setTokenMode(m, save = true) {
+    m = m === 'per_batch' ? 'per_batch' : 'total';
+    $('input[name="token_mode"][value="' + m + '"]').prop('checked', true);
+    $('#tokenModeHelp').text(TOKEN_HELP[m]);
+    if (save) store('token_mode', m);
+}
+const getTokenMode = () => $('input[name="token_mode"]:checked').val() === 'per_batch' ? 'per_batch' : 'total';
+setTokenMode(store('token_mode'), false);
+$('input[name="token_mode"]').on('change', function () { setTokenMode(this.value); });
+$('#auto_fill').prop('checked', (store('auto_fill') ?? '1') === '1').on('change', function () { store('auto_fill', this.checked ? '1' : '0'); });
+
+// simpan nilai spec memakai kunci "<id>_<val|min|max>" (id elemen sudah sama dengan kunci)
+$('#btnEye').on('click', function () {
+    const i = $('#key'), show = i.attr('type') === 'password';
+    i.attr('type', show ? 'text' : 'password');
+    $(this).find('i').toggleClass('fa-eye', !show).toggleClass('fa-eye-slash', show);
+});
+
+/* ==================================================================
+   LANGKAH 1: KONEKSI AI
+   ================================================================== */
+function setApiValidated(ok) {
+    STATE.apiValidated = ok;
+    $('#apiBadge').attr('class', 'label ' + (ok ? 'label-success' : 'label-warning')).text(ok ? 'Terhubung' : 'Belum terhubung');
+    $('#pickBadge, #setBadge').attr('class', 'label ' + (ok ? 'label-success' : 'label-default')).text(ok ? 'Aktif' : 'Terkunci');
+    $('#cardPick, #cardSet, #actionBar').toggleClass('locked', !ok);
+    $('#apiHint').toggle(!ok);
+    if (ok) load();
+}
+
+$('#btnTest').on('click', () => XT.run(async () => {
+    const key = ($('#key').val() || '').trim(), model = ($('#model').val() || '').trim();
+    if (!key) {
+        const ok = await Swal.fire({ title:'API Key kosong', text:'Pakai API key dari file .env server?', icon:'question', showCancelButton:true, confirmButtonText:'Ya, lanjut', cancelButtonText:'Batal' });
+        if (!ok.isConfirmed) return;
     }
-    FIELDS.forEach(k => {
-        const v = store(k) ?? DEF[k];
-        if (k === 'auto_fill') $('#auto_fill').prop('checked', v === '1');
-        else $('#' + k).val(v);
-    });
-    $('#key,#model,#rate,#hours,#auto_fill').on('input change', function() {
-        const c = cfg(); FIELDS.forEach(k => store(k, c[k]));
-    });
-    $('#btnEye').on('click', function() {
-        const i = $('#key'), show = i.attr('type') === 'password';
-        i.attr('type', show ? 'text' : 'password');
-        $(this).find('i').toggleClass('fa-eye', !show).toggleClass('fa-eye-slash', show);
-    });
+    Swal.fire({ title:'Menghubungkan...', text:'Menguji koneksi ke Gemini', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
+    const r = await XT.api('/test', { key, model });
+    Swal.close();
+    if (r.model && r.model !== model) $('#model').val(r.model).trigger('change');
+    setApiValidated(true);
+    Toast.fire({ icon:'success', title:'Terhubung ke ' + (r.model || model) });
+}));
 
-    $('#btnModels').on('click', () => XT.run(async () => {
-        const r = await XT.api('/models', { key: cfg().key });
-        $('#modelList').html(r.models.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(''));
-        Toast.fire({ icon: 'success', title: r.models.length + ' model tersedia.' });
-    }));
+$('#btnModels').on('click', () => XT.run(async () => {
+    const r = await XT.api('/models', { key: ($('#key').val() || '').trim() });
+    $('#modelList').html(r.models.map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join(''));
+    Toast.fire({ icon:'success', title: r.models.length + ' model tersedia' });
+}));
 
-    $('#btnTest').on('click', () => XT.run(async () => {
-        const c = cfg();
-        Swal.fire({ title: 'Menguji koneksi...', allowOutsideClick: false, onBeforeOpen: () => Swal.showLoading() });
-        const r = await XT.api('/test', { key: c.key, model: c.model });
-        Swal.fire('Koneksi Berhasil', `Model ${r.model || c.model || '(default)'} merespons.`, 'success');
-    }));
+/* ==================================================================
+   TABEL
+   ================================================================== */
+const ST = { pending:['Antre','default'], processing:['Proses','warning'], done:['Selesai','success'], empty:['Kosong','warning'], error:['Gagal','danger'] };
+const badge = (s) => { const m = ST[s] || [s, 'default']; return `<span class="label label-${m[1]}">${esc(m[0])}</span>`; };
+const LANG = { search:'Cari:', lengthMenu:'Tampilkan _MENU_', info:'_START_–_END_ dari _TOTAL_', infoEmpty:'0 data', infoFiltered:'(dari _MAX_)', zeroRecords:'Tidak ada data', paginate:{ previous:'‹', next:'›' } };
 
-    const ST = {
-        pending:    ['Belum diproses', 'default'],
-        processing: ['Diproses', 'warning'],
-        done:       ['Selesai', 'success'],
-        empty:      ['Tidak ada email', 'warning'],
-        error:      ['Gagal', 'danger']
-    };
-    const badge = (s) => {
-        const m = ST[s] || [s, 'default'];
-        return `<span class="label label-${m[1]}">${esc(m[0])}</span>`;
-    };
-    const LANG = {
-        search: 'Cari:', lengthMenu: 'Tampilkan _MENU_', info: '_START_–_END_ dari _TOTAL_',
-        infoEmpty: '0 data', infoFiltered: '(disaring dari _MAX_)', zeroRecords: 'Tidak ada data',
-        paginate: { previous: '‹', next: '›' }
-    };
-    
-    let kontak = [], hasil = [], checked = new Set();
+const nameCell = (d, t, r) => {
+    const main = d || r.nama || '(tanpa nama)';
+    if (t !== 'display') return main + ' ' + (r.nama || '') + ' ' + (r.kota_kabupaten || '');
+    const sub = [d && r.nama ? r.nama : '', r.kota_kabupaten || ''].filter(Boolean).join(' · ');
+    return `<strong>${esc(main)}</strong>` + (sub ? `<br><small class="text-muted">${esc(sub)}</small>` : '');
+};
+const webCell = (d, t, r) => {
+    if (t !== 'display') return d || '';
+    if (!d) return '<span class="text-muted">—</span>';
+    const url = r.url || (/^https?:\/\//i.test(d) ? d : 'https://' + d);
+    if (r.has_web === false) return `<span class="url-cell text-muted" title="${esc(d)}"><i class="fa fa-times-circle text-red"></i> ${esc(d)}</span>`;
+    return `<a class="url-cell" href="${esc(url)}" target="_blank" rel="noopener"><i class="fa fa-external-link"></i> ${esc(d)}</a>`;
+};
 
-    const dtK = $('#tblKontak').DataTable({
-        data: [], deferRender: true, autoWidth: false, order: [], pageLength: 10,
-        language: { ...LANG, emptyTable: 'Semua kontak sudah memiliki email.' },
-        columns: [
-            {
-                data: null, orderable: false, className: 'text-center',
-                render: (d, t, r) => t === 'display'
-                    ? `<input type="checkbox" class="chk" data-id="${r.id}" ${checked.has(r.id) ? 'checked' : ''} ${r.has_web ? '' : 'disabled'}>`
-                    : ''
-            },
-            {
-                data: 'nama_perusahaan',
-                render: (d, t, r) => {
-                    const main = d || r.nama || '(tanpa nama)';
-                    if (t !== 'display') return main + ' ' + (r.nama || '');
-                    const sub = [d && r.nama ? r.nama : '', r.kota_kabupaten || ''].filter(Boolean).join(' · ');
-                    return `<strong>${esc(main)}</strong>` + (sub ? `<br><small class="text-muted">${esc(sub)}</small>` : '');
-                }
-            },
-            {
-                data: 'website',
-                render: (d, t, r) => {
-                    if (t !== 'display') return d || '';
-                    if (!d) return '<span class="text-muted"><i>—</i></span>';
-                    if (!r.has_web) return `<span class="url-cell text-muted" title="${esc(d)}"><i class="fa fa-times-circle text-red"></i> ${esc(d)}</span>`;
-                    return `<a class="url-cell" href="${esc(r.url)}" target="_blank" rel="noopener" title="${esc(r.url)}"><i class="fa fa-external-link"></i> ${esc(d)}</a>`;
-                }
-            },
-            {
-                data: 'status', className: 'text-center',
-                render: (d, t, r) => t === 'display'
-                    ? (r.has_web || d !== 'pending' ? badge(d) : '<span class="label label-default">Tanpa web</span>')
-                    : d
-            },
-            { data: 'n', className: 'text-center text-green' },
-            {
-                data: 'note', className: 'note-cell',
-                render: (d, t) => t === 'display' ? `<span title="${esc(d)}">${esc(d || '')}</span>` : (d || '')
-            }
-        ]
-    });
-
-    const dtH = $('#tblHasil').DataTable({
-        data: [], deferRender: true, autoWidth: false, order: [], pageLength: 10,
-        language: { ...LANG, emptyTable: 'Belum ada email yang ditemukan.' },
-        columns: [
-            { data: 'email', render: (d, t) => t === 'display' ? `<i class="fa fa-envelope text-aqua"></i> <b>${esc(d)}</b>` : d },
-            { data: 'label', render: (d, t) => t === 'display' ? esc(d || '') : (d || '') },
-            { data: 'nama_perusahaan', render: (d, t, r) => esc(d || r.nama || '') },
-            { data: 'website', render: (d, t) => t === 'display' ? `<span class="url-cell text-muted">${esc(d || '')}</span>` : (d || '') },
-            {
-                data: 'dipakai', className: 'text-center',
-                render: (d, t) => t === 'display'
-                    ? (Number(d) ? '<span class="label label-success"><i class="fa fa-check"></i> Dipakai</span>' : '<span class="label label-default">Alternatif</span>')
-                    : (Number(d) || 0)
-            },
-            {
-                data: null, orderable: false, className: 'text-center',
-                render: (d, t, r) => t === 'display'
-                    ? (Number(r.dipakai) ? '' : `<button class="btn btn-xs btn-primary btn-pakai" data-id="${r.id}">Pakai</button>`)
-                    : ''
-            }
-        ]
-    });
-
-    $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-        dtK.columns.adjust().draw();
-        dtH.columns.adjust().draw();
-    });
-
-    function updateSel() { $('#selCount').text(checked.size); }
-    function redrawK() { dtK.rows().invalidate('data').draw(false); updateSel(); }
-    function selectBy(fn) {
-        checked = new Set(kontak.filter(r => r.has_web && fn(r)).map(r => r.id));
-        redrawK();
+const dtQ = $('#tblQueue').DataTable({
+    data: [], deferRender: true, autoWidth: false, order: [], pageLength: 10,
+    language: { ...LANG, emptyTable:'Belum ada kontak dipilih.' },
+    columns: [
+        { data:null, orderable:false, className:'text-center', render:() => '' },
+        { data:'nama_perusahaan', render:nameCell },
+        { data:'website', render:webCell },
+        { data:'batch', className:'text-center', render:(d, t, r) => t === 'display'
+            ? (d ? `<span class="label label-primary">${r.approx ? '≈ ' : ''}Batch ${d}</span>` : '<span class="text-muted">—</span>') : (d || 0) },
+        { data:'status', className:'text-center', render:(d, t) => t === 'display' ? badge(d) : d },
+        { data:'note', className:'note-cell', render:(d, t) => t === 'display' ? (d ? `<span title="${esc(d)}">${esc(d)}</span>` : '<span class="text-muted">-</span>') : (d || '') }
+    ],
+    drawCallback: function () {
+        const api = this.api(), start = api.page.info().start;
+        api.column(0, { page:'current' }).nodes().each((c, i) => c.innerHTML = start + i + 1);
     }
-    $('[data-sel]').on('click', function() {
-        const m = this.dataset.sel;
-        if (m === 'none') selectBy(() => false);
-        else if (m === 'all') selectBy(() => true);
-        else if (m === 'pending') selectBy(r => r.status === 'pending');
-        else selectBy(r => r.status === 'error' || r.status === 'empty');
+});
+
+const dtP = $('#tblPick').DataTable({
+    data: [], deferRender: true, autoWidth: false, order: [], pageLength: 10,
+    language: { ...LANG, emptyTable:'Tidak ada kontak tanpa email.' },
+    columns: [
+        { data:null, orderable:false, className:'text-center', render:(d, t, r) => t === 'display'
+            ? `<input type="checkbox" class="chk" data-id="${r.id}" ${STATE.draft.has(r.id) ? 'checked' : ''} ${r.has_web ? '' : 'disabled'}>` : '' },
+        { data:'nama_perusahaan', render:nameCell },
+        { data:'website', render:webCell },
+        { data:'last_check', className:'text-center', render:(d, t, r) => {
+            if (t !== 'display') return d || '';
+            if (!d) return '<span class="text-muted">Belum pernah</span>';
+            const cls = Number(r.fresh) === 1 ? 'success' : 'default';
+            return `<span class="label label-${cls}" title="${esc(d)}">${r.hari_lalu === 0 ? 'Hari ini' : r.hari_lalu + ' hari lalu'}</span>`
+                + `<br><small class="text-muted">${r.n} email · ${r.n_telepon} HP · ${r.n_website} web</small>`;
+        } },
+        { data:'status', className:'text-center', render:(d, t) => t === 'display' ? badge(d) : d }
+    ]
+});
+
+/* ==================================================================
+   DATA KONTAK + MODAL
+   ================================================================== */
+async function load() {
+    const k = await XT.api('/kontak');
+    STATE.kontak = k.map(r => ({ ...r, id:Number(r.id), has_web:Number(r.has_web) === 1 }));
+
+    const ids = new Set(STATE.kontak.map(r => r.id));
+    [...STATE.checked].forEach(i => { if (!ids.has(i)) STATE.checked.delete(i); });
+
+    const web = STATE.kontak.filter(r => r.has_web).length;
+    $('#pickAvail, #mAvail').text(num(STATE.kontak.length));
+    $('#pickWeb, #mWeb').text(num(web));
+    dtP.clear().rows.add(STATE.kontak).draw(false);
+    afterSelection();
+}
+function refreshDraft() {
+    $('#mSel, #mSel2').text(num(STATE.draft.size));
+    dtP.rows().invalidate('data').draw(false);
+}
+
+$('#btnPick').on('click', () => XT.run(async () => {
+    await load();
+    STATE.draft = new Set(STATE.checked);
+    refreshDraft();
+    $('#modalKontak').modal('show');
+}));
+$('#modalKontak').on('shown.bs.modal', () => dtP.columns.adjust().draw(false));
+// Filter "dicek < 30 hari" dijalankan di tabel (data tetap lengkap, jadi pilihan & antrean tidak terpengaruh)
+$.fn.dataTable.ext.search.push((settings, data, idx) => {
+    if (settings.nTable.id !== 'tblPick') return true;
+    const f = $('#fCheck').val() || 'all';
+    if (f === 'all') return true;
+    const r = dtP.row(idx).data();
+    if (!r) return true;
+    return f === 'fresh' ? Number(r.fresh) === 1 : Number(r.fresh) !== 1;
+});
+$('#fCheck').on('change', () => dtP.draw());
+$('#mSelAll').on('click', () => { STATE.draft = new Set(STATE.kontak.filter(r => r.has_web).map(r => r.id)); refreshDraft(); });
+$('#mSelNone').on('click', () => { STATE.draft = new Set(); refreshDraft(); });
+$('#chkAll').on('change', function () {
+    const on = this.checked;
+    dtP.rows({ search:'applied' }).data().toArray().forEach(r => { if (r.has_web) on ? STATE.draft.add(r.id) : STATE.draft.delete(r.id); });
+    refreshDraft();
+});
+$('#tblPick tbody').on('change', '.chk', function () {
+    const id = Number(this.dataset.id);
+    this.checked ? STATE.draft.add(id) : STATE.draft.delete(id);
+    $('#mSel, #mSel2').text(num(STATE.draft.size));
+});
+$('#btnPickOk').on('click', () => {
+    STATE.checked = new Set(STATE.draft);
+    $('#modalKontak').modal('hide');
+    afterSelection();
+    if (STATE.checked.size) Toast.fire({ icon:'success', title: num(STATE.checked.size) + ' kontak dipilih' });
+});
+
+/* ==================================================================
+   BATCH & PERKIRAAN (memakai nilai rata-rata untuk mode acak)
+   ================================================================== */
+function recalcBatch() {
+    const S = allSpecs();
+    const size  = Math.max(1, Math.round(avg(S.batch)));
+    const limit = Math.max(1, Math.round(avg(S.total)));
+    const approx = S.batch.mode === 'acak';
+
+    STATE.batchOf = new Map();
+    let n = 0;
+    STATE.kontak.forEach(r => {
+        if (STATE.checked.has(r.id) && n < limit) { STATE.batchOf.set(r.id, Math.floor(n / size) + 1); n++; }
     });
-    $('#chkAll').on('change', function() {
-        const on = this.checked;
-        dtK.rows({ search: 'applied' }).data().toArray().forEach(r => {
-            if (r.has_web) on ? checked.add(r.id) : checked.delete(r.id);
-        });
-        redrawK();
-    });
-    $('#tblKontak tbody').on('change', '.chk', function() {
-        const id = Number(this.dataset.id);
-        this.checked ? checked.add(id) : checked.delete(id);
-        updateSel();
-    });
+    STATE.taken = n;
+    STATE.totalBatches = Math.ceil(n / size);
+    STATE.approx = approx || S.total.mode === 'acak';
 
-    $('#tblHasil tbody').on('click', '.btn-pakai', function() {
-        const id = Number(this.dataset.id), row = hasil.find(r => r.id === id);
-        XT.run(async () => {
-            const ok = await Swal.fire({
-                title: 'Jadikan email kontak?',
-                text: `${row.email} akan disimpan sebagai email ${row.nama_perusahaan || row.nama || 'kontak'}.`,
-                icon: 'question', showCancelButton: true,
-                confirmButtonText: 'Ya, Pakai', cancelButtonText: 'Batal',
-                confirmButtonColor: '#00a65a'
-            });
-            if (!ok.isConfirmed) return;
-            await XT.api('/pakai', { id });
-            Toast.fire({ icon: 'success', title: 'Email kontak diperbarui' });
-            await load();
-        });
-    });
+    const outside = Math.max(0, STATE.checked.size - n);
+    let t;
+    if (!STATE.checked.size) t = 'Belum ada kontak dipilih. Klik “Pilih Data Kontak”.';
+    else {
+        t = `${STATE.approx ? '≈ ' : ''}${num(n)} kontak akan diproses dalam ${STATE.approx ? '≈ ' : ''}${num(STATE.totalBatches)} batch.`;
+        if (outside > 0) t += ` ${num(outside)} kontak berada di luar batas Total Pengambilan.`;
+        if (STATE.approx) t += ' (Mode acak: angka pasti ditentukan saat proses dimulai.)';
+    }
+    $('#batchSummary').text(t);
+}
 
-    async function load() {
-        const [k, h] = await Promise.all([XT.api('/kontak'), XT.api('/hasil')]);
-        kontak = k.map(r => ({ ...r, id: Number(r.id), n: Number(r.n), has_web: Number(r.has_web) === 1 }));
-        hasil  = h.map(r => ({ ...r, id: Number(r.id), kontak_id: Number(r.kontak_id), dipakai: Number(r.dipakai) === 1 }));
+function fmtDur(sec) {
+    sec = Math.round(sec);
+    if (sec < 60) return sec + ' dtk';
+    const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+    return (h ? h + ' j ' : '') + m + ' mnt';
+}
+function calc() {
+    const S = allSpecs();
+    const n = STATE.taken;
+    const size = Math.max(1, Math.round(avg(S.batch)));
+    const perAcc = EST_SEC_PER_CONTACT + avg(S.delay);
+    const interval = avg(S.interval) * 60;
+    const ph = perHourAvg(S.perhour);
+    const hours = avg(S.hours);
+    const batches = Math.ceil(n / size);
 
-        const ids = new Set(kontak.map(r => r.id));
-        [...checked].forEach(i => { if (!ids.has(i)) checked.delete(i); });
+    let total = n * perAcc + Math.max(0, batches - 1) * interval;
+    if (ph > 0) total = Math.max(total, (n / ph) * 3600);
 
-        dtK.clear().rows.add(kontak).draw(false);
-        dtH.clear().rows.add(hasil).draw(false);
-        updateSel();
+    const cycle = size * perAcc + interval;
+    let cap = Math.floor(hours * 3600 / cycle) * size;
+    cap += Math.min(size, Math.floor(((hours * 3600) % cycle) / perAcc));
+    if (ph > 0) cap = Math.min(cap, Math.floor(ph * hours));
+    return { n, batches, total, cap, hours };
+}
+function estimate() {
+    const e = calc(), p = STATE.approx ? '≈ ' : '';
+    $('#estN').text(p + num(e.n));
+    $('#estBatch').text(p + num(e.batches));
+    $('#estDur').text(e.n ? p + fmtDur(e.total) : '-');
+    $('#estCap').text('±' + num(e.cap) + ' kontak');
 
-        $('#stTotal').text(num(kontak.length));
-        $('#stWeb').text(num(kontak.filter(r => r.has_web).length));
-        $('#stFound').text(num(hasil.length));
-        $('#stFail').text(num(kontak.filter(r => r.status === 'error' || r.status === 'empty').length));
-        $('#cntKontak').text(kontak.length);
-        $('#cntHasil').text(hasil.length);
+    const over = e.n > 0 && e.total > e.hours * 3600;
+    $('#estNote').attr('class', 'callout ' + (over ? 'callout-warning' : 'callout-info')).find('p').html(over
+        ? `Perkiraan durasi <b>${fmtDur(e.total)}</b> melebihi batas <b>${Math.round(e.hours * 10) / 10} jam</b>. Hanya sekitar <b>${num(e.cap)}</b> kontak yang sempat diproses. Naikkan durasi, perbesar batch, atau perpendek jeda.`
+        : 'Proses berjalan terus sampai semua kontak selesai, token habis, kuota Gemini habis, atau batas durasi tercapai. Angka di atas hanya perkiraan.');
+}
+function settingsChanged() { recalcBatch(); estimate(); renderQueue(); }
+function afterSelection() {
+    $('#selCount, #pickSel').text(num(STATE.checked.size));
+    settingsChanged();
+}
+
+function renderQueue() {
+    const approx = !!STATE.approx;
+    dtQ.clear().rows.add(STATE.kontak.filter(r => STATE.batchOf.has(r.id))
+        .map(r => ({ ...r, batch: STATE.batchOf.get(r.id), approx, status:'pending', note:'' }))).draw(false);
+}
+
+/* ==================================================================
+   MULAI / HENTIKAN
+   ================================================================== */
+async function doStart() {
+    if (!STATE.apiValidated) return Swal.fire('Hubungkan Dulu', 'Klik “Hubungkan & Lanjut” pada langkah 1.', 'warning');
+    if (!STATE.checked.size) return Swal.fire('Pilih Kontak', 'Klik “Pilih Data Kontak” lalu centang minimal satu kontak.', 'warning');
+
+    const e = calc();
+    if (e.total > e.hours * 3600) {
+        const ok = await Swal.fire({ icon:'question', title:'Mungkin tidak semua selesai', text:`Perkiraan ${fmtDur(e.total)} melebihi batas durasi. Lanjutkan?`, showCancelButton:true, confirmButtonText:'Lanjutkan', cancelButtonText:'Batal' });
+        if (!ok.isConfirmed) return;
     }
 
-    async function doStart() {
-        if (!checked.size) return Swal.fire('Pilih Kontak', 'Centang minimal satu kontak yang punya website.', 'warning');
-        
-        const c = cfg(), rate = parseFloat(c.rate), hours = parseFloat(c.hours);
-        if (!(rate > 0)) return Swal.fire('Periksa Pengaturan', 'Kontak per menit harus > 0.', 'warning');
-        if (!(hours > 0 && hours <= 24)) return Swal.fire('Periksa Pengaturan', 'Durasi 0.01 - 24 jam.', 'warning');
+    // kirim SEMUA kontak terpilih (urut sesuai tabel); server menentukan total & batch final
+    const ids = STATE.kontak.filter(r => STATE.checked.has(r.id)).map(r => r.id);
+    const S = allSpecs();
 
-        // Kita hardcode token limit 1jt untuk backend, karena user tidak input lagi
-        const r = await XT.api('/start', {
-            ids: [...checked], key: c.key, model: c.model, rate, hours,
-            token_limit: 1000000, auto_fill: c.auto_fill === '1' ? 1 : 0
-        });
-        Toast.fire({ icon: 'success', title: r.queued + ' kontak masuk antrean' });
-        if (r.skipped) Toast.fire({ icon: 'warning', title: `${r.skipped} kontak dilewati` });
-        if (!r.ai) Toast.fire({ icon: 'info', title: 'API key kosong: hanya regex.' });
-        
-        await poll();
-    }
-    $('#btnStart').on('click', () => XT.run(doStart));
-    $('#btnStop').on('click', () => XT.run(async () => {
-        await XT.api('/stop', {});
-        await poll();
-    }));
+    Swal.fire({ title:'Menyiapkan antrean...', allowOutsideClick:false, didOpen:() => Swal.showLoading() });
+    const r = await XT.api('/start', {
+        ids,
+        key: ($('#key').val() || '').trim(),
+        model: ($('#model').val() || '').trim(),
+        token_limit: Math.max(1000, Math.floor(parseFloat($('#token_limit').val()) || 1000000)),
+        token_mode: getTokenMode(),
+        daily_limit: Math.max(0, Math.floor(parseFloat($('#daily_limit').val()) || 0)),
+        auto_fill: $('#auto_fill').is(':checked') ? 1 : 0,
+        settings: { hours:S.hours, total:S.total, batch:S.batch, perhour:S.perhour, delay:S.delay, interval:S.interval }
+    });
+    Swal.close();
+    Swal.fire({ icon:'success', title:'Proses dimulai', text:`${r.queued} kontak masuk antrean (${r.batches} batch). Membuka halaman detail...`, timer:1500, showConfirmButton:false });
+    // progres, token per batch, dan hasil email ada di halaman detail
+    window.location.href = DETAIL_BASE + '/' + r.job_id;
+}
+$('#btnStart').on('click', () => XT.run(doStart));
+$('#btnStop').on('click', () => XT.run(async () => { await XT.api('/stop', {}); await poll(); }));
 
-    const JOB = {
-        queued:   ['Menunggu worker', 'warning'],
-        running:  ['Berjalan', 'primary'],
-        finished: ['Selesai', 'success'],
-        stopped:  ['Dihentikan', 'default'],
-        expired:  ['Waktu habis', 'warning'],
-        quota:    ['Berhenti: kuota / limit', 'danger']
-    };
-    let polling = false, lastSig = '';
+/* ==================================================================
+   POLLING STATUS (ringan: hanya tombol, banner & angka ringkas)
+   ================================================================== */
+let polling = false;
 
-    async function poll() {
-        if (polling) return;
-        polling = true;
-        try {
-            const s = await XT.api('/status'), j = s.job;
-            XT.setWorker(s.worker);
+function updDaily(used) {
+    if (used !== undefined) STATE.dailyUsed = Number(used || 0);
+    const used2 = Number(STATE.dailyUsed || 0), lim = Math.max(0, Math.floor(parseFloat($('#daily_limit').val()) || 0));
+    $('#dailyUsed').text(num(used2));
+    $('#dailySisa').text(lim > 0 ? num(Math.max(0, lim - used2)) : 'tanpa batas');
+}
+$('#daily_limit').on('input change', () => updDaily());
 
-            const busy = !!j && ['queued', 'running'].includes(j.status);
-            $('#btnStart').prop('disabled', busy);
-            $('#btnStop').prop('disabled', !busy);
+async function poll() {
+    if (polling) return;
+    polling = true;
+    try {
+        const s = await XT.api('/status');
+        const j = s.job || null;
+        const busy = !!j && ['queued', 'running'].includes(j.status);
+        updDaily(s.token_hari_ini);
 
-            if (!j) {
-                $('#stMsg').text('Siap. Pilih kontak lalu klik Mulai Proses.');
-                $('#stBadge').attr('class', 'label label-default').text('Siap');
-                
-                // Jika tidak ada job, set token kembali ke 1jt
-                $('#token_sisa').val('1.000.000');
-            } else {
-                const m = JOB[j.status] || [j.status, 'default'];
-                $('#stBadge').attr('class', 'label label-' + m[1]).text(m[0]);
-                $('#stMsg').text(j.message || '');
-                
-                const total = Number(j.total || 0), done = Number(j.processed_count || 0);
-                const pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
-                $('#stBar').css('width', pct + '%');
-                $('#stPct').text(`${num(done)} dari ${num(total)} kontak (${pct}%)`);
-                $('#stDeadline').text(j.status === 'running' && j.deadline_at ? 'Batas: ' + j.deadline_at : '');
-                
-                $('#stProc').text(num(done));
-                $('#stNew').text(num(j.found_count));
-                $('#stTok').text(num(j.tokens_used));
-                
-                // Tampilkan sisa token secara realtime (Read-Only)
-                const tokenSisa = Number(j.token_limit) - Number(j.tokens_used);
-                $('#token_sisa').val(num(tokenSisa));
+        $('#btnStart').prop('disabled', busy);
+        $('#btnStop').prop('disabled', !busy);
+        $('#workerWarn').toggle(!s.worker && busy);
+        if (busy && !STATE.apiValidated) setApiValidated(true);
 
-                const tp = Number(j.token_limit) ? Math.min(100, Number(j.tokens_used) / Number(j.token_limit) * 100) : 0;
-                $('#stTokBar').css('width', tp + '%');
-                $('#stCurrent').text(j.status === 'running' && j.current_url ? 'Sedang memproses: ' + j.current_url : '');
-            }
+        if (j) {
+            const url = DETAIL_BASE + '/' + j.id;
+            $('#lnkLast').attr('href', url).show();
+            $('#lnkActive').attr('href', url);
+            $('#activeJob').toggle(busy);
+            $('#activeMsg').text(`${j.message || 'Berjalan'} — ${num(j.processed_count)}/${num(j.total)} kontak, batch ${num(j.current_batch)}/${num(j.total_batches)}`);
+            $('#stBadge').attr('class', 'label label-' + (busy ? 'primary' : 'default')).text(busy ? 'Berjalan' : 'Siap');
 
-            const sig = j ? [j.id, j.status, j.processed_count, j.found_count].join(':') : 'none';
-            if (sig !== lastSig) { lastSig = sig; await load(); }
-        } catch (e) {
-            $('#stMsg').text('Gagal memuat: ' + e.message);
-        } finally {
-            polling = false;
+            // daftar kontak tanpa email berubah saat proses jalan (auto-fill)
+            const sig = [j.id, j.status, j.processed_count, j.found_count].join(':');
+            if (sig !== poll.sig) { poll.sig = sig; if (STATE.apiValidated) await load(); }
+        } else {
+            $('#activeJob, #lnkLast').hide();
+            $('#stBadge').attr('class', 'label label-default').text('Siap');
         }
+    } catch (e) {
+        /* abaikan, coba lagi pada polling berikutnya */
+    } finally {
+        polling = false;
     }
-    
+}
+
+$(function () {
+    setApiValidated(false);
+    afterSelection();
     poll();
     setInterval(poll, 3000);
+});
 </script>
 <?= $this->endSection() ?>

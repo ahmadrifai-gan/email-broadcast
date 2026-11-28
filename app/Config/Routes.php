@@ -12,16 +12,22 @@ $routes->group('kategori-template-email', function ($routes) {
     $routes->post('delete/(:num)', 'KategoriController::delete/$1');
 });
 
-// Kontak
+//Kontak
 $routes->group('kontak', static function ($routes) {
-    $routes->get('/', 'KontakController::index');
-    $routes->post('simpan', 'KontakController::simpan');
+    // Kontak (CRUD + import Excel)
+    $routes->get('/',                'KontakController::index');
+    $routes->post('simpan',          'KontakController::simpan');
     $routes->post('perbarui/(:num)', 'KontakController::perbarui/$1');
-    $routes->post('hapus/(:num)', 'KontakController::hapus/$1');
+    $routes->post('hapus/(:num)',    'KontakController::hapus/$1');
+    $routes->post('import',          'KontakController::import');
+    $routes->get('template',         'KontakController::template');
 
-    // Import Excel
-    $routes->get('template', 'KontakController::template');
-    $routes->post('import', 'KontakController::import');
+    // Perusahaan (detail, hapus massal, import ke supplier)
+    $routes->get('detail/(:num)',         'KontakController::detail/$1');
+    $routes->post('bulk-delete',          'KontakController::bulkDelete');
+    $routes->get('import-preview',        'KontakController::importPreview');
+    $routes->post('import-single/(:num)', 'KontakController::importSingle/$1');
+    $routes->post('import-all',           'KontakController::importAll');
 });
 
 $routes->group('template-email', ['namespace' => 'App\Controllers'], function ($routes) {
@@ -93,23 +99,59 @@ $routes->get('laporan/per-kampanye/export/(:segment)', 'PerKampanyeController::e
 // Extractor Routes
 // --- ROUTE UNTUK EXTRACTOR ---
 
-// Halaman utama
-$routes->get('extractor', 'Extractor::index');
 
-// Alias dengan underscore (sesuai nama file)
-$routes->get('extractor/cari_email', 'Extractor::index');
-
-// Alias dengan dash (sesuai yang Anda ketik di browser)
-$routes->get('extractor/cari-email', 'Extractor::index');
-
-// API Endpoint
-$routes->group('extractor/api', ['namespace' => 'App\Controllers'], function ($routes) {
-    $routes->get('kontak', 'Extractor::kontak');
-    $routes->get('hasil', 'Extractor::hasil');
-    $routes->post('start', 'Extractor::start');
-    $routes->post('stop', 'Extractor::stop');
-    $routes->get('status', 'Extractor::status');
-    $routes->post('models', 'Extractor::models');
-    $routes->post('test', 'Extractor::test');
-    $routes->post('pakai', 'Extractor::pakai');
+$routes->group('extractor', ['namespace' => 'App\Controllers'], static function ($routes) {
+    $routes->get('/',     'Extractor::index');   // halaman Data & Hasil Email (ada tombol "Cari Email")
+    $routes->get('cari',  'Extractor::cari');    // halaman proses Cari Email
+    $routes->get('detail/(:num)', 'Extractor::detail/$1');   // halaman DETAIL proses (progres, token per batch, hasil)
+ 
+    $routes->group('api', static function ($routes) {
+        $routes->get('ringkasan', 'Extractor::ringkasan');
+        $routes->get('kontak',    'Extractor::kontak');          // ?check=all|fresh|stale
+        $routes->get('kontak/(:num)', 'Extractor::kontakDetail/$1'); // email + no HP + website satu kontak
+        $routes->get('hasil',     'Extractor::hasil');
+        $routes->get('riwayat',   'Extractor::riwayat');
+        $routes->get('items',     'Extractor::items');
+        $routes->get('jobs',          'Extractor::daftarJob');      // riwayat proses
+        $routes->get('detail/(:num)', 'Extractor::detailData/$1');  // data halaman detail (?items=1 untuk daftar kontak)
+        $routes->get('status',    'Extractor::status');
+        $routes->post('start',    'Extractor::start');
+        $routes->post('stop',     'Extractor::stop');
+        $routes->post('test',     'Extractor::test');
+        $routes->post('models',   'Extractor::models');
+        $routes->post('pakai',    'Extractor::pakai');
+    });
 });
+
+// --------------------------------------------------------------------
+// Data Kontak: CRUD Email, No HP, dan Website (masing-masing MVC sendiri)
+// Bisa dibuka lewat  /data-kontak/email  maupun  /data_kontak/email
+// --------------------------------------------------------------------
+foreach (['data-kontak', 'data_kontak'] as $prefix) {
+    $routes->group($prefix, ['namespace' => 'App\Controllers'], static function ($routes) {
+
+        $routes->group('email', static function ($routes) {
+            $routes->get('/',                'DataEmail::index');
+            $routes->get('data',             'DataEmail::data');
+            $routes->post('simpan',          'DataEmail::simpan');
+            $routes->post('perbarui/(:num)', 'DataEmail::perbarui/$1');
+            $routes->post('hapus/(:num)',    'DataEmail::hapus/$1');
+        });
+
+        $routes->group('telepon', static function ($routes) {
+            $routes->get('/',                'DataTelepon::index');
+            $routes->get('data',             'DataTelepon::data');
+            $routes->post('simpan',          'DataTelepon::simpan');
+            $routes->post('perbarui/(:num)', 'DataTelepon::perbarui/$1');
+            $routes->post('hapus/(:num)',    'DataTelepon::hapus/$1');
+        });
+
+        $routes->group('website', static function ($routes) {
+            $routes->get('/',                'DataWebsite::index');
+            $routes->get('data',             'DataWebsite::data');
+            $routes->post('simpan',          'DataWebsite::simpan');
+            $routes->post('perbarui/(:num)', 'DataWebsite::perbarui/$1');
+            $routes->post('hapus/(:num)',    'DataWebsite::hapus/$1');
+        });
+    });
+}

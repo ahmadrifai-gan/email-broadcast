@@ -9,10 +9,17 @@ class EmailExtractor
 {
     public const DEFAULT_MODEL = 'gemini-3.5-flash-lite';
 
-    private const API_BASE    = 'https://generativelanguage.googleapis.com/v1beta/';
-    private const MAX_PAGES   = 5;
-    private const MAX_CONTEXT = 16000;
-    private const MAX_EMAILS  = 30;
+    private const API_BASE     = 'https://generativelanguage.googleapis.com/v1beta/';
+    private const MAX_PAGES    = 5;
+    private const MAX_CONTEXT  = 16000;
+    private const MAX_EMAILS   = 30;
+    private const COMMON_PATHS = ['/contact', '/contact-us', '/kontak', '/kontak-kami', '/hubungi-kami', '/hubungi'];
+    /** Media sosial / marketplace / pemendek link: bukan situs resmi, isinya butuh login & tidak memuat email. */
+    private const SKIP_HOSTS = [
+        'facebook.com', 'fb.com', 'fb.me', 'instagram.com', 'tiktok.com', 'twitter.com', 'x.com', 'youtube.com', 'youtu.be',
+        'linkedin.com', 'linktr.ee', 'wa.me', 'whatsapp.com', 't.me', 'tokopedia.com', 'shopee.co.id', 'bukalapak.com',
+        'lazada.co.id', 'blibli.com', 'google.com', 'goo.gl', 'bit.ly',
+    ];
 
     private const JUNK_EXT = [
         'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'avif', 'ico', 'css', 'js', 'map', 'json',
@@ -33,7 +40,8 @@ class EmailExtractor
 
     private string $apiKey;
     private string $model;
-    private CURLRequest $http;
+    private CURLRequest $http;   // khusus mengunduh website
+    private CURLRequest $api;    // khusus Gemini (API key TIDAK PERNAH ikut terkirim ke website)
     private ?CURLRequest $loose = null;
 
     public function __construct(string $apiKey, string $model = '')
@@ -41,7 +49,12 @@ class EmailExtractor
         $this->apiKey = trim($apiKey);
         $this->model  = trim($model) !== '' ? trim($model) : self::DEFAULT_MODEL;
         $this->http   = $this->client($this->verifyOption());
+        $this->api    = $this->client($this->verifyOption(), true);
     }
+
+    /* ==================================================================
+       STATIC HELPERS
+       ================================================================== */
 
     public static function normalizeWebsite(?string $raw): ?string
     {
@@ -86,34 +99,107 @@ class EmailExtractor
         return array_column($scored, 0);
     }
 
+    /* ==================================================================
+       ALUR UTAMA: collect() (tanpa AI) lalu analyze() (AI + regex)
+       Dipisah supaya worker bisa mencoba beberapa model Gemini
+       tanpa mengunduh ulang website.
+       ================================================================== */
+
     public function extract(string $url): array
     {
+        return $this->analyze($this->collect($url));
+    }
+
+    /** Unduh homepage + halaman kontak/tentang, kumpulkan email dan konteks teks. */
+    public function collect(string $url): array
+    {
+        $this->assertOfficialSite($url);
+        $origin       = $url;
         [$url, $html] = $this->open($url);
-        $host  = $this->bareHost($url);
-        $pages = $this->findPages($url, $html, $host);
+        $host         = $this->bareHost($url);
+
+        $pages = [$url => $html];
+        foreach ($this->findPages($url, $html, $host) as $u) {
+            if (isset($pages[$u])) continue;
+            try {
+                $pages[$u] = $this->get($u);
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        // Tidak ada link kontak di homepage -> tebak path umum (maks 3 percobaan)
+        $hasContact = false;
+        foreach (array_keys($pages) as $u) {
+            if (preg_match('/contact|kontak|hubungi/i', (string) $u)) { $hasContact = true; break; }
+        }
+        if (! $hasContact) {
+            $p    = parse_url($url);
+            $root = ($p['scheme'] ?? 'https') . '://' . ($p['host'] ?? '') . (isset($p['port']) ? ':' . $p['port'] : '');
+            $try  = 0;
+            foreach (self::COMMON_PATHS as $path) {
+                if ($try++ >= 3) break;
+                try {
+                    $pages[$root . $path] = $this->get($root . $path);
+                    break;
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+        }
 
         $chunks = [];
         $strong = [];
         $weak   = [];
-        foreach ($pages as $i => $page) {
-            try {
-                $h = $i === 0 ? $html : $this->get($page);
-            } catch (\Throwable $e) {
-                continue;
-            }
-            $found    = $this->scanEmails($h);
-            $strong   = array_merge($strong, $found['strong']);
-            $weak     = array_merge($weak, $found['weak']);
-            // Kirim info apakah ini halaman kontak atau bukan
-            $isContactPage = (bool) preg_match('/contact|kontak|hubungi/i', $page);
-            $chunks[] = $this->toChunk($page, $h, $found['strong'], $isContactPage);
+        $phones = [];
+        foreach ($pages as $page => $h) {
+            $found  = $this->scanEmails($h);
+            $strong = array_merge($strong, $found['strong']);
+            $weak   = array_merge($weak, $found['weak']);
+            $phones = array_merge($phones, $this->scanPhones($h, (string) $page));
+            $isContactPage = (bool) preg_match('/contact|kontak|hubungi/i', (string) $page);
+            $chunks[] = $this->toChunk((string) $page, $h, $found['strong'], $isContactPage);
         }
-        $context = mb_substr(implode("\n\n", $chunks), 0, self::MAX_CONTEXT);
+
+        return [
+            'url'     => $url,
+            'context' => mb_substr(implode("\n\n", $chunks), 0, self::MAX_CONTEXT),
+            'strong'  => array_values(array_unique($strong)),
+            'weak'    => array_values(array_unique($weak)),
+            'phones'  => $this->uniquePhones($phones),
+            'websites' => array_values(array_unique([$origin, $url])),
+        ];
+    }
+
+    /** Analisis hasil collect(): tanya Gemini, validasi jawabannya, gabung dengan regex. */
+    public function analyze(array $b, bool $useAi = true, string $skipReason = ''): array
+    {
+        $url     = (string) $b['url'];
+        $context = (string) $b['context'];
+        $strong  = $b['strong'];
+        $weak    = $b['weak'];
+        $host    = $this->bareHost($url);
+
+        // Himpunan email yang BENAR-BENAR ada di halaman (dipakai menyaring halusinasi AI)
+        $known = [];
+        foreach (array_merge($strong, $weak) as $e) {
+            $c = $this->cleanEmail($e);
+            if ($c !== null) $known[$c] = true;
+        }
 
         $tokens = 0;
         $note   = '';
         $ai     = null;
-        if ($this->apiKey !== '') {
+
+        $adaPola = $known !== [] || (bool) preg_match('/@|\[\s*at\s*\]|\(\s*at\s*\)|\bat\b.{1,40}?\bdot\b/iu', $context);
+
+        if (! $useAi) {
+            $note = $skipReason !== '' ? $skipReason : 'AI dilewati: hanya regex';
+        } elseif ($this->apiKey === '') {
+            $note = 'tanpa API key: hanya regex';
+        } elseif (! $adaPola) {
+            $note = 'tidak ada pola email di halaman (AI dilewati, hemat token)';
+        } else {
             try {
                 [$ai, $tokens] = $this->askGemini($context);
                 if ($ai === null) {
@@ -124,49 +210,84 @@ class EmailExtractor
             } catch (\Throwable $e) {
                 $note = 'AI gagal (' . $this->short($e->getMessage()) . '), memakai regex';
             }
-        } else {
-            $note = 'tanpa API key: hanya regex';
         }
 
-        $list = [];
-        if (is_array($ai) && count($ai) > 0) {
+        // Kandidat dari AI, hanya diterima kalau terbukti ada di halaman
+        $ctxLower   = mb_strtolower($context);
+        $aiCand     = [];
+        $dropped    = 0;
+        if (is_array($ai)) {
             foreach ($ai as $d) {
-                if (is_array($d)) {
-                    $list[] = [(string) ($d['email'] ?? ''), (string) ($d['label'] ?? '')];
-                } elseif (is_string($d)) {
-                    $list[] = [$d, ''];
+                $email = is_array($d) ? (string) ($d['email'] ?? '') : (is_string($d) ? $d : '');
+                $label = is_array($d) ? (string) ($d['label'] ?? '') : '';
+                $clean = $this->cleanEmail($email);
+                if ($clean === null) continue;
+
+                [$local, $dom] = explode('@', $clean, 2);
+                $domSama = $host !== '' && ($dom === $host || str_ends_with($dom, '.' . $host) || str_ends_with($host, '.' . $dom));
+                if (isset($known[$clean]) || ($domSama && str_contains($ctxLower, $local))) {
+                    $aiCand[] = [$clean, $label];
+                } else {
+                    $dropped++;
                 }
             }
-            // Tambahkan email dari mailto: (karena ini 100% valid)
-            foreach ($strong as $e) {
-                $list[] = [$e, 'Dari link mailto/Cloudflare'];
-            }
-        } else {
-            // Fallback: Jika AI gagal atau tidak menemukan, gunakan Regex secara menyeluruh
-            foreach (array_unique(array_merge($strong, $weak)) as $e) {
-                $list[] = [$e, 'Ditemukan via Regex'];
+            if ($dropped > 0) {
+                $note = trim($note . " {$dropped} email dari AI dibuang (tidak ditemukan di halaman)");
             }
         }
 
         $emails = [];
-        foreach ($list as [$email, $label]) {
-            $email = $this->cleanEmail($email);
-            if ($email === null || isset($emails[$email])) {
-                continue;
+        $push = function (array $pairs, string $defaultLabel = '') use (&$emails): void {
+            foreach ($pairs as $pair) {
+                [$email, $label] = is_array($pair) ? $pair + [1 => ''] : [$pair, ''];
+                $clean = $this->cleanEmail((string) $email);
+                if ($clean === null || isset($emails[$clean])) continue;
+                $label = trim((string) $label) !== '' ? (string) $label : $defaultLabel;
+                $emails[$clean] = [$clean, mb_substr(trim($label), 0, 255)];
+                if (count($emails) >= self::MAX_EMAILS) return;
             }
-            $emails[$email] = [$email, mb_substr(trim($label), 0, 255)];
-            if (count($emails) >= self::MAX_EMAILS) {
-                break;
-            }
+        };
+
+        $push($aiCand);
+        $push(array_map(static fn ($e) => [$e, ''], array_unique($strong)), 'Dari link mailto/Cloudflare');
+        if (count($emails) === 0) {
+            $push(array_map(static fn ($e) => [$e, ''], array_unique($weak)), 'Ditemukan via Regex');
+            if (count($emails) > 0 && $note === '') $note = 'AI tidak menemukan email, fallback ke regex';
+        } elseif (! is_array($ai)) {
+            // AI tidak dipakai / gagal: email dari teks biasa (mis. "info [at] domain [dot] com") milik domain situs tetap diambil
+            $sameSite = static function (string $e) use ($host): bool {
+                $d = (string) substr((string) strrchr($e, '@'), 1);
+                return $d !== '' && $host !== '' && ($d === $host || str_ends_with($d, '.' . $host) || str_ends_with($host, '.' . $d));
+            };
+            $push(array_map(static fn ($e) => [$e, ''], array_filter(array_unique($weak), $sameSite)), 'Ditemukan via Regex');
         }
 
-        return ['emails' => array_values($emails), 'tokens' => $tokens, 'note' => $note, 'url' => $url];
+        if (count($emails) > 0) {
+            $ordered = [];
+            foreach (self::rank(array_values($emails), $url) as $rEmail) {
+                if (isset($emails[$rEmail])) $ordered[$rEmail] = $emails[$rEmail];
+            }
+            if (count($ordered) === count($emails)) $emails = $ordered;
+        }
+
+        return [
+            'emails' => array_values($emails),
+            'tokens' => $tokens,
+            'note'   => $note,
+            'url'    => $url,
+            'phones'   => $b['phones'] ?? [],
+            'websites' => $b['websites'] ?? [],
+        ];
     }
+
+    /* ==================================================================
+       GEMINI
+       ================================================================== */
 
     public function listModels(): array
     {
         try {
-            $res = $this->http->get(self::API_BASE . 'models?pageSize=200', [
+            $res = $this->api->get(self::API_BASE . 'models?pageSize=200', [
                 'headers' => ['x-goog-api-key' => $this->apiKey],
             ]);
         } catch (\Throwable $e) {
@@ -197,6 +318,170 @@ class EmailExtractor
         return ['reply' => trim(mb_substr($txt, 0, 40)), 'tokens' => $tokens];
     }
 
+    private function askGemini(string $context): array
+    {
+        $prompt = "Kamu adalah ekstraktor email. Dari teks website berikut, ambil HANYA alamat email "
+            . "yang benar-benar tertulis (termasuk yang disamarkan seperti 'info [at] domain [dot] com').\n"
+            . "PENTING:\n"
+            . "- Jika ada [AREA HALAMAN KONTAK], prioritaskan email dari situ.\n"
+            . "- Jika ada [AREA FOOTER], periksa juga email di footer.\n"
+            . "- JANGAN mengarang email. Jika tidak yakin, jangan sertakan.\n"
+            . "- Abaikan placeholder (example.com, yourname@, test@), nama file gambar, "
+            . "dan email pihak ketiga (sentry, wixpress, dll).\n"
+            . "- Jika tidak ada email, balas [].\n"
+            . "Balas HANYA JSON array tanpa penjelasan:\n"
+            . "[{\"email\":\"...\",\"label\":\"departemen jika ada\"}]\n\n"
+            . "=== TEKS WEBSITE ===\n" . $context;
+
+        [$txt, $tokens] = $this->call($prompt, true, 4);
+        return [$this->parseJson($txt), $tokens];
+    }
+
+    private function parseJson(string $txt): ?array
+    {
+        $txt = trim((string) preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($txt)));
+        $d   = json_decode($txt, true);
+        if (! is_array($d) && preg_match('/\[.*\]/s', $txt, $m)) $d = json_decode($m[0], true);
+        if (is_array($d) && isset($d['emails']) && is_array($d['emails'])) $d = $d['emails'];
+        if (is_array($d) && isset($d['email'])) $d = [$d];
+        return is_array($d) ? $d : null;
+    }
+
+    private function call(string $prompt, bool $json, int $maxTry = 3): array
+    {
+        $url = self::API_BASE . 'models/' . rawurlencode($this->model) . ':generateContent';
+        // maxOutputTokens dilonggarkan: model "thinking" ikut menghitung token berpikirnya di sini
+        $gen = ['temperature' => 0, 'maxOutputTokens' => 8192];
+        if ($json) $gen['responseMimeType'] = 'application/json';
+
+        $body = [
+            'contents'         => [['role' => 'user', 'parts' => [['text' => mb_scrub($prompt, 'UTF-8')]]]],
+            'generationConfig' => $gen,
+        ];
+        // JSON disusun manual: byte UTF-8 yang rusak diganti, bukan membuat json_encode gagal diam-diam
+        $payload = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($payload === false) {
+            throw new \RuntimeException('Gagal menyusun permintaan ke Gemini');
+        }
+
+        $last       = null;
+        $limited    = false;
+        $overloaded = false;
+        for ($try = 1; $try <= $maxTry; $try++) {
+            try {
+                $res = $this->api->post($url, [
+                    'body'    => $payload,
+                    'timeout' => 90,
+                    'headers' => ['Content-Type' => 'application/json', 'x-goog-api-key' => $this->apiKey],
+                ]);
+            } catch (\Throwable $e) {
+                $last = $this->connectionError($e);
+                if ($last instanceof QuotaException) throw $last;
+                $overloaded = true;
+                if ($try < $maxTry) $this->backoff($try);
+                continue;
+            }
+
+            $code = $res->getStatusCode();
+            $raw  = (string) $res->getBody();
+
+            if ($code === 200) return $this->readResponse($raw);
+
+            if ($code === 429) {
+                $limited = true;
+                $flat    = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $raw));
+                if (str_contains($flat, 'perday')) {
+                    throw new QuotaException("Kuota harian model '{$this->model}' habis.", QuotaException::DAILY);
+                }
+                if (preg_match('/limit:\s*0\b/i', $raw)) {
+                    throw new QuotaException("Model '{$this->model}' tidak tersedia untuk API key ini (kuota 0).", QuotaException::MODEL_MISSING);
+                }
+                $wait = preg_match('/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/', $raw, $m)
+                    ? (int) ceil((float) $m[1]) + 2
+                    : 20 * $try;
+                if ($try < $maxTry) sleep(min(70, $wait));
+                continue;
+            }
+
+            if ($code >= 500) {
+                // 500 / 502 / 503 / 504: Gemini sedang sibuk -> tunggu makin lama lalu coba lagi
+                $overloaded = true;
+                $last       = new \RuntimeException("Gemini sedang gangguan (HTTP {$code})");
+                if ($try < $maxTry) $this->backoff($try);
+                continue;
+            }
+
+            throw $this->apiException($code, $raw);
+        }
+
+        if ($limited) {
+            throw new QuotaException("Limit per menit model '{$this->model}' terlewati.", QuotaException::RATE);
+        }
+        if ($overloaded) {
+            throw new QuotaException(
+                "Gemini sedang sibuk untuk model '{$this->model}'" . ($last ? ' (' . $this->short($last->getMessage()) . ')' : ''),
+                QuotaException::UNAVAILABLE
+            );
+        }
+        throw $last ?? new \RuntimeException('Gemini tidak merespons');
+    }
+
+    /** Jeda antar percobaan ulang: 4, 8, 16 detik (+ acak 0-2 dtk), maks 30. */
+    private function backoff(int $try): void
+    {
+        sleep(min(30, 4 * (2 ** ($try - 1))) + random_int(0, 2));
+    }
+
+    private function readResponse(string $raw): array
+    {
+        $j      = json_decode($raw, true) ?: [];
+        $tokens = (int) ($j['usageMetadata']['totalTokenCount'] ?? 0);
+
+        if (! empty($j['promptFeedback']['blockReason'])) {
+            throw new \RuntimeException('Konten ditolak AI (' . $j['promptFeedback']['blockReason'] . ')');
+        }
+        $txt = '';
+        foreach ($j['candidates'][0]['content']['parts'] ?? [] as $part) {
+            if (! empty($part['thought'])) continue;
+            $txt .= (string) ($part['text'] ?? '');
+        }
+        if (trim($txt) === '') {
+            throw new \RuntimeException('Respons AI kosong (' . ($j['candidates'][0]['finishReason'] ?? 'tanpa alasan') . ')');
+        }
+
+        return [$txt, $tokens];
+    }
+
+    private function connectionError(\Throwable $e): \RuntimeException
+    {
+        if ($this->isSslError($e)) {
+            return new QuotaException(
+                'Sertifikat SSL tidak dikenali PHP. Perbaiki dengan set curl.cainfo di php.ini atau isi EXTRACTOR_CA_BUNDLE di .env.',
+                QuotaException::SSL
+            );
+        }
+        return new \RuntimeException('Gagal menghubungi Gemini: ' . $this->short($e->getMessage()));
+    }
+
+    private function apiException(int $code, string $raw): \RuntimeException
+    {
+        $j      = json_decode($raw, true);
+        $msg    = (string) ($j['error']['message'] ?? substr($raw, 0, 200));
+        $status = (string) ($j['error']['status'] ?? '');
+
+        if ($code === 404) {
+            return new QuotaException("Model '{$this->model}' tidak ditemukan. Silakan ganti model di pengaturan.", QuotaException::MODEL_MISSING);
+        }
+        if ($code === 401 || $code === 403 || ($code === 400 && (stripos($msg, 'api key') !== false || $status === 'API_KEY_INVALID'))) {
+            return new QuotaException('API key tidak valid: ' . $this->short($msg), QuotaException::AUTH);
+        }
+        return new \RuntimeException("Gemini HTTP {$code}: " . $this->short($msg));
+    }
+
+    /* ==================================================================
+       HTTP KE WEBSITE
+       ================================================================== */
+
     private function verifyOption()
     {
         $ca = trim((string) env('EXTRACTOR_CA_BUNDLE', ''));
@@ -205,24 +490,29 @@ class EmailExtractor
         return $v ?? true;
     }
 
-    private function client($verify): CURLRequest
+    private function client($verify, bool $api = false): CURLRequest
     {
+        $headers = $api
+            ? ['Accept' => 'application/json']
+            : [
+                // Banyak website (WAF/hosting) menolak User-Agent kustom dengan HTTP 403, jadi dibuat seperti browser biasa
+                'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'id-ID,id;q=0.9,en;q=0.8',
+            ];
+
         return Services::curlrequest([
-            'timeout'         => 20,
+            'timeout'         => $api ? 90 : 20,
             'connect_timeout' => 10,
             'http_errors'     => false,
             'verify'          => $verify,
-            'headers'         => [
-                'User-Agent'      => 'Mozilla/5.0 (compatible; EmailFinder/2.0)',
-                'Accept'          => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-                'Accept-Language' => 'id,en;q=0.8',
-            ],
+            'headers'         => $headers,
         ], null, null, false);
     }
 
     private function loose(): CURLRequest
     {
-        return $this->loose ??= $this->client(false);
+        return $this->loose ??= $this->client(false);   // klien website tanpa verifikasi SSL
     }
 
     private function isSslError(\Throwable $e): bool
@@ -236,19 +526,48 @@ class EmailExtractor
         return mb_substr(trim((string) preg_replace('/\s+/', ' ', $m)), 0, 200);
     }
 
+    /**
+     * Buka website. Bila gagal, coba variasi lain: https<->http, dengan/tanpa "www.",
+     * lalu halaman utama (kalau URL di database berupa path yang sudah mati).
+     * Mengembalikan [url yang berhasil dibuka, isi HTML].
+     */
     private function open(string $url): array
     {
-        try {
-            return [$url, $this->get($url)];
-        } catch (\Throwable $e) {
-            if (stripos($url, 'https://') === 0 && str_starts_with($e->getMessage(), 'Gagal membuka')) {
-                $alt = 'http://' . substr($url, 8);
-                try {
-                    return [$alt, $this->get($alt)];
-                } catch (\Throwable $e2) {}
-            }
-            throw $e;
+        $p      = parse_url($url) ?: [];
+        $host   = (string) ($p['host'] ?? '');
+        $port   = isset($p['port']) ? ':' . $p['port'] : '';
+        $rest   = ($p['path'] ?? '') . (isset($p['query']) ? '?' . $p['query'] : '');
+        $scheme = strtolower((string) ($p['scheme'] ?? 'https')) === 'http' ? ['http', 'https'] : ['https', 'http'];
+        $hosts  = [$host, str_starts_with($host, 'www.') ? substr($host, 4) : 'www.' . $host];
+
+        $paths = [$rest];
+        if ($rest !== '' && $rest !== '/') {
+            $paths[] = '/';   // URL di database berupa path: coba juga halaman utamanya
         }
+
+        $cands = [[$host, $url]];
+        foreach ($paths as $path) {
+            foreach ($hosts as $h) {
+                foreach ($scheme as $s) {
+                    $cands[] = [$h, "{$s}://{$h}{$port}{$path}"];
+                }
+            }
+        }
+
+        $first = null;
+        $dead  = [];
+        $seen  = [];
+        foreach ($cands as [$h, $c]) {
+            if (isset($seen[$c]) || isset($dead[$h])) continue;
+            $seen[$c] = true;
+            try {
+                return [$c, $this->get($c)];
+            } catch (\Throwable $e) {
+                $first ??= $e;   // pesan yang dilaporkan = percobaan pertama (URL asli)
+                if (stripos($e->getMessage(), 'resolve host') !== false) $dead[$h] = true;   // DNS mati: jangan buang waktu
+            }
+        }
+        throw $first ?? new \RuntimeException('Gagal membuka website');
     }
 
     private function get(string $url): string
@@ -279,6 +598,10 @@ class EmailExtractor
         }
         return mb_strcut($body, 0, 1500000, 'UTF-8');
     }
+
+    /* ==================================================================
+       PARSING HTML
+       ================================================================== */
 
     private function findPages(string $base, string $html, string $host): array
     {
@@ -333,6 +656,53 @@ class EmailExtractor
         return ['strong' => $strong, 'weak' => $weak];
     }
 
+    /** Maksimum no HP yang disimpan per kontak. */
+    private const MAX_PHONES = 10;
+
+    /**
+     * Cari no HP / telepon di sebuah halaman: link tel:/wa.me (kuat) dan teks biasa (lemah).
+     * @return array<int,array{0:string,1:string}>  [[nomorMentah, label], ...]
+     */
+    private function scanPhones(string $html, string $page = ''): array
+    {
+        $out = [];
+
+        if (preg_match_all('/href\s*=\s*["\']tel:([^"\'?#]+)/i', $html, $m)) {
+            foreach ($m[1] as $x) {
+                $out[] = [urldecode(html_entity_decode($x)), 'Link telepon'];
+            }
+        }
+        if (preg_match_all('/(?:wa\.me\/|api\.whatsapp\.com\/send\?[^"\']*phone=)(\+?\d{9,15})/i', $html, $m)) {
+            foreach ($m[1] as $x) {
+                $out[] = [$x, 'WhatsApp'];
+            }
+        }
+
+        $text = preg_replace('#<(script|style|noscript)\b[^>]*>.*?</\1>#is', ' ', $html) ?? $html;
+        $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if (preg_match_all('/(?<![\d\w])(?:\+62|62|0)[\s.\-()]*8\d[\d\s.\-]{7,12}\d|(?<![\d\w])(?:\+62|62|\(?0)\s*[2-7]\d{1,2}\)?[\s.\-]*\d{3,4}[\s.\-]*\d{3,5}/', $text, $m)) {
+            foreach ($m[0] as $x) {
+                $out[] = [trim($x), 'Dari teks halaman'];
+            }
+        }
+        return $out;
+    }
+
+    /** Normalkan & hilangkan duplikat nomor. */
+    private function uniquePhones(array $phones): array
+    {
+        $res = [];
+        foreach ($phones as [$raw, $label]) {
+            $n = \App\Libraries\ContactStore::normalizePhone((string) $raw);
+            if ($n === null) continue;
+            if (! isset($res[$n[1]]) || $label === 'WhatsApp' || $label === 'Link telepon') {
+                $res[$n[1]] = [$n[0], $label];
+            }
+            if (count($res) >= self::MAX_PHONES) break;
+        }
+        return array_values($res);
+    }
+
     private function decodeCf(string $hex): string
     {
         if (strlen($hex) < 4 || strlen($hex) % 2 !== 0) return '';
@@ -350,11 +720,6 @@ class EmailExtractor
         return preg_replace('/\s*[\[\(\{]\s*dot\s*[\]\)\}]\s*/i', '.', $t) ?? $t;
     }
 
-    /**
-     * LOGIKA BARU: 
-     * Jika Halaman Kontak (isContactPage = true): Ambil teks dari awal sampai akhir.
-     * Jika Bukan Halaman Kontak (isContactPage = false): Ambil teks 1200 karakter terakhir (Footer).
-     */
     private function toChunk(string $page, string $html, array $mails, bool $isContactPage = false): string
     {
         $clean = preg_replace('#<(script|style|noscript|svg)\b[^>]*>.*?</\1>#is', ' ', $html) ?? $html;
@@ -367,17 +732,13 @@ class EmailExtractor
         $out = [];
 
         if ($isContactPage) {
-            // Jika halaman Kontak, ambil seluruh teks (karena biasanya isinya sedikit)
-            $out[] = "[AREA HALAMAN KONTAK - SELURUH TEKS]\n" . $text;
+            $out[] = "[AREA HALAMAN KONTAK - SELURUH TEKS]\n" . mb_substr($text, 0, 6000);
         } else {
-            // Jika halaman Home/Lainnya, fokus ke Footer
             $footerStart = max(0, $len - 1200);
-            $footer = substr($text, $footerStart);
+            $footer      = mb_scrub(substr($text, $footerStart), 'UTF-8');
             if ($footer !== '') {
                 $out[] = "[AREA FOOTER / BAWAH HALAMAN]\n" . $footer;
             }
-            
-            // Tetap cek jika ada kata "kontak" di tengah halaman
             $spans = [];
             if (preg_match_all('/@|e-?mail|surel|kontak|hubungi/i', $text, $m, PREG_OFFSET_CAPTURE)) {
                 foreach ($m[0] as $hit) {
@@ -393,13 +754,23 @@ class EmailExtractor
                 }
             }
             foreach ($spans as [$a, $b]) {
-                if ($a >= $footerStart) continue; // Skip jika sudah ada di footer
+                if ($a >= $footerStart) continue;
                 $out[] = mb_scrub(substr($text, $a, $b - $a), 'UTF-8');
             }
         }
 
         $header = mb_substr($text, 0, 300);
         return "## PAGE {$page}\nMAILTO: " . implode(', ', array_unique($mails)) . "\nHEADER: {$header}\n\n" . implode("\n...\n", $out);
+    }
+
+    private function assertOfficialSite(string $url): void
+    {
+        $host = $this->bareHost($url);
+        foreach (self::SKIP_HOSTS as $d) {
+            if ($host === $d || str_ends_with($host, '.' . $d)) {
+                throw new \RuntimeException('Website berupa media sosial/marketplace (' . $d . '), bukan situs resmi - dilewati');
+            }
+        }
     }
 
     private function bareHost(string $url): string
@@ -457,138 +828,5 @@ class EmailExtractor
             if ($domain === $d || str_ends_with($domain, '.' . $d)) return null;
         }
         return $e;
-    }
-
-    private function askGemini(string $context): array
-    {
-        $prompt = "Dari teks website berikut, ambil semua alamat email kontak milik perusahaan. "
-            . "PENTING: Halaman ini mungkin halaman 'Kontak' atau halaman biasa. "
-            . "Jika ada label [AREA HALAMAN KONTAK], ambil email dari situ. "
-            . "Jika ada label [AREA FOOTER], prioritaskan email di bagian footer/bawah. "
-            . "Termasuk email yang disamarkan (contoh: 'info [at] domain [dot] com'). "
-            . "Abaikan email contoh/placeholder, nama file gambar, dan email pihak ketiga. "
-            . 'Balas HANYA JSON array: [{"email":"...","label":"nama departemen jika ada"}]. '
-            . "Jika tidak ada, balas [].\n\n" . $context;
-
-        [$txt, $tokens] = $this->call($prompt, true, 4);
-        return [$this->parseJson($txt), $tokens];
-    }
-
-    private function parseJson(string $txt): ?array
-    {
-        $txt = trim((string) preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($txt)));
-        $d   = json_decode($txt, true);
-        if (! is_array($d) && preg_match('/\[.*\]/s', $txt, $m)) $d = json_decode($m[0], true);
-        if (is_array($d) && isset($d['emails']) && is_array($d['emails'])) $d = $d['emails'];
-        if (is_array($d) && isset($d['email'])) $d = [$d];
-        return is_array($d) ? $d : null;
-    }
-
-    private function call(string $prompt, bool $json, int $maxTry): array
-    {
-        $url = self::API_BASE . 'models/' . rawurlencode($this->model) . ':generateContent';
-        $gen = ['temperature' => 0, 'maxOutputTokens' => 4096];
-        if ($json) $gen['responseMimeType'] = 'application/json';
-        
-        $body = [
-            'contents'         => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
-            'generationConfig' => $gen,
-        ];
-
-        $last    = null;
-        $limited = false;
-        for ($try = 1; $try <= $maxTry; $try++) {
-            try {
-                $res = $this->http->post($url, [
-                    'json'    => $body,
-                    'timeout' => 90,
-                    'headers' => ['x-goog-api-key' => $this->apiKey],
-                ]);
-            } catch (\Throwable $e) {
-                $last = $this->connectionError($e);
-                if ($last instanceof QuotaException) throw $last;
-                if ($try < $maxTry) sleep(3 * $try);
-                continue;
-            }
-
-            $code = $res->getStatusCode();
-            $raw  = (string) $res->getBody();
-
-            if ($code === 200) return $this->readResponse($raw);
-
-            if ($code === 429) {
-                $limited = true;
-                $flat    = strtolower((string) preg_replace('/[^a-z0-9]/i', '', $raw));
-                if (str_contains($flat, 'perday')) {
-                    throw new QuotaException('Kuota harian Gemini habis.');
-                }
-                if (preg_match('/limit:\s*0\b/i', $raw)) {
-                    throw new QuotaException("Model '{$this->model}' tidak tersedia untuk API key ini (kuota 0).");
-                }
-                $wait = preg_match('/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/', $raw, $m)
-                    ? (int) ceil((float) $m[1]) + 2
-                    : 20 * $try;
-                if ($try < $maxTry) sleep(min(70, $wait));
-                continue;
-            }
-
-            if ($code >= 500) {
-                $last = new \RuntimeException("Gemini sedang gangguan (HTTP {$code})");
-                if ($try < $maxTry) sleep(5 * $try);
-                continue;
-            }
-
-            throw $this->apiException($code, $raw);
-        }
-
-        if ($limited) {
-            throw new QuotaException('Limit per menit Gemini terlewati. Turunkan "Kontak per menit".');
-        }
-        throw $last ?? new \RuntimeException('Gemini tidak merespons');
-    }
-
-    private function readResponse(string $raw): array
-    {
-        $j      = json_decode($raw, true) ?: [];
-        $tokens = (int) ($j['usageMetadata']['totalTokenCount'] ?? 0);
-
-        if (! empty($j['promptFeedback']['blockReason'])) {
-            throw new \RuntimeException('Konten ditolak AI (' . $j['promptFeedback']['blockReason'] . ')');
-        }
-        $txt = '';
-        foreach ($j['candidates'][0]['content']['parts'] ?? [] as $part) {
-            if (! empty($part['thought'])) continue;
-            $txt .= (string) ($part['text'] ?? '');
-        }
-        if (trim($txt) === '') {
-            throw new \RuntimeException('Respons AI kosong (' . ($j['candidates'][0]['finishReason'] ?? 'tanpa alasan') . ')');
-        }
-
-        return [$txt, $tokens];
-    }
-
-    private function connectionError(\Throwable $e): \RuntimeException
-    {
-        if ($this->isSslError($e)) {
-            return new QuotaException(
-                'Sertifikat SSL tidak dikenali PHP. Perbaiki dengan set curl.cainfo di php.ini atau isi EXTRACTOR_CA_BUNDLE di .env.'
-            );
-        }
-        return new \RuntimeException('Gagal menghubungi Gemini: ' . $this->short($e->getMessage()));
-    }
-
-    private function apiException(int $code, string $raw): \RuntimeException
-    {
-        $j      = json_decode($raw, true);
-        $msg    = (string) ($j['error']['message'] ?? substr($raw, 0, 200));
-        $status = (string) ($j['error']['status'] ?? '');
-
-        if ($code === 404) {
-            return new QuotaException("Model '{$this->model}' tidak ditemukan. Silakan ganti model di pengaturan.");
-        }
-        if ($code === 401 || $code === 403 || ($code === 400 && (stripos($msg, 'api key') !== false || $status === 'API_KEY_INVALID'))) {
-            return new QuotaException('API key tidak valid: ' . $this->short($msg));
-        }
-        return new \RuntimeException("Gemini HTTP {$code}: " . $this->short($msg));
     }
 }
