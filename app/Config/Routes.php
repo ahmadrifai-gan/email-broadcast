@@ -155,3 +155,57 @@ foreach (['data-kontak', 'data_kontak'] as $prefix) {
         });
     });
 }
+
+$routes->group('scrapper', function ($routes) {
+    $routes->get('/', 'Travel::index');
+    $routes->post('scrape', 'Travel::scrape');
+    $routes->get('edit-data', 'Travel::editData');
+    $routes->get('edit-data/(:segment)', 'Travel::editDataKeyword/$1');
+    $routes->get('edit/(:num)', 'Travel::edit/$1');
+    $routes->post('update/(:num)', 'Travel::update/$1');
+    $routes->get('delete/(:num)', 'Travel::delete/$1');
+    $routes->get('export-excel/(:segment)', 'Travel::exportExcel/$1');
+    
+    // Fitur cek status
+    $routes->post('check-website/(:num)', 'Travel::checkWebsite/$1');
+    $routes->post('check-website-bulk', 'Travel::checkWebsiteBulk');
+    $routes->post('check-wa/(:num)', 'Travel::checkWaNumber/$1');
+    $routes->post('check-wa-bulk', 'Travel::checkWaNumberBulk');
+    
+    // Fitur import ke kontak
+    $routes->get('import-ke-kontak', 'Travel::importKeKontak');
+});
+
+$routes->group('import-excel',  function ($routes) {
+    $routes->get('/',         'ImportExcel::index');
+    $routes->post('preview',  'ImportExcel::preview');
+    $routes->post('process',  'ImportExcel::process');
+    $routes->post('from-tei', 'ImportExcel::importFromTei');
+});
+
+$routes->group('pengaturan', function($routes) {
+
+    $routes->get('/', 'PengaturanAI::index');
+
+    $routes->post('save', 'PengaturanAI::save');
+
+    $routes->post('test-connection', 'PengaturanAI::testConnection');
+
+});
+
+$routes->group('analisis-ai', function ($routes) {
+    $routes->get('/', 'AnalisisAI::index');                 // halaman utama
+    $routes->get('queue', 'AnalisisAI::getQueue');          // ambil antrean
+    $routes->post('process-one', 'AnalisisAI::processOne'); // proses 1 perusahaan
+       $routes->post('kontak/(:num)', 'AnalisisAI::analisisKontak/$1');
+});
+
+// $routes->group('perusahaan', static function ($routes) {
+//     $routes->get('/',                     'Perusahaan::index');
+//     $routes->get('detail/(:num)',         'Perusahaan::detail/$1');
+//     $routes->post('delete/(:num)',        'Perusahaan::delete/$1');
+//     $routes->post('bulk-delete',          'Perusahaan::bulkDelete');
+//     $routes->post('import-single/(:num)', 'Perusahaan::importSingle/$1');
+//     $routes->get('import-preview',        'Perusahaan::importPreview');
+//     $routes->post('import-all',           'Perusahaan::importAll');
+// });
